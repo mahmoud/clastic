@@ -2,31 +2,57 @@ from __future__ import unicode_literals
 
 import inspect
 import collections
+from collections import defaultdict
+import types
 
 from werkzeug.wrappers import Request, Response
 from werkzeug.routing import Map, Rule
 from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.wsgi import SharedDataMiddleware
-from werkzeug.utils import redirect
+from werkzeug.utils import redirect, cached_property
 
 from werkzeug.routing import parse_rule
 
-RESERVED_ARGS = ['req', 'request', 'application']
+# TODO: 'next' is really only reserved for middlewares
+RESERVED_ARGS = ['req', 'request', 'application', 'matched_route', 'matched_endpoint', 'next']
 
-def get_arg_names(func):
-    args, varargs, kw, defaults = inspect.getargspec(func)
-    for a in args:
-        if not isinstance(a, basestring):
-            raise TypeError('does not support anonymous tuple arguments')
-    return args
+def get_arg_names(f, only_required=False):
+    arg_names, _, _, defaults = inspect.getargspec(f)
+    if not all([isinstance(a, basestring) for a in arg_names]):
+        raise TypeError('does not support anonymous tuple arguments '
+                        'or any other strange args for that matter.')
+    ret = list(arg_names)
+    if isinstance(f, types.MethodType):
+        ret = ret[1:]  # throw away "self"
+
+    if only_required and defaults:
+        ret = ret[:-len(defaults)]
+
+    return ret
 
 
-# turn into combination Map/RuleFactory
-class WorklesBase(Map):
+def inject(f, injectables):
+    arg_names, _, _, defaults = inspect.getargspec(f)
+    if defaults:
+        defaults = dict(reversed(zip(reversed(arg_names), reversed(defaults))))
+    else:
+        defaults = {}
+    if isinstance(f, types.MethodType):
+        arg_names = arg_names[1:] #throw away "self"
+    args = {}
+    for n in arg_names:
+        if n in injectables:
+            args[n] = injectables[n]
+        else:
+            args[n] = defaults[n]
+    return f(**args)
+
+
+class Application(Map):
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, **map_kwargs):
         map_kwargs.pop('rules', None)
-        super(WorklesBase, self).__init__(**map_kwargs)
+        super(Application, self).__init__(**map_kwargs)
 
         self.routes = []
         self.resources = dict(resources or {})
@@ -98,6 +124,10 @@ class Middleware(object):
     reorderable = True
     provides = ()
 
+    request = None
+    endpoint = None
+    render = None
+
     @property
     def name(self):
         return self.__class__.__name__
@@ -105,7 +135,7 @@ class Middleware(object):
     @property
     def overridable(self):
         # thought: list of overridable provides?
-        return tuple(provides)
+        return tuple(self.provides)
 
     def __eq__(self, other):
         return type(self) == type(other)
@@ -113,9 +143,27 @@ class Middleware(object):
     def __ne__(self, other):
         return type(self) != type(other)
 
-    request = None
-    endpoint = None
-    render = None
+    @cached_property
+    def requirements(self):
+        reqs = []
+        if self.request:
+            reqs.extend(get_arg_names(self.request, True))
+        if self.endpoint:
+            reqs.extend(get_arg_names(self.endpoint, True))
+        if self.render:
+            reqs.extend(get_arg_names(self.render, True))
+        return set(reqs)
+
+    @cached_property
+    def arguments(self):
+        args = []
+        if self.request:
+            args.extend(get_arg_names(self.request))
+        if self.endpoint:
+            args.extend(get_arg_names(self.endpoint))
+        if self.render:
+            args.extend(get_arg_names(self.render))
+        return set(args)
 
 
 class DummyMiddleware(Middleware):
@@ -153,7 +201,11 @@ class Route(Rule):
         super(Route, self).__init__(rule_str, *a, endpoint=endpoint, **kw)
         self._middlewares = []
         self._resources = {}
+        self._reqs = None  # TODO
+        self._args = None
+        self._bound_apps = []
         self.endpoint_args = get_arg_names(endpoint)
+        self.endpoint_reqs = get_arg_names(endpoint, True)
 
         self._render = None
         self.render_arg = render_arg
@@ -203,24 +255,64 @@ class Route(Rule):
 
         self._bind_args(app, merged_resources, middlewares)
         self.bind_render(render_factory)
+        self._bound_apps.append(app)
         return self
 
     def _bind_args(self, url_map, resources, middlewares):
         super(Route, self).bind(url_map, rebind=True)
-        url_args = self.arguments
+        url_args = set(self.arguments)
+        builtin_args = set(RESERVED_ARGS)
+        resource_args = set(resources.keys() + self._resources.keys())
+
         endpoint_args = set(self.endpoint_args)
-        mw_args = set().union(*[set(mw.provides) for mw in middlewares])
-        app_args = set(resources.keys()) | set(mw_args) | set(RESERVED_ARGS)
-        common_args = url_args & app_args
-        if common_args:
-            raise ValueError('Route args conflict with app args: ' + \
-                             repr(common_args) + ' (' + self.rule + ')')
-        available_args = url_args | app_args
-        unresolved_args = endpoint_args - available_args
-        if unresolved_args:
-            import pdb;pdb.set_trace()
-            raise ValueError('Route endpoint has unresolved args: ' + \
-                             repr(unresolved_args)+' ('+ self.rule +')')
+        endpoint_reqs = set(self.endpoint_reqs)
+        spec_mw = self.get_middlewares(middlewares)
+
+        provided_by = defaultdict(list)
+        for arg in builtin_args:
+            provided_by[arg].append('builtins')
+        for arg in url_args:
+            provided_by[arg].append('url')
+        for arg in resource_args:
+            provided_by[arg].append('resources')
+        for mw in spec_mw:
+            for arg in mw.provides:
+                provided_by[arg].append(mw)
+
+        conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
+        if conflicts:
+            raise ValueError('route argument conflicts: '+repr(conflicts))
+
+        route_reqs = set(endpoint_reqs)
+        route_args = set(endpoint_args)
+        provided = resource_args | builtin_args | url_args
+        mw_unresolved = defaultdict(list)
+        for mw in spec_mw:
+            route_reqs.update(mw.requirements)
+            route_args.update(mw.arguments)
+            cur_unresolved = mw.requirements - provided
+            if cur_unresolved:
+                mw_unresolved[mw] = tuple(cur_unresolved)
+            provided.update(set(mw.provides))
+        if mw_unresolved:
+            raise ValueError('unresolved middleware arguments: '+repr(dict(mw_unresolved)))
+
+        ep_unresolved = endpoint_reqs - provided
+        if ep_unresolved:
+            raise ValueError('unresolved endpoint arguments: '+repr(tuple(ep_unresolved)))
+
+        self._resources.update(resources)
+        self._middlewares = spec_mw
+        self._reqs = route_reqs
+        self._args = route_args
+
+    def execute(request):  # , resources=None):
+        injectables = {'req': request,
+                       'request': request,
+                       'application': self._bound_apps[-1],
+                       'matched_endpoint': self.endpoint,
+                       'matched_route': self.route}
+        injectables.update(self._resources)
 
     def bind_render(self, render_factory):
         # control over whether or not to override?
@@ -240,4 +332,14 @@ class Route(Rule):
                 return cls(*in_arg)
             except TypeError:
                 pass
+        elif isinstance(in_arg, Application):
+            pass
         raise TypeError('incompatible Route type: ' + repr(in_arg))
+
+
+# GET/POST param middleware factory
+# ordered sets?
+
+# should resource values be bound into the route,
+# or just check argument names and let the application do the
+# resource merging?
