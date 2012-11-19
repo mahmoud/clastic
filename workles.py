@@ -13,6 +13,8 @@ from werkzeug.utils import redirect, cached_property
 
 from werkzeug.routing import parse_rule
 
+from decorator import decorator
+
 # TODO: 'next' is really only reserved for middlewares
 RESERVED_ARGS = ['req', 'request', 'application', 'matched_route', 'matched_endpoint', 'next']
 
@@ -283,6 +285,14 @@ class Route(Rule):
         if conflicts:
             raise ValueError('route argument conflicts: '+repr(conflicts))
 
+        for mw in spec_mw:
+            if mw.request:
+                if callable(mw.request):
+                    pass
+                else:
+                    raise ValueError('expected middleware.request to be a function')
+
+
         route_reqs = set(endpoint_reqs)
         route_args = set(endpoint_args)
         provided = resource_args | builtin_args | url_args
@@ -303,8 +313,10 @@ class Route(Rule):
 
         self._resources.update(resources)
         self._middlewares = spec_mw
-        self._reqs = route_reqs
-        self._args = route_args
+        self._reqs = route_reqs - set(['next'])
+        self._args = route_args - set(['next'])  # Route signature (TODO: defaults)
+
+        # create middleware next()s using new/types
 
     def execute(request):  # , resources=None):
         injectables = {'req': request,
@@ -343,3 +355,54 @@ class Route(Rule):
 # should resource values be bound into the route,
 # or just check argument names and let the application do the
 # resource merging?
+
+
+# exec req middlewares
+# -> exec endpoint middlewares
+#  -> endpoint (*get context or response)
+# -> ret endpoint middlewares
+# -> exec render middlewares (if not response)
+#  -> render (*get response)
+# -> ret render middlewares
+# ret req middlewares
+def theory(**provides):
+    for p_name, p_val in provides.items():
+        injectables[p_name] = p_val
+
+"""
+def func(injectables):
+    for mw in mws:
+        reqs = get_reqs(mw, injectables)
+        def next(*provides):
+            injectables += provides
+            mw(next, *reqs)
+injectables = {**builtins, etc}
+func(injectables)
+"""
+"""
+next() as a partial
+unrequested args that are necessary later are curried in at each level.
+to build the function stack, at each level we need:
+1) the actual next function to be decorated
+2) a list of its arg names (and defaults)
+3) what it provides (or whether it is the final function)
+4) a list of all arguments not automatically provided in the future
+"""
+
+def sort_of_next(f, sofar):
+    return f(sofar)
+
+def build_stack(funcs):
+    if not funcs:
+        return deco(self.endpoint)
+    else:
+        return deco(build_stack(funcs[1:]))
+
+def deco(f, next):
+    f.real_next = next
+    f.real_next_args = get_arguments(next)
+    return decorator(_deco, f)
+
+def _deco(func, *args, **kw):
+    __injectables__ = kw.pop('__injectables__', {})
+    func(*args, **kw)
