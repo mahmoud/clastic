@@ -16,21 +16,25 @@ from werkzeug.routing import parse_rule
 from decorator import decorator
 
 # TODO: 'next' is really only reserved for middlewares
-RESERVED_ARGS = ['req', 'request', 'application', 'matched_route', 'matched_endpoint', 'next']
+RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route', '_endpoint')
 
-def get_arg_names(f, only_required=False):
-    arg_names, _, _, defaults = inspect.getargspec(f)
-    if not all([isinstance(a, basestring) for a in arg_names]):
+def getargspec(f):
+    ret = inspect.getargspec(f)
+    if not all([isinstance(a, basestring) for a in ret.args]):
         raise TypeError('does not support anonymous tuple arguments '
                         'or any other strange args for that matter.')
-    ret = list(arg_names)
     if isinstance(f, types.MethodType):
-        ret = ret[1:]  # throw away "self"
+        ret = ret._replace(args=ret.args[1:])  # throw away "self"
+    return ret
+
+
+def get_arg_names(f, only_required=False):
+    arg_names, _, _, defaults = getargspec(f)
 
     if only_required and defaults:
-        ret = ret[:-len(defaults)]
+        arg_names = arg_names[:-len(defaults)]
 
-    return ret
+    return tuple(arg_names)
 
 
 def inject(f, injectables):
@@ -101,7 +105,7 @@ class Application(Map):
     def respond(self, request):
         try:
             route, ep_kwargs = self.match(request)
-            ep_res = route.endpoint(**ep_kwargs)
+            ep_res = route.execute(request, **ep_kwargs)
         except (HTTPException, NotFound) as e:
             return e
 
@@ -110,7 +114,7 @@ class Application(Map):
         elif callable(getattr(route, 'render', None)):
             return route.render(ep_res)
         else:
-            import pdb;pdb.set_trace()
+            #import pdb;pdb.set_trace()
             return HTTPException('no renderer registered for ' + repr(route) + \
                                  ' and no Response returned')
         #TODO: default renderer?
@@ -125,6 +129,7 @@ class Middleware(object):
     unique = True
     reorderable = True
     provides = ()
+    endpoint_provides = ()
 
     request = None
     endpoint = None
@@ -182,8 +187,40 @@ class DummyMiddleware(Middleware):
         print self, 'hooray'
         return ret
 
+def check_middleware(mw):
+    for f_name in ('request', 'endpoint', 'render'):
+        func = getattr(mw, f_name, None)
+        if not func:
+            continue
+        if not callable(func):
+            raise TypeError('expected middleware.'+f_name+' to be a function')
+        if not get_arg_names(func)[0] == 'next':
+            raise TypeError("middleware functions must take a first parameter 'next'")
+
+def check_middlewares(middlewares, args_dict=None):
+    args_dict = args_dict or {}
+
+    provided_by = defaultdict(list)
+    for source, arg_list in args_dict.items():
+        for arg_name in arg_list:
+            provided_by[arg_name].append(source)
+
+    for mw in middlewares:
+        check_middleware(mw)
+        for arg in mw.provides:
+            provided_by[arg].append(mw)
+
+    conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
+    if conflicts:
+        raise ValueError('route argument conflicts: '+repr(conflicts))
+    return True
+
 
 def merge_middlewares(old, new):
+    # TODO: since duplicate provides aren't allowed
+    # an error needs to be raised if a middleware is
+    # set to non-unique and has provides params
+
     old = list(old)
     merged = list(new)
     for mw in old:
@@ -194,7 +231,6 @@ def merge_middlewares(old, new):
                 raise ValueError('multiple inclusion of unique '
                                  'middleware '+mw.name)
         merged.append(mw)
-    # todo: resolve provides conflicts
     return merged
 
 
@@ -234,12 +270,6 @@ class Route(Rule):
         ret._middlewares = list(self._middlewares)
         return ret
 
-    def get_middlewares(self, new_middlewares=None):
-        if new_middlewares:
-            return merge_middlewares(self._middlewares, new_middlewares)
-        else:
-            return self._middlewares
-
     def bind(self, app):
         resources = app.__dict__.get('resources', {})
         render_factory = app.__dict__.get('render_factory')
@@ -247,89 +277,48 @@ class Route(Rule):
 
         merged_resources = self._resources.copy()
         merged_resources.update(resources)
-        merged_mw = self.get_middlewares(middlewares)
+        merged_mw = merge_middlewares(self._middlewares, middlewares)
 
         r_copy = self.copy()
         try:
-            r_copy._bind_args(app, merged_resources, merged_mw)
+            r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
         except:
             raise
 
-        self._bind_args(app, merged_resources, middlewares)
-        self.bind_render(render_factory)
+        self._bind_args(app, merged_resources, middlewares, render_factory)
         self._bound_apps.append(app)
         return self
 
-    def _bind_args(self, url_map, resources, middlewares):
+    def _bind_args(self, url_map, resources, middlewares, render_factory):
         super(Route, self).bind(url_map, rebind=True)
         url_args = set(self.arguments)
         builtin_args = set(RESERVED_ARGS)
-        resource_args = set(resources.keys() + self._resources.keys())
+        resource_args = set(resources.keys())
 
-        endpoint_args = set(self.endpoint_args)
-        endpoint_reqs = set(self.endpoint_reqs)
-        spec_mw = self.get_middlewares(middlewares)
-
-        provided_by = defaultdict(list)
-        for arg in builtin_args:
-            provided_by[arg].append('builtins')
-        for arg in url_args:
-            provided_by[arg].append('url')
-        for arg in resource_args:
-            provided_by[arg].append('resources')
-        for mw in spec_mw:
-            for arg in mw.provides:
-                provided_by[arg].append(mw)
-
-        conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
-        if conflicts:
-            raise ValueError('route argument conflicts: '+repr(conflicts))
-
-        for mw in spec_mw:
-            if mw.request:
-                if callable(mw.request):
-                    pass
-                else:
-                    raise ValueError('expected middleware.request to be a function')
-
-
-        route_reqs = set(endpoint_reqs)
-        route_args = set(endpoint_args)
+        tmp_avail_args = {'url':url_args,
+                          'builtins':builtin_args,
+                          'resources': resource_args}
+        check_middlewares(middlewares, tmp_avail_args)
         provided = resource_args | builtin_args | url_args
-        mw_unresolved = defaultdict(list)
-        for mw in spec_mw:
-            route_reqs.update(mw.requirements)
-            route_args.update(mw.arguments)
-            cur_unresolved = mw.requirements - provided
-            if cur_unresolved:
-                mw_unresolved[mw] = tuple(cur_unresolved)
-            provided.update(set(mw.provides))
-        if mw_unresolved:
-            raise ValueError('unresolved middleware arguments: '+repr(dict(mw_unresolved)))
-
-        ep_unresolved = endpoint_reqs - provided
-        if ep_unresolved:
-            raise ValueError('unresolved endpoint arguments: '+repr(tuple(ep_unresolved)))
+        if callable(render_factory) and self.render_arg is not None:
+            _render = render_factory(self.render_arg)
+        else:
+            _render = lambda context: context
+        _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
 
         self._resources.update(resources)
-        self._middlewares = spec_mw
-        self._reqs = route_reqs - set(['next'])
-        self._args = route_args - set(['next'])  # Route signature (TODO: defaults)
+        self._render = _render
+        self._execute = _execute
 
-        # create middleware next()s using new/types
-
-    def execute(request):  # , resources=None):
-        injectables = {'req': request,
+    def execute(self, request, **kwargs):  # , resources=None):
+        injectables = {
                        'request': request,
-                       'application': self._bound_apps[-1],
-                       'matched_endpoint': self.endpoint,
-                       'matched_route': self.route}
+                       '_application': self._bound_apps[-1],
+                       '_endpoint': self.endpoint,
+                       '_route': self}
         injectables.update(self._resources)
-
-    def bind_render(self, render_factory):
-        # control over whether or not to override?
-        if callable(render_factory) and self.render_arg is not None:
-            self._render = render_factory(self.render_arg)
+        injectables.update(kwargs)
+        return inject(self._execute, injectables)
 
     @classmethod
     def cast(cls, in_arg):
@@ -365,44 +354,146 @@ class Route(Rule):
 #  -> render (*get response)
 # -> ret render middlewares
 # ret req middlewares
-def theory(**provides):
-    for p_name, p_val in provides.items():
-        injectables[p_name] = p_val
 
 """
-def func(injectables):
-    for mw in mws:
-        reqs = get_reqs(mw, injectables)
-        def next(*provides):
-            injectables += provides
-            mw(next, *reqs)
-injectables = {**builtins, etc}
-func(injectables)
-"""
-"""
-next() as a partial
-unrequested args that are necessary later are curried in at each level.
-to build the function stack, at each level we need:
-1) the actual next function to be decorated
-2) a list of its arg names (and defaults)
-3) what it provides (or whether it is the final function)
-4) a list of all arguments not automatically provided in the future
+        endpoint_args = set(self.endpoint_args)
+        endpoint_reqs = set(self.endpoint_reqs)
+
+        route_reqs = set(endpoint_reqs)
+        route_args = set(endpoint_args)
+
+        mw_unresolved = defaultdict(list)
+        for mw in spec_mw:
+            route_reqs.update(mw.requirements)
+            route_args.update(mw.arguments)
+            cur_unresolved = mw.requirements - provided
+            if cur_unresolved:
+                mw_unresolved[mw] = tuple(cur_unresolved)
+            provided.update(set(mw.provides))
+        if mw_unresolved:
+            raise ValueError('unresolved middleware arguments: '+repr(dict(mw_unresolved)))
+
+        ep_unresolved = endpoint_reqs - provided
+        if ep_unresolved:
+            raise ValueError('unresolved endpoint arguments: '+repr(tuple(ep_unresolved)))
+
+        self._reqs = route_reqs - set(['next'])
+        self._args = route_args - set(['next'])  # Route signature (TODO: defaults)
 """
 
-def sort_of_next(f, sofar):
-    return f(sofar)
 
-def build_stack(funcs):
-    if not funcs:
-        return deco(self.endpoint)
+
+def chain_argspec(func_list, provides):
+    provided_sofar = set(['next']) #'next' is an extremely special case
+    optional_sofar = set()
+    required_sofar = set()
+    for f, p in zip(func_list, provides):
+        # middlewares can default the same parameter to different values;
+        # can't properly keep track of default values
+        arg_names, _, _, defaults = getargspec(f)
+
+        def_offs = -len(defaults) if defaults else None
+        undefaulted, defaulted = arg_names[:def_offs], arg_names[def_offs:]
+        optional_sofar.update(defaulted)
+        # keep track of defaults so that e.g. endpoint default param can pick up
+        # request injected/provided param
+        required_sofar |= set(undefaulted) - provided_sofar
+        provided_sofar.update(p)
+
+    return required_sofar, optional_sofar
+
+#NOTE: checking for double provided variables is assumed to already be done
+#NOTE: any "hoisting" of middlewares / removing of duplicates should be done before this function
+def make_middleware_chain(middlewares, endpoint, render, provided):
+    endpoints = [(mw.endpoint, mw.endpoint_provides)
+                    for mw in middlewares if mw.endpoint]
+    renders = [mw.render for mw in middlewares if mw.render]
+    requests = [(mw.request, mw.provides) for mw in middlewares if mw.request]
+
+    #maybe there aren't and endpoints or requests functions defined at all
+    if endpoints:
+        endpoints, endpoints_provides = zip(*endpoints)
     else:
-        return deco(build_stack(funcs[1:]))
+        endpoints_provides = []
+    if requests:
+        requests, requests_provides = zip(*requests)
+    else:
+        requests_provides = []
 
-def deco(f, next):
-    f.real_next = next
-    f.real_next_args = get_arguments(next)
-    return decorator(_deco, f)
+    request_params, request_optional =\
+        chain_argspec(requests, requests_provides)
 
-def _deco(func, *args, **kw):
-    __injectables__ = kw.pop('__injectables__', {})
-    func(*args, **kw)
+    endpoint_params, endpoint_optional =\
+        chain_argspec(list(endpoints)+[endpoint], list(endpoints_provides)+[()])
+
+    renders_params, renders_optional =\
+        chain_argspec(list(renders)+[render], [('context',)]*(len(middlewares)+1))
+
+    available_params = set(sum(map(tuple, requests_provides), ()) + tuple(provided))
+
+    if endpoint_params - available_params:
+        raise Exception("unresolved endpoint resources")
+
+    if request_params - set(provided):
+        raise Exception("unresolved request resources")
+
+    if renders_params - available_params - set(['context']):
+        raise Exception("unresolved renders resources")
+
+    #add provided optional parameters back into actual parameters
+    endpoint_params |= available_params & endpoint_optional
+    renders_params  |= available_params & renders_optional
+    tmp_ep_name = endpoint.__name__
+    endpoint = make_chain(
+        list(endpoints)+[endpoint],
+        [endpoint_params]+[mw.endpoint_provides for mw in middlewares])
+
+    render = make_chain(
+        list(renders)+[render],
+        [renders_params]+[('context',)]*len(middlewares))
+
+    def named_arg_str(args): return ','.join([a+'='+a for a in args])
+
+    inner_code = \
+    'def inner('+','.join(endpoint_params|renders_params-set(['context']))+'):\n'+\
+    '   context = endpoint('+named_arg_str(endpoint_params)+')\n'+\
+    '   resp = render('+named_arg_str(renders_params)+')\n'+\
+    '   return resp'
+
+    d = {'endpoint':endpoint, 'render':render}
+    exec compile(inner_code, '<string>', 'single') in d
+
+    if tmp_ep_name.startswith('get_stops'):
+        import pdb;pdb.set_trace()
+
+    mw_exec = make_chain(
+        list(requests)+[d['inner']], [request_params]+list(requests_provides) )
+
+    return mw_exec
+
+
+def make_chain(funcs, params, verbose=True):
+    call_str = make_call_str(funcs, params)
+    code = compile(call_str, '<string>', 'single')
+    if verbose:
+        print call_str
+    d = {'funcs':funcs}
+    exec code in d
+    return d['next']
+
+
+#funcs[0] = function to call
+#params[0] = parameters to take
+def make_call_str(funcs, params, params_sofar=None, level=0):
+    if not funcs:
+        return '' #stopping case
+    if params_sofar is None:
+        params_sofar = set(['next'])
+    params_sofar.update(params[0])
+    next_args = inspect.getargspec(funcs[0])[0]
+    if isinstance(funcs[0], types.MethodType):
+        next_args = next_args[1:]
+    next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
+    return '   '*level +'def next('+','.join(params[0])+'):\n'+\
+        make_call_str(funcs[1:], params[1:], params_sofar, level+1)+\
+        '   '*(level+1)+'return funcs['+str(level)+']('+next_args+')\n'
