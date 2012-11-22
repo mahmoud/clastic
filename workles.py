@@ -1,23 +1,20 @@
 from __future__ import unicode_literals
 
 import inspect
-import collections
-from collections import defaultdict
+from collections import defaultdict, Sequence
 import types
 
 from werkzeug.wrappers import Request, Response
-from werkzeug.routing import Map, Rule
+from werkzeug.routing import Map, Rule, RuleFactory
 from werkzeug.exceptions import HTTPException, NotFound
-from werkzeug.wsgi import SharedDataMiddleware
-from werkzeug.utils import redirect, cached_property
+from werkzeug.utils import cached_property
 
-from werkzeug.routing import parse_rule
-
-from decorator import decorator
-
-# TODO: 'next' is really only reserved for middlewares
 # TODO: check resources for conflicts with reserved args
-RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route', '_endpoint')
+# TODO: check for URL pattern conflicts?
+
+RESERVED_ARGS = ('request', 'next', 'context', '_application',
+                 '_route', '_endpoint')
+
 
 def getargspec(f):
     ret = inspect.getargspec(f)
@@ -39,13 +36,11 @@ def get_arg_names(f, only_required=False):
 
 
 def inject(f, injectables):
-    arg_names, _, _, defaults = inspect.getargspec(f)
+    arg_names, _, _, defaults = getargspec(f)
     if defaults:
         defaults = dict(reversed(zip(reversed(arg_names), reversed(defaults))))
     else:
         defaults = {}
-    if isinstance(f, types.MethodType):
-        arg_names = arg_names[1:] #throw away "self"
     args = {}
     for n in arg_names:
         if n in injectables:
@@ -53,6 +48,26 @@ def inject(f, injectables):
         else:
             args[n] = defaults[n]
     return f(**args)
+
+
+def cast_to_rule_factory(in_arg):
+    if isinstance(in_arg, Route):
+        return in_arg
+    elif isinstance(in_arg, Rule):
+        ret = Route(in_arg.rule, in_arg.endpoint)
+        ret.__dict__.update(in_arg.empty().__dict__)
+        return ret
+    elif isinstance(in_arg, Sequence):
+        try:
+            if isinstance(in_arg[1], Application):
+                return SubApplication(*in_arg)
+            if callable(in_arg[2]):
+                return Route(*in_arg)
+        except TypeError:
+            pass
+    if isinstance(in_arg, RuleFactory):
+        return in_arg
+    raise TypeError('Could not create routes from ' + repr(in_arg))
 
 
 class Application(Map):
@@ -68,36 +83,32 @@ class Application(Map):
         self.endpoint_args = {}
         self._map_kwargs = map_kwargs
         for entry in routes:
-            rule_factory = Route.cast(entry)
-            for r in rule_factory.get_rules(self):
-                self.add_route(r)
+            self.add(entry)
 
-    def add_route(self, route):
-        # note: currently only works with individual routes
-        nr = route.empty()  # is copy necessary here?
-        self.add(nr)
-        return nr
-
-    @property
-    def injectable_names(self):
-        return set(self.resources.keys() + RESERVED_ARGS)
+    def add(self, entry, rebind_render=True):
+        rf = cast_to_rule_factory(entry)
+        rebind_render = getattr(rf, 'rebind_render', rebind_render)
+        for route in rf.get_rules(self):
+            route.bind(self, rebind_render)
+            self.routes.append(route)
+            self._rules.append(route)
+            self._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
+        self._remap = True
 
     def get_rules(self, r_map=None):
-        if r_map is None:
-            r_map = self
+        r_map = self
         for rf in self.routes:
             for rule in rf.get_rules(r_map):
                 yield rule  # is yielding bound rules bad?
 
     def match(self, request):
         adapter = self.bind_to_environ(request.environ)
-        route, values = adapter.match(return_rule=True)
-        request.path_params = values
+        route, url_args = adapter.match(return_rule=True)
+        request.path_params = url_args
         injectables = dict(self.resources)
         injectables['request'] = request
-        injectables['req'] = request
-        injectables['application'] = self
-        injectables.update(values)
+        injectables['_application'] = self
+        injectables.update(url_args)
         ep_arg_names = route.endpoint_args
         ep_kwargs = dict([(k, v) for k, v in injectables.items()
                           if k in ep_arg_names])
@@ -109,15 +120,7 @@ class Application(Map):
             ep_res = route.execute(request, **ep_kwargs)
         except (HTTPException, NotFound) as e:
             return e
-
-        if isinstance(ep_res, Response):
-            return ep_res
-        elif callable(getattr(route, 'render', None)):
-            return route.render(ep_res)
-        else:
-            return HTTPException('no renderer registered for ' + repr(route) + \
-                                 ' and no Response returned')
-        #TODO: default renderer?
+        return ep_res
 
     def __call__(self, environ, start_response):
         request = Request(environ)
@@ -139,11 +142,6 @@ class Middleware(object):
     def name(self):
         return self.__class__.__name__
 
-    @property
-    def overridable(self):
-        # thought: list of overridable provides?
-        return tuple(self.provides)
-
     def __eq__(self, other):
         return type(self) == type(other)
 
@@ -153,23 +151,19 @@ class Middleware(object):
     @cached_property
     def requirements(self):
         reqs = []
-        if self.request:
-            reqs.extend(get_arg_names(self.request, True))
-        if self.endpoint:
-            reqs.extend(get_arg_names(self.endpoint, True))
-        if self.render:
-            reqs.extend(get_arg_names(self.render, True))
+        for func_name in ('request', 'endpoint', 'render'):
+            func = getattr(self, func, None)
+            if func:
+                reqs.extend(get_arg_names(func, True))
         return set(reqs)
 
     @cached_property
     def arguments(self):
         args = []
-        if self.request:
-            args.extend(get_arg_names(self.request))
-        if self.endpoint:
-            args.extend(get_arg_names(self.endpoint))
-        if self.render:
-            args.extend(get_arg_names(self.render))
+        for func_name in ('request', 'endpoint', 'render'):
+            func = getattr(self, func, None)
+            if func:
+                args.extend(get_arg_names(func))
         return set(args)
 
 
@@ -188,6 +182,7 @@ class DummyMiddleware(Middleware):
         print type_name, '- hooray:', repr(ret)
         return ret
 
+
 def check_middleware(mw):
     for f_name in ('request', 'endpoint', 'render'):
         func = getattr(mw, f_name, None)
@@ -197,6 +192,7 @@ def check_middleware(mw):
             raise TypeError('expected middleware.'+f_name+' to be a function')
         if not get_arg_names(func)[0] == 'next':
             raise TypeError("middleware functions must take a first parameter 'next'")
+
 
 def check_middlewares(middlewares, args_dict=None):
     args_dict = args_dict or {}
@@ -221,7 +217,6 @@ def merge_middlewares(old, new):
     # TODO: since duplicate provides aren't allowed
     # an error needs to be raised if a middleware is
     # set to non-unique and has provides params
-
     old = list(old)
     merged = list(new)
     for mw in old:
@@ -246,6 +241,7 @@ class Route(Rule):
 
         self._execute = None
         self._render = None
+        self._render_factory = None
         self.render_arg = render_arg
         if callable(render_arg):
             self._render = render_arg
@@ -261,30 +257,33 @@ class Route(Rule):
     def empty(self):
         ret = Route(self.rule, self.endpoint, self.render_arg)
         ret.__dict__.update(super(Route, self).empty().__dict__)
-        ret._middlewares = list(self._middlewares)
+        ret._middlewares = tuple(self._middlewares)
         ret._resources = dict(self._resources)
-        ret._bound_apps = list(self._bound_apps)
+        ret._bound_apps = tuple(self._bound_apps)
+        ret._render_factory = self._render_factory
         ret._render = self._render
         ret._execute = self._execute
         return ret
 
-    def bind(self, app):
+    def bind(self, app, rebind_render=True):
         resources = app.__dict__.get('resources', {})
-        render_factory = app.__dict__.get('render_factory')
         middlewares = app.__dict__.get('middlewares', [])
+        if rebind_render:
+            render_factory = app.__dict__.get('render_factory')
+        else:
+            render_factory = self._render_factory
 
         merged_resources = dict(self._resources)
         merged_resources.update(resources)
         merged_mw = merge_middlewares(self._middlewares, middlewares)
-
         r_copy = self.empty()
         try:
             r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
         except:
             raise
 
-        self._bind_args(app, merged_resources, middlewares, render_factory)
-        self._bound_apps.append(app)
+        self._bind_args(app, merged_resources, merged_mw, render_factory)
+        self._bound_apps += (app,)
         return self
 
     def _bind_args(self, url_map, resources, middlewares, render_factory):
@@ -305,6 +304,8 @@ class Route(Rule):
         _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
 
         self._resources.update(resources)
+        self._middlewares = middlewares
+        self._render_factory = render_factory
         self._render = _render
         self._execute = _execute
 
@@ -318,32 +319,9 @@ class Route(Rule):
         injectables.update(kwargs)
         return inject(self._execute, injectables)
 
-    @classmethod
-    def cast(cls, in_arg):
-        if isinstance(in_arg, cls):
-            return in_arg
-        elif isinstance(in_arg, Rule):
-            ret = cls(in_arg.rule, in_arg.endpoint)
-            ret.__dict__.update(in_arg.empty().__dict__)
-            return ret
-        elif isinstance(in_arg, collections.Sequence):
-            try:
-                return cls(*in_arg)
-            except TypeError:
-                import pdb;pdb.set_trace()
-                raise
-        elif isinstance(in_arg, Application):
-            return in_arg
-        raise TypeError('incompatible Route type: ' + repr(in_arg))
-
 
 # GET/POST param middleware factory
 # ordered sets?
-
-# should resource values be bound into the route,
-# or just check argument names and let the application do the
-# resource merging?
-
 
 # exec req middlewares
 # -> exec endpoint middlewares
@@ -379,6 +357,18 @@ class Route(Rule):
         self._reqs = route_reqs - set(['next'])
         self._args = route_args - set(['next'])  # Route signature (TODO: defaults)
 """
+class SubApplication(RuleFactory):
+    def __init__(self, prefix, app, rebind_render=False):
+        self.prefix = prefix.rstrip('/')
+        self.app = app
+        self.rebind_render = rebind_render
+
+    def get_rules(self, url_map):
+        for rules in self.app.get_rules(url_map):
+            for rule in rules.get_rules(url_map):
+                yld = rule.empty()
+                yld.rule = self.prefix + yld.rule
+                yield yld
 
 
 def chain_argspec(func_list, provides):
@@ -460,10 +450,13 @@ def make_middleware_chain(middlewares, endpoint, render, provided):
     inner_code = \
     'def inner('+','.join(endpoint_params|render_params-set(['context']))+'):\n'+\
     '   context = endpoint('+named_arg_str(endpoint_params)+')\n'+\
-    '   resp = render('+named_arg_str(render_params)+')\n'+\
+    '   if isinstance(context, Response):\n'+\
+    '      resp = context\n'+\
+    '   else:\n'+\
+    '      resp = render('+named_arg_str(render_params)+')\n'+\
     '   return resp'
 
-    d = {'endpoint':endpoint, 'render':render}
+    d = {'endpoint':endpoint, 'render':render, 'Response':Response}
     exec compile(inner_code, '<string>', 'single') in d
 
     request_params |= endpoint_params|render_params-set(['context'])-requests_provides
@@ -488,13 +481,11 @@ def make_chain(funcs, params, verbose=False):
 #params[0] = parameters to take
 def make_call_str(funcs, params, params_sofar=None, level=0):
     if not funcs:
-        return '' #stopping case
+        return ''  # stopping case
     if params_sofar is None:
         params_sofar = set(['next'])
     params_sofar.update(params[0])
-    next_args = inspect.getargspec(funcs[0])[0]
-    if isinstance(funcs[0], types.MethodType):
-        next_args = next_args[1:]
+    next_args = getargspec(funcs[0])[0]
     next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
     return '   '*level +'def next('+','.join(params[0])+'):\n'+\
         make_call_str(funcs[1:], params[1:], params_sofar, level+1)+\
