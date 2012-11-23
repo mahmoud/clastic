@@ -403,12 +403,12 @@ def make_middleware_chain(middlewares, endpoint, render, provided):
     if endpoints:
         endpoints, endpoints_provides = zip(*endpoints)
     else:
-        endpoints_provides = []
+        endpoints_provides = set()
     if requests:
         requests, requests_provides = zip(*requests)
         requests_provides = set(requests_provides)
     else:
-        requests_provides = []
+        requests_provides = set()
 
     request_params, request_optional =\
         chain_argspec(requests, requests_provides)
