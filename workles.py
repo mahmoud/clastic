@@ -152,7 +152,7 @@ class Middleware(object):
     def requirements(self):
         reqs = []
         for func_name in ('request', 'endpoint', 'render'):
-            func = getattr(self, func, None)
+            func = getattr(self, func_name, None)
             if func:
                 reqs.extend(get_arg_names(func, True))
         return set(reqs)
@@ -161,7 +161,7 @@ class Middleware(object):
     def arguments(self):
         args = []
         for func_name in ('request', 'endpoint', 'render'):
-            func = getattr(self, func, None)
+            func = getattr(self, func_name, None)
             if func:
                 args.extend(get_arg_names(func))
         return set(args)
@@ -292,8 +292,8 @@ class Route(Rule):
         builtin_args = set(RESERVED_ARGS)
         resource_args = set(resources.keys())
 
-        tmp_avail_args = {'url':url_args,
-                          'builtins':builtin_args,
+        tmp_avail_args = {'url': url_args,
+                          'builtins': builtin_args,
                           'resources': resource_args}
         check_middlewares(middlewares, tmp_avail_args)
         provided = resource_args | builtin_args | url_args
@@ -314,7 +314,6 @@ class Route(Rule):
                        '_application': self._bound_apps[-1],
                        '_endpoint': self.endpoint,
                        '_route': self}
-
         injectables.update(self._resources)
         injectables.update(kwargs)
         return inject(self._execute, injectables)
