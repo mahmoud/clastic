@@ -1,0 +1,2 @@
+include README.rst.txt
+recursive-include clastic/tests *.py
