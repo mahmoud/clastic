@@ -61,7 +61,7 @@ def cast_to_rule_factory(in_arg):
         try:
             if isinstance(in_arg[1], Application):
                 return SubApplication(*in_arg)
-            if callable(in_arg[2]):
+            if callable(in_arg[1]):
                 return Route(*in_arg)
         except TypeError:
             pass
@@ -76,6 +76,7 @@ class Application(Map):
         map_kwargs.pop('rules', None)
         super(Application, self).__init__(**map_kwargs)
 
+        routes = routes or []
         self.routes = []
         self.resources = dict(resources or {})
         self.middlewares = list(middlewares or [])
