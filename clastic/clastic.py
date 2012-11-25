@@ -118,7 +118,8 @@ class Application(Map):
     def respond(self, request):
         try:
             route, ep_kwargs = self.match(request)
-            ep_res = route.execute(request, **ep_kwargs)
+            ep_kwargs['request'] = request
+            ep_res = route.execute(**ep_kwargs)
         except (HTTPException, NotFound) as e:
             return e
         return ep_res
