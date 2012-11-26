@@ -131,7 +131,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
         raise NameError("unresolved render middleware arguments: %r"
                         % rn_unres)
 
-    req_args = ep_args | rn_args - set(['context'])
+    req_args = (ep_args | rn_args) - (set(['context']) | set(req_provides))
     req_func = _create_request_inner(endpoint,
                                      render,
                                      req_args,
