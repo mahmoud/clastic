@@ -20,6 +20,6 @@ from clastic import (
     Route,
     Middleware,
     DummyMiddleware,
-    Request,  # convenience
-    Response
     )
+
+from werkzeug.wrappers import Request, Response
