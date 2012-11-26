@@ -17,6 +17,7 @@
 * Default mako renderer
 * Example application
 * Form processing middleware?
+# GET/POST param middleware factory
 
 ## v2
 * Custom URL resolvers?
