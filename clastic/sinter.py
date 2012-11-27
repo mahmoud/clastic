@@ -1,7 +1,10 @@
 import types
 import inspect
+import itertools
 
 from werkzeug.wrappers import Response  # TODO: remove dependency
+
+VERBOSE = False
 
 def getargspec(f):
     ret = inspect.getargspec(f)
@@ -65,14 +68,16 @@ def build_chain_str(funcs, params, params_sofar=None, level=0):
     if params_sofar is None:
         params_sofar = set(['next'])
     params_sofar.update(params[0])
+    #args, opts = getargspec(funcs[0])
     next_args = getargspec(funcs[0])[0]
+    print funcs[0], next_args  # DEBUG
     next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
     return '   '*level +'def next('+','.join(params[0])+'):\n'+\
         build_chain_str(funcs[1:], params[1:], params_sofar, level+1)+\
         '   '*(level+1)+'return funcs['+str(level)+']('+next_args+')\n'
 
 
-def compile_chain(funcs, params, verbose=True):
+def compile_chain(funcs, params, verbose=VERBOSE):
     call_str = build_chain_str(funcs, params)
     code = compile(call_str, '<string>', 'single')
     if verbose:
@@ -91,7 +96,8 @@ def make_chain(funcs, provides, final_func, preprovided):
 
     unresolved = tuple(reqs - preprovided)
     args = reqs | (preprovided & opts)
-
+    print 'args:', args, '- reqs:', reqs, '- opts:', opts, '- provided:', preprovided
+    print 'unresolved:', unresolved
     chain = compile_chain(funcs + [final_func],
                           [args] + provides)
     return chain, set(args), set(unresolved)
@@ -106,11 +112,14 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
     req_funcs, req_provides = zip(*req_sigs) or ((), ())
+    #import pdb;pdb.set_trace()
+    req_all_provides = set(itertools.chain.from_iterable(req_provides))
 
-    ep_avail = req_avail | set(req_provides)
+    ep_avail = req_avail | req_all_provides
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
     ep_funcs, ep_provides = zip(*ep_sigs) or ((), ())
+    #ep_all_provides = set(itertools.chain.from_iterable(ep_provides))
     ep_chain, ep_args, ep_unres = make_chain(ep_funcs,
                                              ep_provides,
                                              endpoint,
@@ -119,10 +128,11 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
         raise NameError("unresolved endpoint middleware arguments: %r"
                         % ep_unres)
 
-    rn_avail = ep_avail | set(ep_provides) | set(('context',))
+    rn_avail = ep_avail | set(['context'])
     rn_sigs = [(mw.render, mw.render_provides)
                for mw in middlewares if mw.render]
     rn_funcs, rn_provides = zip(*rn_sigs) or ((), ())
+    #rn_all_provides = set(itertools.chain.from_iterable(rn_provides))
     rn_chain, rn_args, rn_unres = make_chain(rn_funcs,
                                              rn_provides,
                                              render,
@@ -131,16 +141,17 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
         raise NameError("unresolved render middleware arguments: %r"
                         % rn_unres)
 
-    req_args = (ep_args | rn_args) - (set(['context']) | set(req_provides))
+    req_args = (ep_args | rn_args) - set(['context'])
+    print 'req_args:', req_args
     req_func = _create_request_inner(endpoint,
                                      render,
                                      req_args,
                                      ep_args,
                                      rn_args)
-    req_chain, req_args, req_unres = make_chain(req_funcs,
-                                                req_provides,
-                                                req_func,
-                                                req_avail)
+    req_chain, req_chain_args, req_unres = make_chain(req_funcs,
+                                                      req_provides,
+                                                      req_func,
+                                                      req_avail)
     if req_unres:
         raise NameError("unresolved request middleware arguments: %r"
                         % req_unres)
@@ -163,14 +174,20 @@ def _named_arg_str(args):
     return ','.join([a+'='+a for a in args])
 
 
-def _create_request_inner(endpoint, render, all_args, endpoint_args, render_args):
-    all_args_str = _named_arg_str(all_args)
+def _create_request_inner(endpoint, render, all_args,
+                          endpoint_args, render_args,
+                          verbose=VERBOSE):
+    all_args_str = ','.join(all_args)
     ep_args_str = _named_arg_str(endpoint_args)
     rn_args_str = _named_arg_str(render_args)
 
     code_str = _REQ_INNER_TMPL.format(all_args=all_args_str,
                                       endpoint_args=ep_args_str,
                                       render_args=rn_args_str)
+    if verbose:
+        print code_str
     d = {'endpoint':endpoint, 'render':render, 'Response':Response}
+
     exec compile(code_str, '<string>', 'single') in d
+
     return d['process_request']
