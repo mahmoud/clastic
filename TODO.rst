@@ -25,6 +25,7 @@
 
 ## Chopping block
 * Allowing duplicate middlewares
+* endpoint_provides and render_provides
 
 ## Curiosities
 * dynamic vs. static linked middleware stack performance
