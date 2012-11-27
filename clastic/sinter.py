@@ -180,7 +180,7 @@ def _create_request_inner(endpoint, render, all_args,
                                       endpoint_args=ep_args_str,
                                       render_args=rn_args_str)
     if verbose:
-        print code_str
+        print code_str  # pragma: nocover
     d = {'endpoint':endpoint, 'render':render, 'Response':Response}
 
     exec compile(code_str, '<string>', 'single') in d
