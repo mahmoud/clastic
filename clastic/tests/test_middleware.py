@@ -50,3 +50,12 @@ def test_req_provides():
     eq_(resp.data, 'Hello, Kurt!')
 
     return app
+
+@raises(NameError)
+def test_duplicate_mw():
+    req_provides1 = RequestProvidesName('Rajkumar')
+    req_provides2 = RequestProvidesName('Jimmy John')
+    app = Application([('/', hello_world)],
+                      middlewares=[req_provides1,
+                                   req_provides2])
+    return app

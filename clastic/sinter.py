@@ -68,7 +68,6 @@ def build_chain_str(funcs, params, params_sofar=None, level=0):
     if params_sofar is None:
         params_sofar = set(['next'])
     params_sofar.update(params[0])
-    #args, opts = getargspec(funcs[0])
     next_args = getargspec(funcs[0])[0]
     print funcs[0], next_args  # DEBUG
     next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
