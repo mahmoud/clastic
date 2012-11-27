@@ -69,7 +69,6 @@ def build_chain_str(funcs, params, params_sofar=None, level=0):
         params_sofar = set(['next'])
     params_sofar.update(params[0])
     next_args = getargspec(funcs[0])[0]
-    print funcs[0], next_args  # DEBUG
     next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
     return '   '*level +'def next('+','.join(params[0])+'):\n'+\
         build_chain_str(funcs[1:], params[1:], params_sofar, level+1)+\
@@ -95,8 +94,6 @@ def make_chain(funcs, provides, final_func, preprovided):
 
     unresolved = tuple(reqs - preprovided)
     args = reqs | (preprovided & opts)
-    print 'args:', args, '- reqs:', reqs, '- opts:', opts, '- provided:', preprovided
-    print 'unresolved:', unresolved
     chain = compile_chain(funcs + [final_func],
                           [args] + provides)
     return chain, set(args), set(unresolved)
@@ -141,7 +138,6 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
                         % rn_unres)
 
     req_args = (ep_args | rn_args) - set(['context'])
-    print 'req_args:', req_args
     req_func = _create_request_inner(endpoint,
                                      render,
                                      req_args,

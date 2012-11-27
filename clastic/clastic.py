@@ -284,17 +284,17 @@ class DummyMiddleware(Middleware):
         self.verbose = verbose
 
     def request(self, next, request):
-        type_name = self.__class__.__name__
+        name = '%s (%s)' % (self.__class__.__name__, id(self))
         if self.verbose:
-            print type_name, '- handling', id(request)
+            print name, '- handling', id(request)
         try:
             ret = next()
         except Exception as e:
             if self.verbose:
-                print type_name, '- uhoh:', repr(e)
+                print name, '- uhoh:', repr(e)
             raise
         if self.verbose:
-            print type_name, '- hooray:', repr(ret)
+            print name, '- hooray:', repr(ret)
         return ret
 
 
