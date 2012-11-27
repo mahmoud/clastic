@@ -28,6 +28,7 @@ class Application(Map):
             raise NameError('resource names conflict with builtins: %r',
                             resource_conflicts)
         self.middlewares = list(middlewares or [])
+        check_middlewares(self.middlewares)
         self.render_factory = render_factory
         self.endpoint_args = {}
         self._map_kwargs = map_kwargs
@@ -257,7 +258,7 @@ def check_middlewares(middlewares, args_dict=None):
 
     conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
     if conflicts:
-        raise ValueError('route argument conflicts: '+repr(conflicts))
+        raise NameError('found conflicting provides: '+repr(conflicts))
     return True
 
 
