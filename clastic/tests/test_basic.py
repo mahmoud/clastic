@@ -4,41 +4,40 @@ from nose.tools import raises, eq_, ok_
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-import clastic
-from clastic import Application
+#import clastic
+from clastic import Application, DummyMiddleware
 
 from common import hello_world, RequestProvidesName
 
 
 def test_create_empty_application():
-    app = clastic.Application()
+    app = Application()
     return app
 
 
 def test_create_hw_application():
     route = ('/', hello_world)
-    app = clastic.Application([route])
+    app = Application([route])
     yield ok_, app.routes
     yield ok_, callable(app.routes[0]._execute)
     yield ok_, app.routes[0]._bound_apps[0] is app
 
 
 def test_single_mw_basic():
-    dumdum = clastic.DummyMiddleware()
-    app = clastic.Application([('/', hello_world)],
-                              resources={},
-                              middlewares=[dumdum])
+    dumdum = DummyMiddleware()
+    app = Application([('/', hello_world)],
+                      resources={},
+                      middlewares=[dumdum])
     yield ok_, dumdum in app.middlewares
     yield ok_, dumdum in app.routes[0]._middlewares
 
-    c = Client(app, BaseResponse)
-    resp = c.get('/')
+    resp = Client(app, BaseResponse).get('/')
     yield eq_, resp.status_code, 200
 
 
 def test_duplicate_noarg_mw():
     for mw_count in range(0, 100, 20):
-        mw = [clastic.DummyMiddleware() for i in range(mw_count)]
+        mw = [DummyMiddleware() for i in range(mw_count)]
         app = Application([('/', hello_world)],
                           middlewares=mw)
         yield ok_, app
@@ -61,3 +60,30 @@ def test_duplicate_arg_mw():
 @raises(NameError)
 def test_resource_builtin_conflict():
     Application(resources={'next': lambda: None})
+
+
+def test_subapplication_basic():
+    dum1 = DummyMiddleware()
+    dum2 = DummyMiddleware()
+    no_name_app = Application([('/', hello_world)],
+                              middlewares=[dum1])
+    name_app = Application([('/', hello_world)],
+                           resources={'name': 'Rajkumar'},
+                           middlewares=[dum1])
+    app = Application([('/', no_name_app),
+                       ('/beta/', name_app)],
+                      resources={'name': 'Kurt'},
+                      middlewares=[dum2])
+
+    yield eq_, len(app.routes), 2
+    yield eq_, len(set([r.rule for r in app.routes])), 2
+    yield eq_, len(app.routes[0]._middlewares), 1  # middleware merging
+
+    resp = Client(no_name_app, BaseResponse).get('/')
+    yield eq_, resp.data, 'Hello, world!'
+    resp = Client(name_app, BaseResponse).get('/')
+    yield eq_, resp.data, 'Hello, Rajkumar!'
+    resp = Client(app, BaseResponse).get('/')
+    yield eq_, resp.data, 'Hello, Kurt!'
+    resp = Client(app, BaseResponse).get('/beta/')
+    yield eq_, resp.data, 'Hello, Kurt!'
