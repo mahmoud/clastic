@@ -5,7 +5,31 @@ from clastic import Middleware
 def hello_world(name=None):
     if name is None:
         name = 'world'
-    return clastic.Response("Hello, %s!" % name)
+    return clastic.Response('Hello, %s!' % name)
+
+
+def hello_world_ctx(name=None):
+    if name is None:
+        name = 'world'
+    greeting = 'Hello, %s!' % name
+    return {'name': name,
+            'greeting': greeting}
+
+
+def complex_context(name=None, date=None):
+    from datetime import datetime
+
+    ret = hello_world_ctx(name)
+    if date is None:
+        date = datetime.utcnow()
+    ret['date'] = date
+    ret['example_middleware'] = RequestProvidesName
+    ret['a_lambda'] = lambda x: None
+    ret['true'] = True
+    ret['bool_vals'] = set([True, False])
+    ret['locals'] = locals()
+    ret['locals'].pop('ret')
+    return ret
 
 
 class RequestProvidesName(Middleware):
