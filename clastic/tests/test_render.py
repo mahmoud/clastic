@@ -5,8 +5,13 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.render import JSONRender
-from common import hello_world_ctx, complex_context
+from clastic.render import JSONRender, default_response
+from common import (hello_world,
+                    hello_world_str,
+                    hello_world_html,
+                    hello_world_ctx,
+                    complex_context)
+
 import json
 
 def test_json_render():
@@ -35,3 +40,40 @@ def test_json_render():
     yield eq_, resp_data['name'], 'Rajkumar'
     yield ok_, resp_data['date']
     yield ok_, len(resp_data) > 4
+
+
+def test_default_render():
+    app = Application([('/', hello_world_ctx, default_response),
+                       ('/<name>/', hello_world_ctx, default_response),
+                       ('/text/<name>/', hello_world_str, default_response),
+                       ('/html/<name>/', hello_world_html, default_response),
+                       ('/beta/<name>/', complex_context, default_response)])
+
+    yield ok_, callable(app.routes[0]._execute)
+    yield ok_, callable(app.routes[0]._render)
+    c = Client(app, BaseResponse)
+
+    resp = c.get('/')
+    yield eq_, resp.status_code, 200
+    resp_data = json.loads(resp.data)
+    yield eq_, resp_data['name'], 'world'
+
+    resp = c.get('/Kurt/')
+    yield eq_, resp.status_code, 200
+    resp_data = json.loads(resp.data)
+    yield eq_, resp_data['name'], 'Kurt'
+
+    resp = c.get('/beta/Rajkumar/')
+    yield eq_, resp.status_code, 200
+    resp_data = json.loads(resp.data)
+    yield eq_, resp_data['name'], 'Rajkumar'
+    yield ok_, resp_data['date']
+    yield ok_, len(resp_data) > 4
+
+    resp = c.get('/text/Noam/')
+    yield eq_, resp.status_code, 200
+    yield eq_, resp.data, 'Hello, Noam!'
+
+    resp = c.get('/html/Asia/')
+    yield eq_, resp.status_code, 200
+    yield ok_, 'text/html' in resp.headers['Content-Type']

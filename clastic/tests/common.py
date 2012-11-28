@@ -8,6 +8,18 @@ def hello_world(name=None):
     return clastic.Response('Hello, %s!' % name)
 
 
+def hello_world_str(name=None):
+    if name is None:
+        name = 'world'
+    return 'Hello, %s!' % name
+
+
+def hello_world_html(name=None):
+    if name is None:
+        name = 'world'
+    return '<html><body><p>Hello, <b>%s</b>!</p></body></html>' % name
+
+
 def hello_world_ctx(name=None):
     if name is None:
         name = 'world'

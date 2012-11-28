@@ -8,11 +8,11 @@ from werkzeug.utils import cached_property
 
 from sinter import get_arg_names, inject, make_middleware_chain
 
-# TODO: check resources for conflicts with reserved args
 # TODO: check for URL pattern conflicts?
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application',
                  '_route', '_endpoint')
+
 
 class Application(Map):
     def __init__(self, routes=None, resources=None, render_factory=None,
