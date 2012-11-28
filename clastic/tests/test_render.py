@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import os
 from nose.tools import raises, eq_, ok_
 
 from werkzeug.test import Client
@@ -6,6 +7,7 @@ from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.render import JSONRender, default_response
+from clastic.render.mako_templates import mako, MakoRenderFactory
 from common import (hello_world,
                     hello_world_str,
                     hello_world_html,
@@ -53,27 +55,55 @@ def test_default_render():
     yield ok_, callable(app.routes[0]._render)
     c = Client(app, BaseResponse)
 
-    resp = c.get('/')
+    resp = c.get('/')  # test simple json with endpoint default
     yield eq_, resp.status_code, 200
     resp_data = json.loads(resp.data)
     yield eq_, resp_data['name'], 'world'
 
-    resp = c.get('/Kurt/')
+    resp = c.get('/Kurt/')  # test simple json with url param
     yield eq_, resp.status_code, 200
     resp_data = json.loads(resp.data)
     yield eq_, resp_data['name'], 'Kurt'
 
-    resp = c.get('/beta/Rajkumar/')
+    resp = c.get('/beta/Rajkumar/')  # test fancy json
     yield eq_, resp.status_code, 200
     resp_data = json.loads(resp.data)
     yield eq_, resp_data['name'], 'Rajkumar'
     yield ok_, resp_data['date']
     yield ok_, len(resp_data) > 4
 
-    resp = c.get('/text/Noam/')
+    resp = c.get('/text/Noam/')  # test text
     yield eq_, resp.status_code, 200
     yield eq_, resp.data, 'Hello, Noam!'
 
-    resp = c.get('/html/Asia/')
+    resp = c.get('/html/Asia/')  # test basic html
     yield eq_, resp.status_code, 200
     yield ok_, 'text/html' in resp.headers['Content-Type']
+
+
+def test_mako():
+    cur_dir = os.path.dirname(__file__)
+    mako_render = MakoRenderFactory(cur_dir)
+    tmpl = 'basic_template.html'
+    app = Application([('/', hello_world_ctx, tmpl),
+                       ('/<name>/', hello_world_ctx, tmpl),
+                       ('/beta/<name>/', complex_context, tmpl)],
+                      render_factory=mako_render)
+
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    yield eq_, resp.status_code, 200
+    yield ok_, 'clasty' in resp.data
+
+    resp = c.get('/beta/Rajkumar/')
+    yield eq_, resp.status_code, 200
+    yield ok_, 'clasty' in resp.data
+
+
+@raises(mako.exceptions.TopLevelLookupException)
+def test_mako_missing_template():
+    cur_dir = os.path.dirname(__file__)
+    mako_render = MakoRenderFactory(cur_dir)
+    tmpl = 'missing_template.html'
+    return Application([('/', hello_world_ctx, tmpl)],
+                       render_factory=mako_render)
