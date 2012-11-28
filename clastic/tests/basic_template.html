@@ -1,0 +1,18 @@
+<%!
+    from pprint import pformat
+%>
+<!doctype html>
+<html>
+  <head>
+      <title><%block name="head_title">Clastic testin'</%block></title>
+  </head>
+  <body>
+  <h2>A super basic test template</h2>
+  <p>Locals:</p>
+  <pre>${pformat(locals())}</pre>
+  <p>Globals:</p>
+  <pre>${pformat(globals())}</pre>
+  <hr>
+  <h4>Keep it clasty.</h4>
+  </body>
+</html>
