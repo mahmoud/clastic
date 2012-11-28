@@ -7,7 +7,11 @@ from werkzeug.wrappers import Response  # TODO: remove dependency
 VERBOSE = False
 
 def getargspec(f):
+    if not inspect.isfunction(f) and not inspect.ismethod(f) \
+            and hasattr(f, '__call__'):
+        f = f.__call__
     ret = inspect.getargspec(f)
+
     if not all([isinstance(a, basestring) for a in ret.args]):
         raise TypeError('does not support anonymous tuple arguments '
                         'or any other strange args for that matter.')

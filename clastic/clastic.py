@@ -162,6 +162,8 @@ class Route(Rule):
         provided = resource_args | builtin_args | url_args
         if callable(render_factory) and self.render_arg is not None:
             _render = render_factory(self.render_arg)
+        elif callable(self._render):
+            _render = self._render
         else:
             _render = lambda context: context
         _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
