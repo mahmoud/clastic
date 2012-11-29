@@ -5,7 +5,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.contrib.middleware import GetParamMiddleware
+from clastic.middleware import GetParamMiddleware
 from common import hello_world, RequestProvidesName
 
 
