@@ -39,8 +39,8 @@ def complex_context(name=None, date=None):
     ret['a_lambda'] = lambda x: None
     ret['true'] = True
     ret['bool_vals'] = set([True, False])
-    ret['locals'] = locals()
-    ret['locals'].pop('ret')
+    ret['the_locals'] = locals()
+    ret['the_locals'].pop('ret')
     return ret
 
 

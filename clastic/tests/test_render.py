@@ -16,6 +16,8 @@ from common import (hello_world,
 
 import json
 
+_CUR_DIR = os.path.dirname(__file__)
+
 def test_json_render():
     json_response = JSONRender(dev_mode=True)
     app = Application([('/', hello_world_ctx, json_response),
@@ -82,8 +84,7 @@ def test_default_render():
 
 
 def test_mako():
-    cur_dir = os.path.dirname(__file__)
-    mako_render = MakoRenderFactory(cur_dir)
+    mako_render = MakoRenderFactory(_CUR_DIR)
     tmpl = 'basic_template.html'
     app = Application([('/', hello_world_ctx, tmpl),
                        ('/<name>/', hello_world_ctx, tmpl),
@@ -107,3 +108,14 @@ def test_mako_missing_template():
     tmpl = 'missing_template.html'
     return Application([('/', hello_world_ctx, tmpl)],
                        render_factory=mako_render)
+
+
+def test_mako_broken_template():
+    mako_render = MakoRenderFactory(_CUR_DIR)
+    tmpl = 'broken_template_1.html'
+    app = Application([('/', hello_world_ctx, tmpl)],
+                      render_factory=mako_render)
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    yield eq_, resp.status_code, 500
+    yield ok_, len(resp.data) > 1024  # a longish response
