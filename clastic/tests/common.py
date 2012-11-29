@@ -28,6 +28,16 @@ def hello_world_ctx(name=None):
             'greeting': greeting}
 
 
+def session_hello_world(session, name=None):
+    if name is None:
+        name = session.get('name') or 'world'
+    else:
+        pass #raise Exception()
+    session['name'] = name
+    greeting = 'Hello, %s!' % name
+    return greeting
+
+
 def complex_context(name=None, date=None):
     from datetime import datetime
 
