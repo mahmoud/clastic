@@ -1,13 +1,14 @@
 from __future__ import unicode_literals
 
-from collections import defaultdict, Sequence
+from collections import Sequence
 from werkzeug.wrappers import Request
 from werkzeug.routing import Map, Rule, RuleFactory
 from werkzeug.exceptions import HTTPException, NotFound
-from werkzeug.utils import cached_property
 
-from sinter import get_arg_names, inject, make_middleware_chain
-
+from sinter import inject, get_arg_names
+from middleware import (check_middlewares,
+                        merge_middlewares,
+                        make_middleware_chain)
 # TODO: check for URL pattern conflicts?
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application',
@@ -192,112 +193,6 @@ class Route(Rule):
 #  -> render (*get response)
 # -> ret render middlewares
 # ret req middlewares
-
-
-class Middleware(object):
-    unique = True
-    reorderable = True
-    provides = ()
-    endpoint_provides = ()
-    render_provides = ()
-
-    request = None
-    endpoint = None
-    render = None
-
-    @property
-    def name(self):
-        return self.__class__.__name__
-
-    def __eq__(self, other):
-        return type(self) == type(other)
-
-    def __ne__(self, other):
-        return type(self) != type(other)
-
-    @cached_property
-    def requirements(self):
-        reqs = []
-        for func_name in ('request', 'endpoint', 'render'):
-            func = getattr(self, func_name, None)
-            if func:
-                reqs.extend(get_arg_names(func, True))
-        return set(reqs)
-
-    @cached_property
-    def arguments(self):
-        args = []
-        for func_name in ('request', 'endpoint', 'render'):
-            func = getattr(self, func_name, None)
-            if func:
-                args.extend(get_arg_names(func))
-        return set(args)
-
-
-def check_middleware(mw):
-    for f_name in ('request', 'endpoint', 'render'):
-        func = getattr(mw, f_name, None)
-        if not func:
-            continue
-        if not callable(func):
-            raise TypeError('expected middleware.'+f_name+' to be a function')
-        if not get_arg_names(func)[0] == 'next':
-            raise TypeError("middleware functions must take a first parameter 'next'")
-
-
-def check_middlewares(middlewares, args_dict=None):
-    args_dict = args_dict or {}
-
-    provided_by = defaultdict(list)
-    for source, arg_list in args_dict.items():
-        for arg_name in arg_list:
-            provided_by[arg_name].append(source)
-
-    for mw in middlewares:
-        check_middleware(mw)
-        for arg in mw.provides:
-            provided_by[arg].append(mw)
-
-    conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
-    if conflicts:
-        raise NameError('found conflicting provides: '+repr(conflicts))
-    return True
-
-
-def merge_middlewares(old, new):
-    # TODO: since duplicate provides aren't allowed
-    # an error needs to be raised if a middleware is
-    # set to non-unique and has provides params
-    old = list(old)
-    merged = list(new)
-    for mw in old:
-        if mw.unique and mw in merged:
-            if mw.reorderable:
-                continue
-            else:
-                raise ValueError('multiple inclusion of unique '
-                                 'middleware '+mw.name)
-        merged.append(mw)
-    return merged
-
-
-class DummyMiddleware(Middleware):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-
-    def request(self, next, request):
-        name = '%s (%s)' % (self.__class__.__name__, id(self))
-        if self.verbose:
-            print name, '- handling', id(request)
-        try:
-            ret = next()
-        except Exception as e:
-            if self.verbose:
-                print name, '- uhoh:', repr(e)
-            raise
-        if self.verbose:
-            print name, '- hooray:', repr(ret)
-        return ret
 
 
 def cast_to_rule_factory(in_arg):

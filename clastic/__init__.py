@@ -13,13 +13,13 @@
 
 """
 
-from clastic import (
+from core import (
     RESERVED_ARGS,
     Application,
     SubApplication,
-    Route,
-    Middleware,
-    DummyMiddleware,
+    Route
     )
+
+from middleware import Middleware, DummyMiddleware
 
 from werkzeug.wrappers import Request, Response
