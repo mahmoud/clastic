@@ -3,8 +3,7 @@
 ## Core
 * nicer next() names
 * polish sub-application mounting
-* packaging
-* PyPI
+* PyPI/packaging (mostly done)
 * docs
 * dev/meta application
 * license
@@ -14,7 +13,6 @@
 * JSON middleware
 * Cache middleware
 * Klein (bottle-like functionality)
-* Default mako renderer
 * Example application
 * Form processing middleware?
 # GET/POST param middleware factory
@@ -22,6 +20,7 @@
 ## v2
 * Custom URL resolvers?
 * Failsafe application reloading?
+* Middleware <-> middleware merge hook?
 
 ## Chopping block
 * Allowing duplicate middlewares

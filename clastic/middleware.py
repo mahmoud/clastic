@@ -1,5 +1,5 @@
 import itertools
-from collections import defaultdict
+from collections import defaultdict, Mapping, Iterable
 
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Response  # TODO: remove dependency
@@ -200,3 +200,25 @@ def _create_request_inner(endpoint, render, all_args,
     exec compile(code_str, '<string>', 'single') in d
 
     return d['process_request']
+
+
+class GetParamMiddleware(Middleware):
+    def __init__(self, params=None):
+        # TODO: defaults?
+        if isinstance(params, Mapping):
+            self.params = params
+        elif isinstance(params, basestring):
+            self.params = {params: unicode}
+        elif isinstance(params, Iterable):
+            self.params = dict([(p, unicode) for p in params])
+        else:
+            raise TypeError('expected a string, dict, mapping, or iterable.')
+        if not all([isinstance(v, type) for v in self.params.values()]):
+            raise TypeError('param mapping values must be a valid type')
+        self.provides = tuple(self.params.iterkeys())
+
+    def request(self, next, request):
+        kwargs = {}
+        for p_name, p_type in self.params.items():
+            kwargs[p_name] = request.args.get(p_name, None, p_type)
+        return next(**kwargs)
