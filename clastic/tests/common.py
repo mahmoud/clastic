@@ -31,11 +31,8 @@ def hello_world_ctx(name=None):
 def session_hello_world(session, name=None):
     if name is None:
         name = session.get('name') or 'world'
-    else:
-        pass #raise Exception()
     session['name'] = name
-    greeting = 'Hello, %s!' % name
-    return greeting
+    return 'Hello, %s!' % name
 
 
 def complex_context(name=None, date=None):

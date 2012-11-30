@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
+import itertools
 from collections import Sequence
 from werkzeug.wrappers import Request
 from werkzeug.routing import Map, Rule, RuleFactory
 from werkzeug.exceptions import HTTPException, NotFound
 
-from sinter import inject, get_arg_names
+from sinter import inject, get_arg_names, getargspec
 from middleware import (check_middlewares,
                         merge_middlewares,
                         make_middleware_chain)
@@ -79,6 +80,15 @@ class Application(Map):
         response = self.respond(request)
         return response(environ, start_response)
 
+    def serve(self, host=None, port=None, **kw):
+        from werkzeug.serving import run_simple
+        from werkzeug.contrib.lint import LintMiddleware
+        host = host or '0.0.0.0'
+        port = port or 5000
+        kw.setdefault('use_reloader', True)
+        kw.setdefault('use_debugger', True)
+        wrapped = LintMiddleware(self)
+        run_simple(host, port, wrapped, **kw)
 
 class SubApplication(RuleFactory):
     def __init__(self, prefix, app, rebind_render=False):
@@ -101,7 +111,6 @@ class Route(Rule):
         self._resources = {}
         self._bound_apps = []
         self.endpoint_args = get_arg_names(endpoint)
-        self.endpoint_reqs = get_arg_names(endpoint, True)
 
         self._execute = None
         self._render = None
@@ -109,6 +118,34 @@ class Route(Rule):
         self.render_arg = render_arg
         if callable(render_arg):
             self._render = render_arg
+
+    def get_info(self):
+        ret = {}
+        route = self
+        ep_args, _, _, ep_defaults = getargspec(route.endpoint)
+        ep_defaults = dict(reversed(zip(reversed(ep_args),
+                                        reversed(ep_defaults or []))))
+        ret['url_rule'] = route.rule
+        ret['endpoint'] = route.endpoint
+        ret['endpoint_args'] = ep_args
+        ret['endpoint_defaults'] = ep_defaults
+        ret['render_arg'] = route.render_arg
+        srcs = {}
+        for arg in route.endpoint_args:
+            if arg in RESERVED_ARGS:
+                srcs[arg] = 'builtin'
+            elif arg in route.arguments:
+                srcs[arg] = 'url'
+            elif arg in ep_defaults:
+                srcs[arg] = 'default'
+            for mw in route._middlewares:
+                if arg in mw.provides:
+                    srcs[arg] = mw
+            if arg in route._resources:
+                srcs[arg] = 'resources'
+            # TODO: trace to application if middleware/resource
+        ret['sources'] = srcs
+        return ret
 
     @property
     def is_bound(self):
