@@ -25,13 +25,14 @@ class ClasticJSONEncoder(JSONEncoder):
             return obj.to_dict()
 
         if self.dev_mode:
+            return repr(obj)  # TODO: blargh
             if isinstance(obj, type) or callable(obj):
-                return unicode(obj)
+                return unicode(repr(obj))
             try:
                 return dict([(k, v) for k, v in obj.__dict__.items()
                              if not k.startswith('__')])
             except AttributeError:
-                return unicode(obj)
+                return unicode(repr(obj))
         else:
             raise TypeError('cannot serialize to JSON: %r' % obj)
 
@@ -64,4 +65,5 @@ class DefaultRender(object):
         return Response(unicode(context), mimetype="text/plain")
 
 json_response = JSONRender()
+dev_json_response = JSONRender(True)
 default_response = DefaultRender()

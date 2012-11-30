@@ -30,10 +30,8 @@ def get_arg_names(f, only_required=False):
 
 def inject(f, injectables):
     arg_names, _, _, defaults = getargspec(f)
-    if defaults:
-        defaults = dict(reversed(zip(reversed(arg_names), reversed(defaults))))
-    else:
-        defaults = {}
+    defaults = dict(reversed(zip(reversed(arg_names),
+                                 reversed(defaults or []))))
     args = {}
     for n in arg_names:
         if n in injectables:
