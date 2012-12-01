@@ -26,7 +26,8 @@ class MakoRenderFactory(object):
         self.default_mime = default_mime or 'text/html'
 
     def __call__(self, template_filename):
-        template = self.lookup.get_template(template_filename)
+        # trigger error if not found
+        tmp_template = self.lookup.get_template(template_filename)
         for ext, mt in _EXT_MAP.items():
             if template_filename.endswith(ext):
                 mimetype = mt
@@ -35,6 +36,7 @@ class MakoRenderFactory(object):
 
         def mako_render(context):
             status = 200
+            template = self.lookup.get_template(template_filename)
             try:
                 content = template.render_unicode(**context)
             except:
