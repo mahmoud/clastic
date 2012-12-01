@@ -19,8 +19,6 @@ def see_modules(start_time, module_list, name=None):
             % (name, start_time, pformat(sorted(module_list))))
 
 def create_decked_out_app():
-
-
     resources = {'start_time': time.time(),
                  'module_list': sys.modules.keys()}
     middlewares = [GetParamMiddleware(['date', 'session_id']),

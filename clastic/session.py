@@ -21,6 +21,7 @@ class CookieSessionMiddleware(Middleware):
         session = JSONCookie.load_cookie(request,
                                          key=self.cookie_name,
                                          secret_key=self.secret_key)
+
         response = next(session=session)
         session.save_cookie(response, key=self.cookie_name)
         return response
