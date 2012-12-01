@@ -15,7 +15,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
@@ -38,7 +38,10 @@ setup(name='clastic',
       author_email=__contact__,
       url=__url__,
       #py_modules=['clastic', 'clastic.tests'],
-      packages=['clastic', 'clastic.tests'],
+      packages=['clastic',
+                'clastic.render',
+                'clastic.contrib',
+                'clastic.tests'],
       include_package_data=True,
       zip_safe=False,
       install_requires=['Werkzeug>=0.7'],
