@@ -98,7 +98,6 @@ class Application(Map):
             from werkzeug.wsgi import SharedDataMiddleware
             if not static_path:
                 static_path = os.path.join(os.getcwd(), 'static')
-                print(static_path)
             static_prefix = static_prefix or '/'
             static_prefix = '/' + unicode(static_prefix).lstrip('/')
             paths = {static_prefix: static_path}
