@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-import itertools
+import os
 from collections import Sequence
 from werkzeug.wrappers import Request
 from werkzeug.routing import Map, Rule, RuleFactory
@@ -70,6 +70,8 @@ class Application(Map):
         try:
             route, ep_kwargs = self.match(request)
             ep_kwargs['request'] = request
+            # some versions of 2.6 die on unicode dictionary keys
+            ep_kwargs = dict([(str(k), v) for k, v in ep_kwargs.items()])
             ep_res = route.execute(**ep_kwargs)
         except (HTTPException, NotFound) as e:
             return e
@@ -80,15 +82,36 @@ class Application(Map):
         response = self.respond(request)
         return response(environ, start_response)
 
-    def serve(self, host=None, port=None, **kw):
+    def serve(self, host=None, port=None, use_meta=True, use_lint=True,
+              use_static=True, static_prefix='static', static_path=None, **kw):
         from werkzeug.serving import run_simple
         from werkzeug.contrib.lint import LintMiddleware
         host = host or '0.0.0.0'
         port = port or 5000
         kw.setdefault('use_reloader', True)
         kw.setdefault('use_debugger', True)
-        wrapped = LintMiddleware(self)
-        run_simple(host, port, wrapped, **kw)
+        wrapped_wsgi = self
+        if use_meta:
+            from meta import MetaApplication
+            self.add(('/_meta/', MetaApplication))
+        if use_static:
+            from werkzeug.wsgi import SharedDataMiddleware
+            if not static_path:
+                static_path = os.path.join(os.getcwd(), 'static')
+                print(static_path)
+            static_prefix = static_prefix or '/'
+            static_prefix = '/' + unicode(static_prefix).lstrip('/')
+            paths = {static_prefix: static_path}
+            wrapped_wsgi = SharedDataMiddleware(wrapped_wsgi, paths)
+        if use_lint:
+            wrapped_wsgi = LintMiddleware(wrapped_wsgi)
+        # some versions of 2.6 die on unicode dictionary keys
+        kw = dict([(str(k), v) for k, v in kw.items()])
+
+        if kw.get('_jk_just_testing'):
+            return True
+        run_simple(host, port, wrapped_wsgi, **kw)
+
 
 class SubApplication(RuleFactory):
     def __init__(self, prefix, app, rebind_render=False):

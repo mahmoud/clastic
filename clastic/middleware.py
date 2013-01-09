@@ -53,7 +53,7 @@ def check_middleware(mw):
         if not func:
             continue
         if not callable(func):
-            raise TypeError('expected middleware.'+f_name+' to be a function')
+            raise TypeError('expected middleware.' + f_name + ' to be a function')
         if not get_arg_names(func)[0] == 'next':
             raise TypeError("middleware functions must take a first parameter 'next'")
 
@@ -73,7 +73,7 @@ def check_middlewares(middlewares, args_dict=None):
 
     conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
     if conflicts:
-        raise NameError('found conflicting provides: '+repr(conflicts))
+        raise NameError('found conflicting provides: ' + repr(conflicts))
     return True
 
 
@@ -89,7 +89,7 @@ def merge_middlewares(old, new):
                 continue
             else:
                 raise ValueError('multiple inclusion of unique '
-                                 'middleware '+mw.name)
+                                 'middleware ' + mw.name)
         merged.append(mw)
     return merged
 
@@ -122,14 +122,12 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
     req_funcs, req_provides = zip(*req_sigs) or ((), ())
-    #import pdb;pdb.set_trace()
     req_all_provides = set(itertools.chain.from_iterable(req_provides))
 
     ep_avail = req_avail | req_all_provides
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
     ep_funcs, ep_provides = zip(*ep_sigs) or ((), ())
-    #ep_all_provides = set(itertools.chain.from_iterable(ep_provides))
     ep_chain, ep_args, ep_unres = make_chain(ep_funcs,
                                              ep_provides,
                                              endpoint,
@@ -142,7 +140,6 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     rn_sigs = [(mw.render, mw.render_provides)
                for mw in middlewares if mw.render]
     rn_funcs, rn_provides = zip(*rn_sigs) or ((), ())
-    #rn_all_provides = set(itertools.chain.from_iterable(rn_provides))
     rn_chain, rn_args, rn_unres = make_chain(rn_funcs,
                                              rn_provides,
                                              render,
@@ -152,8 +149,8 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
                         % rn_unres)
 
     req_args = (ep_args | rn_args) - set(['context'])
-    req_func = _create_request_inner(endpoint,
-                                     render,
+    req_func = _create_request_inner(ep_chain,
+                                     rn_chain,
                                      req_args,
                                      ep_args,
                                      rn_args)
@@ -180,7 +177,7 @@ def process_request({all_args}):
 
 
 def _named_arg_str(args):
-    return ','.join([a+'='+a for a in args])
+    return ','.join([a + '=' + a for a in args])
 
 
 def _create_request_inner(endpoint, render, all_args,
@@ -195,7 +192,7 @@ def _create_request_inner(endpoint, render, all_args,
                                       render_args=rn_args_str)
     if verbose:
         print code_str  # pragma: nocover
-    d = {'endpoint':endpoint, 'render':render, 'Response':Response}
+    d = {'endpoint': endpoint, 'render': render, 'Response': Response}
 
     exec compile(code_str, '<string>', 'single') in d
 
