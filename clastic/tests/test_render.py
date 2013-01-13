@@ -18,8 +18,9 @@ import json
 
 _CUR_DIR = os.path.dirname(__file__)
 
-def test_json_render():
-    json_response = JSONRender(dev_mode=True)
+def test_json_render(json_response=None):
+    if json_response is None:
+        json_response = JSONRender(dev_mode=True)
     app = Application([('/', hello_world_ctx, json_response),
                        ('/<name>/', hello_world_ctx, json_response),
                        ('/beta/<name>/', complex_context, json_response)])
@@ -44,6 +45,12 @@ def test_json_render():
     yield eq_, resp_data['name'], 'Rajkumar'
     yield ok_, resp_data['date']
     yield ok_, len(resp_data) > 4
+
+
+#def test_default_json_render():
+#    from clastic.render import json_response
+#    for t in test_json_render(json_response):
+#        yield t
 
 
 def test_default_render():
@@ -119,3 +126,19 @@ def test_mako_broken_template():
     resp = c.get('/')
     yield eq_, resp.status_code, 500
     yield ok_, len(resp.data) > 1024  # a longish response
+
+
+def test_mako_mixed():
+    mako_render = MakoRenderFactory(_CUR_DIR)
+    tmpl = 'basic_template.html'
+    app = Application([('/', hello_world_ctx, tmpl),
+                       ('/json/', hello_world_ctx, default_response)],
+                      render_factory=mako_render)
+
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    yield eq_, resp.status_code, 200
+    yield ok_, 'clasty' in resp.data
+
+    resp = c.get('/json/')
+    yield eq_, resp.status_code, 200

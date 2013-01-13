@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict, Mapping, Iterable
 
 from werkzeug.utils import cached_property
-from werkzeug.wrappers import Response  # TODO: remove dependency
+from werkzeug.wrappers import BaseResponse  # TODO: remove dependency
 
 from sinter import make_chain, get_arg_names, _VERBOSE
 
@@ -168,7 +168,7 @@ _REQ_INNER_TMPL = \
 '''
 def process_request({all_args}):
     context = endpoint({endpoint_args})
-    if isinstance(context, Response):
+    if isinstance(context, BaseResponse):
         resp = context
     else:
         resp = render({render_args})
@@ -192,7 +192,7 @@ def _create_request_inner(endpoint, render, all_args,
                                       render_args=rn_args_str)
     if verbose:
         print code_str  # pragma: nocover
-    d = {'endpoint': endpoint, 'render': render, 'Response': Response}
+    d = {'endpoint': endpoint, 'render': render, 'BaseResponse': BaseResponse}
 
     exec compile(code_str, '<string>', 'single') in d
 
