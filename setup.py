@@ -5,7 +5,7 @@
     A functional Python web framework that streamlines explicit
     development practices while eliminating global state.
 
-    :copyright: (c) 2012 by Mahmoud Hashemi
+    :copyright: (c) 2013 by Mahmoud Hashemi
     :license: BSD, see LICENSE for more details.
 
 """
@@ -15,7 +15,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
