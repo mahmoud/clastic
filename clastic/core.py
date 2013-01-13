@@ -220,7 +220,8 @@ class Route(Rule):
                           'resources': resource_args}
         check_middlewares(middlewares, tmp_avail_args)
         provided = resource_args | builtin_args | url_args
-        if callable(render_factory) and self.render_arg is not None:
+        if callable(render_factory) and self.render_arg is not None \
+                and not callable(self.render_arg):
             _render = render_factory(self.render_arg)
         elif callable(self._render):
             _render = self._render
