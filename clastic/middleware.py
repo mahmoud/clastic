@@ -240,6 +240,9 @@ class ContextProcessor(Middleware):
     def _check_params(self, required, defaults, overwrite):
         if not all([isinstance(arg, basestring) for arg in required]):
             raise TypeError('required argument names must be strings')
+        if not isinstance(defaults, Mapping):
+            raise TypeError('defaults expected a dict (or mapping), not: %r'
+                            % defaults)
         if not all([isinstance(arg, basestring) for arg in defaults.keys()]):
             raise TypeError('default argument names must be strings')
         for reserved_arg in ('self', 'next', 'context'):
