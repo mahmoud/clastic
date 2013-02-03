@@ -68,6 +68,13 @@ def test_ctx_proc_nonctx():
 
 
 @raises(NameError)
+def test_ctx_proc_unresolved():
+    add_name = ContextProcessor(['name'])
+    Application([('/', hello_world)],
+                middlewares=[add_name])
+
+
+@raises(NameError)
 def test_ctx_proc_overlap():
     ContextProcessor(required=['name'],
                      defaults={'name': 'Alex'})
