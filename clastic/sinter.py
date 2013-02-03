@@ -1,5 +1,6 @@
 import types
 import inspect
+from inspect import ArgSpec
 
 _VERBOSE = False
 
@@ -9,6 +10,10 @@ def getargspec(f):
     if not inspect.isfunction(f) and not inspect.ismethod(f) \
             and hasattr(f, '__call__'):
         f = f.__call__  # callable objects
+
+    if isinstance(getattr(f, '_argspec', None), ArgSpec):
+        return f._argspec  # we'll take your word for it; good luck, lil buddy.
+
     ret = inspect.getargspec(f)
 
     if not all([isinstance(a, basestring) for a in ret.args]):
