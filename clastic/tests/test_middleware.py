@@ -5,8 +5,12 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.middleware import GetParamMiddleware
+from clastic.middleware import Middleware, GetParamMiddleware
 from common import hello_world, RequestProvidesName
+
+class RenderRaisesMiddleware(Middleware):
+    def render(self, next, context):
+        raise RuntimeError()
 
 
 def test_blank_req_provides():
@@ -40,3 +44,12 @@ def test_get_param_mw():
     yield eq_, resp.data, 'Hello, world!'
     resp = c.get('/?name=Kurt')
     yield eq_, resp.data, 'Hello, Kurt!'
+
+
+def test_direct_no_render():
+    render_raises_mw = RenderRaisesMiddleware()
+    app = Application([('/', hello_world)],
+                      middlewares=[render_raises_mw])
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    yield eq_, resp.data, 'Hello, world!'
