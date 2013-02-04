@@ -39,7 +39,10 @@ utility function below can make it a bit more safe and convenient to
 construct such maps.
 
 TODO: currently endpoint argument names are not sinter-checked.
+TODO: subapplications do not keep their error handlers when
+      copied/bound into parent applications.
 '''
+
 
 def make_error_handler_map(handler_map=None,
                            default_400=None,

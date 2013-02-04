@@ -21,11 +21,12 @@ RESERVED_ARGS = ('request', 'next', 'context', '_application',
 
 class Application(Map):
     def __init__(self, routes=None, resources=None, render_factory=None,
-                 middlewares=None, **map_kwargs):
+                 middlewares=None, error_handlers=None, **map_kwargs):
         map_kwargs.pop('rules', None)
         super(Application, self).__init__(**map_kwargs)
 
         routes = routes or []
+        self.error_handlers = dict(error_handlers or {})
         self.routes = []
         self.resources = dict(resources or {})
         resource_conflicts = [r for r in RESERVED_ARGS if r in self.resources]
@@ -76,8 +77,20 @@ class Application(Map):
             # some versions of 2.6 die on unicode dictionary keys
             ep_kwargs = dict([(str(k), v) for k, v in ep_kwargs.items()])
             ep_res = route.execute(**ep_kwargs)
-        except (HTTPException, NotFound) as e:
-            return e
+        except Exception as e:
+            if not self.error_handlers:
+                raise
+            code = getattr(e, 'code', None)
+            if code in self.error_handlers:
+                handler = self.error_handlers[code]
+            else:
+                handler = self.error_handlers.get(None)
+            if not handler:
+                raise
+            injectables = {'error': e,
+                           'request': request,
+                           '_application': self}
+            return inject(handler, injectables)
         return ep_res
 
     def __call__(self, environ, start_response):
