@@ -15,7 +15,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
