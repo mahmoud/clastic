@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
-from nose.tools import eq_
+from nose.tools import eq_, raises
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.middleware import Middleware, GetParamMiddleware
-from common import hello_world, RequestProvidesName
+from common import hello_world, hello_world_ctx, RequestProvidesName
+
 
 class RenderRaisesMiddleware(Middleware):
     def render(self, next, context):
@@ -53,3 +54,11 @@ def test_direct_no_render():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     yield eq_, resp.data, 'Hello, world!'
+
+
+@raises(RuntimeError)
+def test_render_raises():
+    render_raises_mw = RenderRaisesMiddleware()
+    app = Application([('/', hello_world_ctx)],
+                      middlewares=[render_raises_mw])
+    Client(app, BaseResponse).get('/')
