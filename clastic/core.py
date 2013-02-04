@@ -78,19 +78,23 @@ class Application(Map):
             ep_kwargs = dict([(str(k), v) for k, v in ep_kwargs.items()])
             ep_res = route.execute(**ep_kwargs)
         except Exception as e:
-            if not self.error_handlers:
-                raise
             code = getattr(e, 'code', None)
             if code in self.error_handlers:
                 handler = self.error_handlers[code]
             else:
                 handler = self.error_handlers.get(None)
-            if not handler:
-                raise
-            injectables = {'error': e,
-                           'request': request,
-                           '_application': self}
-            return inject(handler, injectables)
+
+            if handler:
+                injectables = {'error': e,
+                               'request': request,
+                               '_application': self}
+                return inject(handler, injectables)
+            else:
+                if code and callable(getattr(e, 'get_response', None)):
+                    return e.get_response(request)
+                else:
+                    raise
+
         return ep_res
 
     def __call__(self, environ, start_response):
