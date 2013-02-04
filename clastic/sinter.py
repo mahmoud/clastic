@@ -34,16 +34,16 @@ def get_arg_names(f, only_required=False):
 
 
 def inject(f, injectables):
-    arg_names, _, _, defaults = getargspec(f)
+    arg_names, _, kw_name, defaults = getargspec(f)
     defaults = dict(reversed(zip(reversed(arg_names),
                                  reversed(defaults or []))))
-    args = {}
-    for n in arg_names:
-        if n in injectables:
-            args[n] = injectables[n]
-        else:
-            args[n] = defaults[n]
-    return f(**args)
+    all_kwargs = dict(defaults)
+    all_kwargs.update(injectables)
+    if kw_name:
+        return f(**all_kwargs)
+
+    kwargs = dict([(k, v) for k, v in all_kwargs.items() if k in arg_names])
+    return f(**kwargs)
 
 
 def chain_argspec(func_list, provides):
