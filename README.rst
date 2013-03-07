@@ -43,7 +43,7 @@ Response
    An outgoing reply from your application to the client.
 
 A web application exists to accept Requests and produce Responses.
-(Clastic knows that every Request has its Response <3)
+(Clastic knows that every Request has its Response <3)::
 
   Request --> [Application] --> Response
 
@@ -67,7 +67,7 @@ there are no matches, it returns a 404 Response. If a matching Route
 is found, the Route's endpoint is called. If it returns a Response or
 the Route doesn't have a Renderer, the Response is sent back
 directly. Otherwise, the endpoint's return value is fed into the
-Renderer, which produces the actual Response.
+Renderer, which produces the actual Response::
 
   Request --> Routes --> Endpoint --> (Renderer) --> Response
 
@@ -103,18 +103,19 @@ Resources
 
 Render Factory
    A callable which, when called with an argument, returns a suitable
-   *renderer*. Consider a `TemplateRenderFactory`, which, when called
-   with the template filename `index.html`, returns a function that
+   *renderer*. Consider a ``TemplateRenderFactory``, which, when called
+   with the template filename ``index.html``, returns a function that
    can be passed a dictionary to render the application's home page.
 
    A Render Factory is optional
 
-Middleware
-   Middleware is a way of splitting up and ordering logic in discrete
-   layers. When installed in an Application, Middleware has access to
-   the Request before and after the endpoint and render steps. In
-   Python itself, decorators could be thought of as a form of function
-   middleware.
+Middleware_
+   Middleware is a way of splitting up and ordering logic in
+   discrete layers. When installed in an Application, Middleware has
+   access to the Request before and after the endpoint and render
+   steps. In Python itself, decorators could be thought of as a form
+   of function middleware. There's a lot more to middleware in
+   Clastic, so check out the Middleware_ section for more information.
 
 Armed with this information, it's now possible to define what
 constitutes a web application, and indeed a Clastic Application:
@@ -133,13 +134,182 @@ And with any luck this simple Application should be even simpler::
 
    hello_world_app = Application(routes, resources, render_factory, middlewares)
 
-`hello_world_app` is a full-blown WSGI application ready for serving
+``hello_world_app`` is a full-blown WSGI application ready for serving
 to any users needing some greeting.
 
 .. note::
-   For the record, the `Application` instantiation seen above is exactly
+   For the record, the ``Application`` instantiation seen above is exactly
    what is meant by 'constructing' or 'initializing' an
    Application. It's just instantiation, nothing more nothing less.
+
+
+Middleware
+----------
+
+Middleware can be a very useful way to provide separation of
+horizontal concerns from the actual application logic. Common uses
+include logging, caching, request serialization/deserialization,
+performance profiling, and even compression, Including these functions
+in all endpoints would be bad design, not to mention downright
+tedious.
+
+Clastic's most defining feature may well be its interpretation of
+middleware. As opposed to simple pre- and post- request hooks, Clastic
+middlewares use real function-nesting scope. Furthermore, are
+dependency-checked to minimize breakage caused by ordering or
+accidental omission.
+
+Flow
+^^^^
+
+A request flows from the client, to the server, through the
+middlewares, to the endpoint/render functions, which produce a
+response. The response then travels back through the middlewares, in
+reverse order, to the server, which relays it to the client.
+
+Middleware is often described using an onion analogy, wherein the
+first middleware gets first say on the request and last say on the
+response. For example, given middlewares "A" and "B"::
+
+  --Request--> A --> B --> Endpoint --> B --> A --Response-->
+
+Within each individual middleware class (e.g., "A"), there are three
+functions which Clastic will look for and call:
+
+ - ``request()`` - most commonly used
+ - ``endpoint()`` - kind of meh, but good to be complete
+ - ``render()`` - useful for context processing
+
+Those are terse descriptions, but that's ok, because all you need to
+remember is: **"'M' for Middleware"**::
+
+
+
+            (endpoint)   (render)
+                |\         /|
+                | \       / |
+  mw.endpoint() |  \     /  |  mw.render()
+                ^   \   /   v
+                |    \ /    |
+        -- -- --|-- --*-- --|-- -- --
+                |           |
+  mw.request()  ^           v  mw.request()
+                |           |
+                |           |
+           (Request)     (Response)
+
+
+To summarize, if a middleware has a ``request`` function, it will be
+called such that it wraps both endpoint and render steps, whereas
+``endpoint`` and ``render`` functions only wrap their respective
+domains. A middleware class can implement all or none of these
+functions.
+
+Because Clastic middlewares use nested function scopes, Clastic's
+middleware system is essentially a dynamic and specialized decorator
+system. Middleware effectively provides hooks for decorating many
+endpoints at once.
+
+.. note::
+
+   The ***** at the middle vertex of the 'M' represents a checkpoint
+   of sorts. If the return value of the endpoint + endpoint
+   middlewares is a ``Response`` object, it will be returned
+   directly, skipping the ``render`` side of the M completely.
+
+State
+^^^^^
+
+In any framework, all but the simplest middlewares serve some stateful
+purpose. Even a simple timer middleware needs to associate a request
+with a response to calculate how much time elapsed in between. In
+other middleware paradigms, this state usually ends up attached to the
+``request`` object, or worse, somewhere in global state::
+
+   class DjangoTimingMiddleware(object):
+       # Django-like, might be somewhat simplified
+
+       def process_request(self, request):
+           request.start_time = time.time()
+
+       def process_response(self, request, response):
+           total_time = time.time() - request.start_time
+           return response
+
+       def process_exception(self, request, exception):
+           ...  # TODO: exception handling
+
+In Clastic, this would look like::
+
+   class TimingMiddleware(Middleware):
+       def request(self, next):
+           start_time = time.time()
+           try:
+               ret = next()
+           except:
+               raise  # TODO: exception handling
+           total_time = time.time() - start_time
+           return ret
+
+In this case, local function scope suffices for our calculation, no
+need to mutate the request. However, if the middleware did want to
+provide something new, it could use the provides system to do so.
+
+Provides
+^^^^^^^^
+
+Often, well-intentioned middlewares want to give a little something
+back. Clastic let's them do this with *provides*. For an example of
+this, here's an ever-so-slightly simplified version of Clastic's basic
+built-in cookie session middleware::
+
+    class CookieSessionMiddleware(Middleware):
+        provides = ('session',)
+
+        def __init__(self, cookie_name='clastic_session', secret_key=None):
+            self.cookie_name = cookie_name
+            self.secret_key = secret_key or os.urandom(20)
+
+        def request(self, next, request):
+            session = load_cookie(request, self.cookie_name, self.secret_key)
+            response = next(session=session)
+            session.save_cookie(response, key=self.cookie_name)
+            return response
+
+Notice how the ``provides`` class variable, and how the ``next()``
+function is called with the ``session`` keyword argument. The endpoint
+and nested middlewares now have access to the session, should they
+need it, while middlewares before ``CookieSessionMiddleware`` do not.
+
+.. admonition:: Middleware provides vs. resources
+
+   Should a value come from middleware or from the resources? Reading
+   the conceptual overview should make this distinction much easier:
+   provides are for the lifetime of the *request*, whereas resources
+   are for the lifetime of an *application*. A session-store
+   connection *factory* is a good resource, but the session retrieved
+   is best provided by middleware (if not in the application logic).
+
+
+Enhancing reusability and testability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Developers using Clastic to its fullest can use middleware to
+drastically increase the reusability of their code. Middlewares can be
+used to extract variables from the ``request`` and any other complex
+objects, then provided to endpoints with much more reusable and
+testable usage patterns.
+
+Other frameworks require ``request`` to be passed in as an argument,
+even when the endpoint doesn't need it. Still other frameworks provide
+``request`` as a threadlocal (thread-**global** anyone?), but this
+still makes for harder-to-test code when an endpoint actually does use
+a resource provided by request.
+
+Clastic lets you lift nearly anything into a wrapping middleware, so
+it's even possible to make Routes that use builtins like ``abs()`` and
+``dict()`` as endpoints.
+
 
 Compared to Django
 ------------------
