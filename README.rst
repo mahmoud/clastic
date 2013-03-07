@@ -1,6 +1,11 @@
 clastic
 =======
 
+.. contents:: Contents
+   :depth: 2
+   :backlinks: top
+   :local:
+
 A functional Python web framework that streamlines explicit
 development practices while eliminating global state.
 
