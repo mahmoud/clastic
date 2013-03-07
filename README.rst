@@ -176,12 +176,12 @@ response. For example, given middlewares "A" and "B"::
 Within each individual middleware class (e.g., "A"), there are three
 functions which Clastic will look for and call:
 
- - ``request()`` - most commonly used
- - ``endpoint()`` - kind of meh, but good to be complete
- - ``render()`` - useful for context processing
+- ``request()`` - most commonly used
+- ``endpoint()`` - kind of meh, but good to be complete
+- ``render()`` - useful for context processing
 
 Those are terse descriptions, but that's ok, because all you need to
-remember is: **"'M' for Middleware"**::
+remember is: **"Dial 'M' for Middleware"**::
 
 
 
