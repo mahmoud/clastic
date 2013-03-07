@@ -17,6 +17,124 @@ application has loaded, the framework has done all its work and gotten
 out of the way. It doesn't wait until the first request or the first
 time a URL is hit to raise an exception.
 
+What is a web application?
+--------------------------
+
+In a way, every web framework is a systematic answer to the age-old
+question that has baffled humankind until just a few years ago.
+
+.. note::
+   The following is a conceptual introduction, not class
+   reference. Also, don't be fooled by Capital Letters, Clastic really
+   isn't type-heavy.
+
+Request
+   A single incoming communication from a client (to your
+   application). Encapsulates the WSGI environ, which is just Python's
+   representation of an HTTP request.
+
+Response
+   An outgoing reply from your application to the client.
+
+A web application exists to accept Requests and produce Responses.
+(Clastic knows that every Request has its Response <3)
+
+  Request --> [Application] --> Response
+
+Route
+   A regex-like URL pattern, as associated with an endpoint (and
+   optional renderer).
+
+Endpoint
+   The function or callable that is called when an incoming
+   request matches its associated Route. In Django, this is called a
+   `view`, in most MVC frameworks this is called a `controller`.
+
+Renderer
+   A function that usually takes a dictionary of values and
+   produces a Response. For a typical website, the content of the
+   response is usually the result of a templating engine, JSON
+   encoder, or file reader.
+
+A web application matches a Request's URL to its Routes' patterns. If
+there are no matches, it returns a 404 Response. If a matching Route
+is found, the Route's endpoint is called. If it returns a Response or
+the Route doesn't have a Renderer, the Response is sent back
+directly. Otherwise, the endpoint's return value is fed into the
+Renderer, which produces the actual Response.
+
+  Request --> Routes --> Endpoint --> (Renderer) --> Response
+
+.. admonition:: A bit of *context*
+
+   It can be useful to think of an application's behavior in terms of
+   overlapping contexts, each with its own lifespan. For instance, a
+   logged-in user's session is a context which can span multiple
+   requests. A database connection has a context, which may be shorter
+   than a Request's context, or longer if your application uses
+   connection pooling.
+
+   Application code can introduce dozens of logical contexts, specific
+   to its function, but at the Clastic level, there are two primary
+   contexts to consider:
+
+   - The Request context, which begins when the Request is constructed
+     by the framework, and usually ends when the Response has been
+     sent back to the client.
+   - The Application context, which begins once an Application is
+     successfully constructed at server startup, and ends when the
+     server running the Application shuts down.
+
+   Concepts discussed above were more oriented to the Request context,
+   the following items are more Application focused.
+
+Resources
+   A *resource* is a value that is valid for the lifespan of the
+   Application. An example might be a database connection factory, a
+   logger object, or the path of a configuration file. An
+   Application's *resources* refers to a map that gives each resource
+   a name.
+
+Render Factory
+   A callable which, when called with an argument, returns a suitable
+   *renderer*. Consider a `TemplateRenderFactory`, which, when called
+   with the template filename `index.html`, returns a function that
+   can be passed a dictionary to render the application's home page.
+
+   A Render Factory is optional
+
+Middleware
+   Middleware is a way of splitting up and ordering logic in discrete
+   layers. When installed in an Application, Middleware has access to
+   the Request before and after the endpoint and render steps. In
+   Python itself, decorators could be thought of as a form of function
+   middleware.
+
+Armed with this information, it's now possible to define what
+constitutes a web application, and indeed a Clastic Application:
+
+Application
+   A collection of Resources, list of Routes, and list of Middleware
+   instances, with an optional Render Factory to create the rendering
+   step for each of the routes.
+
+And with any luck this simple Application should be even simpler::
+
+   resources = {'start_time': time.time()}
+   middlewares = [CookieSessionMiddleware()]
+   render_factory = TemplateRenderFactory('/path/to/templates/')
+   routes = [('/', hello_world, 'home.html')]
+
+   hello_world_app = Application(routes, resources, render_factory, middlewares)
+
+`hello_world_app` is a full-blown WSGI application ready for serving
+to any users needing some greeting.
+
+.. note::
+   For the record, the `Application` instantiation seen above is exactly
+   what is meant by 'constructing' or 'initializing' an
+   Application. It's just instantiation, nothing more nothing less.
+
 Compared to Django
 ------------------
 
@@ -33,18 +151,14 @@ Proactive URL route checking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For an example of the aggressive checking Clastic provides, consider
-the following Django URL route:
+the following Django URL route::
 
-```
-(r'^articles/(?P<year>\d{4})/$', 'news.views.year_archive')
-```
+   (r'^articles/(?P<year>\d{4})/$', 'news.views.year_archive')
 
-And view function:
+And view function::
 
-```
-def year_archive(year, month):
-    pass
-```
+    def year_archive(year, month):
+        pass
 
 The URL routing rule arguments and view function signature don't
 match, but a Django application will happily start up without
@@ -59,7 +173,7 @@ Better control around application initialization
 In Django, applications and middleware have no way to detect when they
 are fully loaded by the server. Django's lazy loading means middleware
 aren't even initialized until the first request. See `this Django bug
-report`_ for more info.
+report`_ for more information.
 
 .. _this Django bug report:
    https://code.djangoproject.com/ticket/18577
@@ -133,3 +247,19 @@ consider an ORM to be a feature. Every developer has an opinion, and
 every project has its needs, so feel free to use Clastic with straight
 SQL, SQLAlchemy, your non-relational backend of choice, or even
 Django's ORM.
+
+Easier WSGI integration
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For as many claims as its docs make to being standard Python, Django
+makes `WSGI slightly choreful`_, which is a shame, because `WSGI`_ has
+blessed Python has so many neat servers that work with any WSGI
+application.
+
+Clastic applications are themselves WSGI applications. There's no need
+for special one-off modules or imports.
+
+.. _WSGI slightly choreful:
+   https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/
+
+.. _WSGI: http://wsgi.readthedocs.org/en/latest/what.html
