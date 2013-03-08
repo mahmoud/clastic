@@ -22,6 +22,12 @@ Contrib
 * Example application
 * Form processing middleware?
 
+MetaApplication
+---------------
+* Process start time + pid
+* Parent process start time + ppid
+* System load
+
 ## v2
 * Custom URL resolvers?
 * Failsafe application reloading?
