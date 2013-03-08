@@ -53,9 +53,11 @@ def check_middleware(mw):
         if not func:
             continue
         if not callable(func):
-            raise TypeError('expected middleware.' + f_name + ' to be a function')
+            raise TypeError('expected %s.%s to be a function' % (mw.name, f_name))
         if not get_arg_names(func)[0] == 'next':
-            raise TypeError("middleware functions must take a first parameter 'next'")
+            raise TypeError("middleware functions must take argument"
+                            " 'next' as the first parameter (%s.%s)"
+                            % (mw.name, f_name))
 
 
 def check_middlewares(middlewares, args_dict=None):
@@ -71,9 +73,10 @@ def check_middlewares(middlewares, args_dict=None):
         for arg in mw.provides:
             provided_by[arg].append(mw)
 
-    conflicts = [(n, tuple(ps)) for (n, ps) in provided_by.items() if len(ps) > 1]
+    conflicts = [(n, tuple(ps)) for (n, ps) in
+                 provided_by.items() if len(ps) > 1]
     if conflicts:
-        raise NameError('found conflicting provides: ' + repr(conflicts))
+        raise NameError('found conflicting provides: %r' % conflicts)
     return True
 
 
@@ -89,7 +92,7 @@ def merge_middlewares(old, new):
                 continue
             else:
                 raise ValueError('multiple inclusion of unique '
-                                 'middleware ' + mw.name)
+                                 'middleware %r' % mw.name)
         merged.append(mw)
     return merged
 
@@ -115,10 +118,16 @@ class DummyMiddleware(Middleware):
 
 def make_middleware_chain(middlewares, endpoint, render, preprovided):
     """
-    Expects de-duplicated and conflict-free
-    middleware/endpoint/render functions.
+    Expects de-duplicated and conflict-free middleware/endpoint/render
+    functions.
     """
-    req_avail = set(preprovided) - set(['next'])
+    _next_exc_msg = "argument 'next' reserved for middleware use only (%r)"
+    if 'next' in get_arg_names(endpoint):
+        raise NameError(_next_exc_msg % endpoint)
+    if 'next' in get_arg_names(render):
+        raise NameError(_next_exc_msg % render)
+
+    req_avail = set(preprovided) - set(['next', 'context'])
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
     req_funcs, req_provides = zip(*req_sigs) or ((), ())
@@ -134,7 +143,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
                                              ep_avail)
     if ep_unres:
         raise NameError("unresolved endpoint middleware arguments: %r"
-                        % ep_unres)
+                        % list(ep_unres))
 
     rn_avail = ep_avail | set(['context'])
     rn_sigs = [(mw.render, mw.render_provides)
@@ -146,7 +155,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
                                              rn_avail)
     if rn_unres:
         raise NameError("unresolved render middleware arguments: %r"
-                        % rn_unres)
+                        % list(rn_unres))
 
     req_args = (ep_args | rn_args) - set(['context'])
     req_func = _create_request_inner(ep_chain,
@@ -160,7 +169,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
                                                       req_avail)
     if req_unres:
         raise NameError("unresolved request middleware arguments: %r"
-                        % req_unres)
+                        % list(req_unres))
     return req_chain
 
 
@@ -177,7 +186,7 @@ def process_request({all_args}):
 
 
 def _named_arg_str(args):
-    return ','.join([a + '=' + a for a in args])
+    return ', '.join([a + '=' + a for a in args])
 
 
 def _create_request_inner(endpoint, render, all_args,
@@ -200,7 +209,7 @@ def _create_request_inner(endpoint, render, all_args,
 
 
 ####################################
-# Actual concrete middleware follows
+# Actual concrete middlewares follow
 ####################################
 
 

@@ -74,7 +74,7 @@ class Application(Map):
         try:
             route, ep_kwargs = self.match(request)
             ep_kwargs['request'] = request
-            # some versions of 2.6 die on unicode dictionary keys
+            # some versions of 2.6 die on unicode kwarg names
             ep_kwargs = dict([(str(k), v) for k, v in ep_kwargs.items()])
             ep_res = route.execute(**ep_kwargs)
         except Exception as e:

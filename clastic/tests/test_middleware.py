@@ -62,3 +62,11 @@ def test_render_raises():
     app = Application([('/', hello_world_ctx)],
                       middlewares=[render_raises_mw])
     Client(app, BaseResponse).get('/')
+
+
+@raises(NameError)
+def test_next_in_endpoint():
+    def nexter(next, request):
+        return 'this endpoint is broke'
+
+    Application([('/', nexter)])

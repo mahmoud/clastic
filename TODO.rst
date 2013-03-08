@@ -3,9 +3,6 @@
 
 Core
 ----
-* raise exception on endpoint usage of builtin argument ``context`` or
-  non-middleware usage of ``next``.
-
 * nicer next() names
 * polish sub-application mounting
 * PyPI/packaging (mostly done)
