@@ -54,7 +54,7 @@ Route
 Endpoint
    The function or callable that is called when an incoming
    request matches its associated Route. In Django, this is called a
-   `view`, in most MVC frameworks this is called a `controller`.
+   *view*, in most MVC frameworks this is called a *controller*.
 
 Renderer
    A function that usually takes a dictionary of values and
@@ -107,15 +107,24 @@ Render Factory
    with the template filename ``index.html``, returns a function that
    can be passed a dictionary to render the application's home page.
 
-   A Render Factory is optional
+   A Render Factory is optional. Here are some cases where a Render Factory can be omitted:
+
+   - an application's endpoints return Responses directly (as many
+     applications based directly on Werkzeug do)
+   - render functions are specified explicitly on a per-route basis
+   - the application is using some fancy middleware to generate
+     Responses
 
 Middleware_
    Middleware is a way of splitting up and ordering logic in
    discrete layers. When installed in an Application, Middleware has
    access to the Request before and after the endpoint and render
    steps. In Python itself, decorators could be thought of as a form
-   of function middleware. There's a lot more to middleware in
-   Clastic, so check out the Middleware_ section for more information.
+   of function middleware.
+
+   There's a lot more to middleware in Clastic, so check out the
+   Middleware_ section for more information, including diagrams of
+   middleware's role in the request flow.
 
 Armed with this information, it's now possible to define what
 constitutes a web application, and indeed a Clastic Application:
@@ -149,9 +158,9 @@ Middleware
 Middleware can be a very useful way to provide separation of
 horizontal concerns from the actual application logic. Common uses
 include logging, caching, request serialization/deserialization,
-performance profiling, and even compression, Including these functions
-in all endpoints would be bad design, not to mention downright
-tedious.
+performance profiling, and even compression. Including these functions
+in all endpoint functions would be bad design, not to mention a
+downright tedious task.
 
 Clastic's most defining feature may well be its interpretation of
 middleware. As opposed to simple pre- and post- request hooks, Clastic
@@ -439,3 +448,17 @@ for special one-off modules or imports.
    https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/
 
 .. _WSGI: http://wsgi.readthedocs.org/en/latest/what.html
+
+
+Thanks
+------
+
+Thanks to the following folks for helping make Clastic:
+
+- `Kurt Rose`_ - Design review and implementation
+- `Justin van Winkle`_ - Inspiration
+
+And thanks to *you* for making it this far in the docs!
+
+.. _Kurt Rose: //github.com/doublereedkurt
+.. _Justin van Winkle: //twitter.com/jvantastic
