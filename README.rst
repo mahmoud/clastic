@@ -208,8 +208,8 @@ easy-to-test signatures like ``hello(name)``, instead of
 ``hello(request, name)``. No need for test clients and mock requests
 and other contrivances where unnecessary.
 
-Sources and reserved arguments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sources and built-ins
+^^^^^^^^^^^^^^^^^^^^^
 
 The "Hello, World!" example used argument bound in from the URL, one
 of the four sources for arguments:
@@ -221,16 +221,18 @@ of the four sources for arguments:
   middleware. See Middleware_ for more information.
 - **Clastic built-ins** - Special arguments that are always made
   available by Clastic. These arguments are also reserved, and
-  conflicting names will raise an exception. A list of these arguments
-  and their meanings is below.
+  conflicting names will raise an exception. `A list of these arguments
+  and their meanings is below.`_
 
 .. _mentioned above: Resources_
+__ `Reserved arguments`_
 
-Reserved arguments
-""""""""""""""""""
+List of built-ins
+"""""""""""""""""
 
-Clastic provides a small, but powerful set of built-in arguments for
-every occasion:
+Clastic provides a small, but powerful set of six built-in arguments
+for every occasion. These arguments are reserved by Clastic, so know
+them well.
 
 ``request``
    Probably the most commonly used built-in, ``request`` is the
@@ -256,7 +258,6 @@ every occasion:
    exception is raised at Application initialization.
 
 ``context``
-
    ``context`` is the output of the endpoint side of the middleware
    chain. By convention, it is almost always a dictionary of values
    meant to be used in templating or other sorts of Response
@@ -270,9 +271,12 @@ The following built-ins are considered primarily for internal and
 advanced usage, and are thus prefixed with ``_``.
 
 ``_application``
-   The Application object in which this middleware/route/endpoint is
-   currently embedded. This is useful for introspective activities,
-   like those provided by the MetaApplication_.
+
+   The ``Application`` instance in which this middleware or endpoint
+   is currently embedded. The Application has access to all routes,
+   endpoints, middlewares, and other fun stuff, which makes
+   ``_application`` useful for introspective activities, like those
+   provided by Clastic's built-in ``MetaApplication``.
 
 ``_route``
    The Route which was matched by the URL and is currently being
@@ -286,6 +290,73 @@ advanced usage, and are thus prefixed with ``_``.
 
 And, that's it! All other argument names are unreserved and yours for
 the binding.
+
+Constraints
+^^^^^^^^^^^
+
+Clastic's dynamic binding system makes for concise, testable web
+applications, free of global state and whole classes of common bugs,
+but there are a couple implications.
+
+No anonymous arguments
+""""""""""""""""""""""
+
+This means that Clastic does not support functions which use ``*args``
+or ``**kwargs`` as part of a Route's function chain. In practice, such
+signatures reduce testability, introspectability, and debuggability,
+while providing little benefit to endpoints and middlewares. As a
+result, Clastic actively discourages their use; currently the presence
+of such functions does not raise an exception, but this behavior may
+change.
+
+There is one substantial exception to this assertion, which is that of
+function decorators, which make extensive use of ``*args`` and
+``**kwargs``, and of which Clastic is a close cousin. To use
+decorators, simply import ``clastic_decorator`` and decorate your
+decorator, like so::
+
+  from clastic.decorators import clastic_decorator
+  cl_my_deco = clastic_decorator(my_deco)
+
+``clastic_decorator`` simply wraps another decorator in a way that
+lifts the eventually decorated function's signature so that it remains
+visible to the rest of the Clastic system.
+
+Named URL parameters
+""""""""""""""""""""
+
+As a corallary to the above, all parameters in the URL pattern are
+required to be named, which in practice, makes for a cleaner and more
+testable application. For the few Routes that might actually use such
+URLs, simply use a ``path`` converter to capture arbitrarily long
+segments and split it in middleware or the endpoint itself.
+
+Naming conflicts
+""""""""""""""""
+
+Almost every system has the potential for naming conflicts and Clastic
+is no exception. The good news is that Clastic actively checks for
+such conflicts at Application initialization. This early-warning
+system means naming conflicts are only ever encountered during
+development, circumventing the much worse and much more common
+scenario of accidental overriding in production.
+
+Because each Route is independent, and there is no global state,
+there's no way for one Route's URL parameters to get intermingled with
+one another, but it is possible for a URL parameter to conflict with
+an Application's resources or middleware-provided arguments. in the
+event of such a conflict an error like the following would be raised
+at Application initialization::
+
+   NameError: found conflicting provides: [('name', (u'url', u'resources'))]
+
+Which means that ``name`` was provided by both the Route's URL and the
+Application's resources.
+
+Finally, in practice, Clastic naming conflicts are rare, easily
+resolvable, and resolution leads to less ambiguous, more maintainable
+code.
+
 
 Middleware
 ----------

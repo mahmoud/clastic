@@ -3,13 +3,14 @@
 
 Core
 ----
-* raise exception on endpoint usage of builtin argument ``context``
+* raise exception on endpoint usage of builtin argument ``context`` or
+  non-middleware usage of ``next``.
 
 * nicer next() names
 * polish sub-application mounting
 * PyPI/packaging (mostly done)
-* docs
-* dev/meta application
+* Sphinx docs
+* MetaApplication styling and docs
 * license
 
 Contrib
@@ -17,10 +18,9 @@ Contrib
 * Secure cookies/sessions
 * JSON middleware
 * Cache middleware
-* Klein (bottle-like functionality)
+* Cline (bottle-like functionality)
 * Example application
 * Form processing middleware?
-# GET/POST param middleware factory
 
 ## v2
 * Custom URL resolvers?
@@ -35,4 +35,5 @@ Contrib
 * dynamic vs. static linked middleware stack performance
 * OrderedSets?
 * 'strict' mode with more immutability enforcement (immutable dicts
-  for resources, etc.)
+  for resources, etc.) and certain types of linting (detect unset
+  global variables)
