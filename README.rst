@@ -215,17 +215,17 @@ The "Hello, World!" example used argument bound in from the URL, one
 of the four sources for arguments:
 
 - **Route URL pattern**
-- **Application resources** - As `mentioned above`__, arguments which
+- **Application resources** - As `mentioned above`_, arguments which
   are valid for the lifespan of the Application.
 - **Middleware provides** - Arguments provided by an Application's
   middleware. See Middleware_ for more information.
 - **Clastic built-ins** - Special arguments that are always made
   available by Clastic. These arguments are also reserved, and
   conflicting names will raise an exception. `A list of these arguments
-  and their meanings is below.`_
+  and their meanings is below.`__
 
 .. _mentioned above: Resources_
-__ `Reserved arguments`_
+__ `List of built-ins`_
 
 List of built-ins
 """""""""""""""""
@@ -268,10 +268,9 @@ them well.
    initialization.
 
 The following built-ins are considered primarily for internal and
-advanced usage, and are thus prefixed with ``_``.
+advanced usage, and are thus prefixed with an underscore.
 
 ``_application``
-
    The ``Application`` instance in which this middleware or endpoint
    is currently embedded. The Application has access to all routes,
    endpoints, middlewares, and other fun stuff, which makes
@@ -353,9 +352,9 @@ at Application initialization::
 Which means that ``name`` was provided by both the Route's URL and the
 Application's resources.
 
-Finally, in practice, Clastic naming conflicts are rare, easily
-resolvable, and resolution leads to less ambiguous, more maintainable
-code.
+In practice, Clastic naming conflicts are rare and easily
+resolvable. Resolution leads to less ambiguous, more maintainable
+code, and the application developer lives to see another day.
 
 
 Middleware
@@ -664,8 +663,11 @@ Thanks to the following folks for helping make Clastic:
 
 - `Kurt Rose`_ - Design review and implementation
 - `Justin van Winkle`_ - Inspiration
+- Pocoo_ and the Werkzeug_ team - For a very great WSGI toolkit
 
 And thanks to *you* for making it this far in the docs!
 
 .. _Kurt Rose: //github.com/doublereedkurt
 .. _Justin van Winkle: //twitter.com/jvantastic
+.. _Pocoo: //pocoo.org
+.. _Werkzeug: //werkzeug.pocoo.org
