@@ -221,10 +221,11 @@ endpoints at once.
 
 .. note::
 
-   The ***** at the middle vertex of the 'M' represents a checkpoint
-   of sorts. If the return value of the endpoint + endpoint
-   middlewares is a ``Response`` object, it will be returned
-   directly, skipping the ``render`` side of the M completely.
+   The ***** at the center vertex of the 'M' represents a checkpoint
+   of sorts: If the return value of the endpoint + endpoint
+   middlewares is a ``Response`` object, it will be returned directly,
+   skipping the ``render`` vertex of the M completely, but still
+   executing the outgoing request middlewares.
 
 State
 ^^^^^
