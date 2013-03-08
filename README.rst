@@ -94,6 +94,8 @@ Renderer, which produces the actual Response::
    Concepts discussed above were more oriented to the Request context,
    the following items are more Application focused.
 
+.. _Resources:
+
 Resources
    A *resource* is a value that is valid for the lifespan of the
    Application. An example might be a database connection factory, a
@@ -151,6 +153,139 @@ to any users needing some greeting.
    what is meant by 'constructing' or 'initializing' an
    Application. It's just instantiation, nothing more nothing less.
 
+Dynamic binding
+---------------
+
+Dynamic binding, or dynamic *argument* binding, is the process of
+resolving the arguments and dependencies of endpoints and middlewares
+to produce a rock-solid application. Basically, if a certain endpoint
+function takes an argument, Clastic will make sure that argument is
+available at Application initialization time.
+
+A simple example
+^^^^^^^^^^^^^^^^
+
+Arguments are simply checked by name. Consider the following
+"Hello, World!" Application::
+
+  from clastic import Application, default_response
+
+  def hello(name='world'):
+      return 'Hello, %s!' % name
+
+  routes = [('/', hello, default_response),
+            ('/<name>', hello, default_response)]
+
+  app = Application(routes)
+  app.serve()
+
+The ``hello()`` function acts as an endpoint for two Routes, one for
+the root URL, and one which takes a ``name`` as a URL path segment. On
+visiting the root URL, one sees ``Hello, world!``, and if a ``name`` is
+provided, ``Hello, (whatever-was-in-the-URL)``.
+
+If the ``hello()`` function was changed to read::
+
+  def hello(first_name):
+      return 'Hello, %s!' % first_name
+
+And the code was run without other changes, an exception would be
+raised, originating from line 9, ``app = Application(routes)``::
+
+  NameError: unresolved endpoint middleware arguments: set(['first_name'])
+
+Hmm, looks like we've got a bug, but at least we caught it early. In
+the future we should probably use a message bus or maybe Cassandra??
+Actually, let's write a quick test::
+
+  def test_hello():
+      assert hello() == 'Hello, world!'
+      assert hello('Justin') == 'Hello, Justin!'
+
+A nice side-effect of Clastic's argument binding is that endpoints
+only take what they need, meaning endpoint functions can have
+easy-to-test signatures like ``hello(name)``, instead of
+``hello(request, name)``. No need for test clients and mock requests
+and other contrivances where unnecessary.
+
+Sources and reserved arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The "Hello, World!" example used argument bound in from the URL, one
+of the four sources for arguments:
+
+- **Route URL pattern**
+- **Application resources** - As `mentioned above`__, arguments which
+  are valid for the lifespan of the Application.
+- **Middleware provides** - Arguments provided by an Application's
+  middleware. See Middleware_ for more information.
+- **Clastic built-ins** - Special arguments that are always made
+  available by Clastic. These arguments are also reserved, and
+  conflicting names will raise an exception. A list of these arguments
+  and their meanings is below.
+
+.. _mentioned above: Resources_
+
+Reserved arguments
+""""""""""""""""""
+
+Clastic provides a small, but powerful set of built-in arguments for
+every occasion:
+
+``request``
+   Probably the most commonly used built-in, ``request`` is the
+   current ``Request`` object being handled by the Application. It has
+   the URL arguments, POST parameters, user agent, everything from the
+   WSGI environ.
+
+``next``
+   ``next`` is only for use by Middleware, and represents the
+   next function in the execution chain. It is called with the
+   arguments the middleware class declared that it would provide. If
+   the middleware does not provide any arguments, then it is called
+   with no arguments.
+
+   ``next`` allows a middleware to not worry about what middleware or
+   function comes after it in the chain. All the middleware knows is
+   that the result of (or exception raised by) the ``next`` function
+   is the Response that a client would receive.
+
+   Middleware functions must accept ``next`` as the first argument. If
+   a middleware function does not accept the ``next`` argument, or if
+   a non-middleware function accepts the ``next`` argument, an
+   exception is raised at Application initialization.
+
+``context``
+
+   ``context`` is the output of the endpoint side of the middleware
+   chain. By convention, it is almost always a dictionary of values
+   meant to be used in templating or other sorts of Response
+   serialization.
+
+   Accepting the ``context`` built-in outside of the render branch of
+   middleware will cause an exception to be raised at Application
+   initialization.
+
+The following built-ins are considered primarily for internal and
+advanced usage, and are thus prefixed with ``_``.
+
+``_application``
+   The Application object in which this middleware/route/endpoint is
+   currently embedded. This is useful for introspective activities,
+   like those provided by the MetaApplication_.
+
+``_route``
+   The Route which was matched by the URL and is currently being
+   executed. Also mostly introspective in nature.
+
+``_endpoint``
+   The endpoint function associated with the matched Route. While of
+   limited utility, since the same function is available as an
+   attribute of ``_route``, it can be useful for introspection, or to
+   shortcut execution in extreme cases.
+
+And, that's it! All other argument names are unreserved and yours for
+the binding.
 
 Middleware
 ----------
@@ -162,9 +297,9 @@ performance profiling, and even compression. Including these functions
 in all endpoint functions would be bad design, not to mention a
 downright tedious task.
 
-Clastic's most defining feature may well be its interpretation of
-middleware. As opposed to simple pre- and post- request hooks, Clastic
-middlewares use real function-nesting scope. Furthermore, are
+One of Clastic's most defining features may well be its interpretation
+of middleware. As opposed to simple pre- and post- request hooks,
+Clastic middlewares use real function-nesting scope. Furthermore, are
 dependency-checked to minimize breakage caused by ordering or
 accidental omission.
 

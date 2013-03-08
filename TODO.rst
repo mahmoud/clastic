@@ -1,6 +1,10 @@
 # TODO
+======
 
-## Core
+Core
+----
+* raise exception on endpoint usage of builtin argument ``context``
+
 * nicer next() names
 * polish sub-application mounting
 * PyPI/packaging (mostly done)
@@ -8,7 +12,8 @@
 * dev/meta application
 * license
 
-## Contrib
+Contrib
+-------
 * Secure cookies/sessions
 * JSON middleware
 * Cache middleware
