@@ -30,3 +30,27 @@ def test_ashes():
     resp = c.get('/beta/Rajkumar/')
     yield eq_, resp.status_code, 200
     yield ok_, 'Rajkumar' in resp.data
+
+
+@raises(ashes.TemplateNotFound)
+def test_ashes_missing_template():
+    ashes_render = AshesRenderFactory(_TMPL_DIR)
+    tmpl = 'missing_template.html'
+    return Application([('/', hello_world_ctx, tmpl)],
+                       render_factory=ashes_render)
+
+
+def test_ashes_mixed():
+    ashes_render = AshesRenderFactory(_TMPL_DIR)
+    tmpl = 'basic_template.html'
+    app = Application([('/', hello_world_ctx, tmpl),
+                       ('/json/', hello_world_ctx, default_response)],
+                      render_factory=ashes_render)
+
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    yield eq_, resp.status_code, 200
+    yield ok_, 'Salam' in resp.data
+
+    resp = c.get('/json/')
+    yield eq_, resp.status_code, 200
