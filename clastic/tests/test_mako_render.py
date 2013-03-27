@@ -34,8 +34,7 @@ def test_mako():
 
 @raises(mako.exceptions.TopLevelLookupException)
 def test_mako_missing_template():
-    cur_dir = os.path.dirname(__file__)
-    mako_render = MakoRenderFactory(cur_dir)
+    mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'missing_template.html'
     return Application([('/', hello_world_ctx, tmpl)],
                        render_factory=mako_render)
