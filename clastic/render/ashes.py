@@ -1195,6 +1195,9 @@ class Template(object):
         self.name = name
         self.source = source
         self.source_file = source_file
+        self.last_mtime = None
+        if source_file:
+            self.last_mtime = os.path.getmtime(source_file)
         self.optimized = optimize
         if env is None:
             env = default_env
@@ -1314,7 +1317,8 @@ class BaseAshesEnv(object):
                  filters=None,
                  special_chars=None,
                  optimizers=None,
-                 pragmas=None):
+                 pragmas=None,
+                 auto_reload=True):
         self.templates = {}
         self.loaders = list(loaders or [])
         self.filters = dict(DEFAULT_FILTERS)
@@ -1332,15 +1336,25 @@ class BaseAshesEnv(object):
         self.pragmas = dict(DEFAULT_PRAGMAS)
         if pragmas:
             self.pragmas.update(pragmas)
+        self.auto_reload = auto_reload
 
     def render(self, name, model):
         tmpl = self.load(name)
         return tmpl.render(model, self)
 
     def load(self, name):
-        if not name in self.templates:
+        try:
+            template = self.templates[name]
+        except KeyError:
             template = self._load_template(name)
             self.register(template)
+        if self.auto_reload:
+            if not getattr(template, 'source_file', None):
+                return template
+            mtime = os.path.getmtime(template.source_file)
+            if mtime > template.last_mtime:
+                template = self._load_template(name)
+                self.register(template)
         return self.templates[name]
 
     def _load_template(self, name):
