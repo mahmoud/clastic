@@ -31,6 +31,7 @@ class MakoRenderFactory(object):
         for ext, mt in _EXT_MAP.items():
             if template_filename.endswith(ext):
                 mimetype = mt
+                break
         else:
             mimetype = self.default_mime
 
