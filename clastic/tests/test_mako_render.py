@@ -11,11 +11,11 @@ from clastic.render import default_response
 
 from common import hello_world_ctx, complex_context
 
-_CUR_DIR = os.path.dirname(__file__)
+_TMPL_DIR = os.path.join(os.path.dirname(__file__), '_mako_tmpls')
 
 
 def test_mako():
-    mako_render = MakoRenderFactory(_CUR_DIR)
+    mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'basic_template.html'
     app = Application([('/', hello_world_ctx, tmpl),
                        ('/<name>/', hello_world_ctx, tmpl),
@@ -42,7 +42,7 @@ def test_mako_missing_template():
 
 
 def test_mako_broken_template():
-    mako_render = MakoRenderFactory(_CUR_DIR)
+    mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'broken_template_1.html'
     app = Application([('/', hello_world_ctx, tmpl)],
                       render_factory=mako_render)
@@ -53,7 +53,7 @@ def test_mako_broken_template():
 
 
 def test_mako_mixed():
-    mako_render = MakoRenderFactory(_CUR_DIR)
+    mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'basic_template.html'
     app = Application([('/', hello_world_ctx, tmpl),
                        ('/json/', hello_world_ctx, default_response)],
