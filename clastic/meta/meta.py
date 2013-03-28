@@ -1,11 +1,18 @@
 from __future__ import unicode_literals
 
+import os
+
 from clastic.core import Application
 from clastic.render import dev_json_response
+from clastic.render import AshesRenderFactory
 
+_CUR_DIR = os.path.dirname(__file__)
 
 def create_app():
-    app = Application([('/', get_routes_info, dev_json_response)])
+    routes = [('/', get_routes_info, dev_json_response),
+              ('/beta/', get_routes_info, 'base.html')]
+    arf = AshesRenderFactory(_CUR_DIR)
+    app = Application(routes, {}, arf)
     return app
 
 
