@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from clastic import (Application,
                      default_response,
-                     MetaApplication,
                      GetParamMiddleware)
 from clastic.session import CookieSessionMiddleware
 from clastic.tests.common import session_hello_world, RequestProvidesName
@@ -25,8 +24,7 @@ def create_decked_out_app():
                    RequestProvidesName(),
                    CookieSessionMiddleware()]
     routes = [('/', session_hello_world, default_response),
-              ('/modules/', see_modules, default_response),
-              ('/meta/', MetaApplication)]
+              ('/modules/', see_modules, default_response)]
     return Application(routes, resources, None, middlewares)
 
 
