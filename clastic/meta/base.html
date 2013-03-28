@@ -6,12 +6,23 @@
   <body>
   <h2 class="page_title">Clastic</h2>
   <div class="content">
-    <div><table>
+    <div>
+      <h3>Routes</h3>
+      <table>
       <thead>
-        <tr><th>URL</th><th>Arguments and sources</th></tr>
+        <tr><th>URL</th><th>Endpoint</th></tr>
       </thead>
       {#routes}
-      <tr><td>{url_rule}</td><td>{#sources}{.}{/sources}</td></tr>
+        <tr><td>{url_rule}</td><td>
+          {#endpoint}
+            <span title="{.module_name}">{.name}</span>
+          {/endpoint}
+            (
+          {#args}
+            <span title="{.source}">{.name}</span>{@sep}, {/sep}
+          {/args}
+            )
+        </td></tr>
       {/routes}
     </table></div>
     <br/>
