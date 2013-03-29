@@ -28,3 +28,7 @@ class CookieSessionMiddleware(Middleware):
 
     def _get_random(self):
         return os.urandom(20)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '%s(cookie_name=%r)' % (cn, self.cookie_name)
