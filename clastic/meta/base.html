@@ -41,10 +41,18 @@
       </table>
     </div>
     <div>
-      <h3>Middlewares</h3>
+      <h3>Application-wide Middlewares</h3>
       <table>
+        <thead>
+          <tr><th></th><th>Type</th><th>Provides</th><th>Requires</th></tr>
+        </thead>
         {#middlewares}
-        <tr><td>{.}</td></tr>
+        <tr>
+          <td>{@idx_1}{.}{/idx_1}</td>
+          <td>{.type_name}</td>
+          <td>{#provides}{.}{@sep}, {/sep}{/provides}</td>
+          <td>{#requires}{.}{@sep}, {/sep}{/requires}</td>
+        </tr>
         {/middlewares}
       </table>
     </div>

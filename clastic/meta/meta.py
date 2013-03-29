@@ -30,8 +30,21 @@ def get_routes_info(_application):
         r_info['args'] = get_route_arg_info(r)
         route_infos.append(r_info)
 
+    mw_infos = []
+    for mw in app.middlewares:
+        mw_infos.append(get_mw_info(mw))
+
     ret['routes'] = route_infos
-    ret['middlewares'] = [repr(m) for m in _application.middlewares]
+    ret['middlewares'] = mw_infos
+    return ret
+
+
+def get_mw_info(mw):
+    ret = {}
+    ret['type_name'] = mw.__class__.__name__
+    ret['provides'] = mw.provides
+    ret['requires'] = mw.requires
+    ret['repr'] = repr(mw)
     return ret
 
 
