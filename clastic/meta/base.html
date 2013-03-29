@@ -56,6 +56,15 @@
         {/middlewares}
       </table>
     </div>
+    <div>
+      <h3>Resources</h3>
+      <table>
+        <thead><th>Name</th><th>Value</th></thead>
+        {#resources}
+          <tr><td>{.key}</td><td>{.value}</td></tr>
+        {/resources}
+      </table>
+    </div>
   </div>
   <div class="footer"></div>
   </body>

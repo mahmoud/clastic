@@ -36,10 +36,29 @@ def get_routes_info(_application):
 
     ret['routes'] = route_infos
     ret['middlewares'] = mw_infos
+    ret['resources'] = get_resource_info(app)
+    return ret
+
+
+def _trunc(str_val, length=70, trailer='...'):
+    if len(str_val) > length:
+        if trailer:
+            str_val = str_val[:length - len(trailer)] + trailer
+        else:
+            str_val = str_val[:length]
+    return str_val
+
+
+def get_resource_info(_application):
+    ret = []
+    for key, val in _application.resources.items():
+        trunc_val = _trunc(repr(val))
+        ret.append({'key': key, 'value': trunc_val})
     return ret
 
 
 def get_mw_info(mw):
+    # TODO: what to do about render and endpoint provides?
     ret = {}
     ret['type_name'] = mw.__class__.__name__
     ret['provides'] = mw.provides
