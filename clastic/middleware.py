@@ -246,6 +246,17 @@ class ContextProcessor(Middleware):
         self.overwrite = overwrite
         self.render = self._create_render()
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        kwargs = []
+        if self.required:
+            kwargs.append('required=%r' % (self.required,))
+        if self.defaults:
+            kwargs.append('defaults=%r' % (self.defaults,))
+        if self.overwrite:
+            kwargs.append('overwrite=True')
+        return '%s(%s)' % (cn, ', '.join(kwargs))
+
     def _check_params(self, required, defaults, overwrite):
         if not all([isinstance(arg, basestring) for arg in required]):
             raise TypeError('required argument names must be strings')
