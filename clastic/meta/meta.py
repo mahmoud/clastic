@@ -31,6 +31,7 @@ def get_routes_info(_application):
         route_infos.append(r_info)
 
     ret['routes'] = route_infos
+    ret['middlewares'] = [repr(m) for m in _application.middlewares]
     return ret
 
 
