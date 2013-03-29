@@ -830,7 +830,13 @@ def idx_helper(chunk, context, bodies):
     return chunk
 
 
-DEFAULT_HELPERS = {'sep': sep_helper, 'idx': idx_helper}
+def idx_1_helper(chunk, context, bodies):
+    if 'block' in bodies:
+        return bodies['block'](chunk, context.push(context.stack.index + 1))
+    return chunk
+
+
+DEFAULT_HELPERS = {'sep': sep_helper, 'idx': idx_helper, 'idx_1': idx_1_helper}
 
 
 class Context(object):
