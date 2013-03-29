@@ -29,13 +29,15 @@ class Middleware(object):
         return type(self) != type(other)
 
     @cached_property
-    def requirements(self):
+    def requires(self):
         reqs = []
         for func_name in ('request', 'endpoint', 'render'):
             func = getattr(self, func_name, None)
             if func:
                 reqs.extend(get_arg_names(func, True))
-        return set(reqs)
+        unique_reqs = set(reqs)
+        unique_reqs.discard('next')
+        return list(unique_reqs)
 
     @cached_property
     def arguments(self):
@@ -233,6 +235,11 @@ class GetParamMiddleware(Middleware):
         for p_name, p_type in self.params.items():
             kwargs[p_name] = request.args.get(p_name, None, p_type)
         return next(**kwargs)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        param_map = dict([(n, t.__name__) for n, t in self.params.items()])
+        return '%s(params=%r)' % (cn, param_map)
 
 
 class ContextProcessor(Middleware):
