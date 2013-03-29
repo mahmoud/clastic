@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import os
+import datetime
 
 from clastic.core import Application, RESERVED_ARGS
 from clastic.sinter import getargspec
@@ -13,12 +14,13 @@ _CUR_DIR = os.path.dirname(__file__)
 def create_app():
     routes = [('/', get_routes_info, 'base.html'),
               ('/json/', get_routes_info, json_response)]
+    resources = {'_meta_start_time': datetime.datetime.utcnow()}
     arf = AshesRenderFactory(_CUR_DIR)
-    app = Application(routes, {}, arf)
+    app = Application(routes, resources, arf)
     return app
 
 
-def get_routes_info(_application):
+def get_routes_info(_application, _meta_start_time):
     ret = {}
     app = _application
     route_infos = []
@@ -34,9 +36,12 @@ def get_routes_info(_application):
     for mw in app.middlewares:
         mw_infos.append(get_mw_info(mw))
 
+    ret['abs_start_time'] = str(_meta_start_time)
+    ret['rel_start_time'] = _rel_datetime(_meta_start_time)
     ret['routes'] = route_infos
     ret['middlewares'] = mw_infos
     ret['resources'] = get_resource_info(app)
+    ret['env'] = get_env_info()
     return ret
 
 
@@ -47,6 +52,43 @@ def _trunc(str_val, length=70, trailer='...'):
         else:
             str_val = str_val[:length]
     return str_val
+
+
+def _rel_datetime(d, other=None):
+    if other is None:
+        other = datetime.datetime.utcnow()
+    diff = other - d
+    s, days = diff.seconds, diff.days
+    if days > 7 or days < 0:
+        return d.strftime('%d %b %y')
+    elif days == 1:
+        return '1 day ago'
+    elif days > 1:
+        return '{} days ago'.format(diff.days)
+    elif s < 5:
+        return 'just now'
+    elif s < 60:
+        return '{} seconds ago'.format(s)
+    elif s < 120:
+        return '1 minute ago'
+    elif s < 3600:
+        return '{} minutes ago'.format(s/60)
+    elif s < 7200:
+        return '1 hour ago'
+    else:
+        return '{} hours ago'.format(s/3600)
+
+
+def get_env_info():
+    import os
+    ret = {}
+    ret['pid'] = os.getpid()
+    ret['times'] = os.times()[:2]
+    try:
+        ret['load_avgs'] = os.getloadavg()
+    except:
+        ret['load_avgs'] = (None, None, None)
+    return ret
 
 
 def get_resource_info(_application):
