@@ -26,7 +26,7 @@ def get_routes_info(_application):
         r_info = {}
         r_info['url_rule'] = r.rule
         r_info['endpoint'] = get_endpoint_info(r)
-        r_info['render_arg'] = r.render_arg
+        r_info['render'] = get_render_info(r)
         r_info['args'] = get_route_arg_info(r)
         route_infos.append(r_info)
 
@@ -42,6 +42,19 @@ def get_endpoint_info(route):
         ret['module_name'] = route.endpoint.__module__
     except:
         ret['name'] = repr(route.endpoint)
+    return ret
+
+
+def get_render_info(route):
+    ret = {'type': None}
+    if route._render_factory and not callable(route.render_arg):
+        ret['type'] = route._render_factory.__class__.__name__
+        ret['arg'] = route.render_arg
+    else:
+        try:
+            ret['arg'] = route.render_arg.func_name
+        except AttributeError:
+            ret['arg'] = route.render_arg.__class__.__name__
     return ret
 
 

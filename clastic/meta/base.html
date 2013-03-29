@@ -10,24 +10,37 @@
       <h3>Routes</h3>
       <table>
       <thead>
-        <tr><th>URL</th><th>Endpoint</th></tr>
+        <tr><th>URL</th><th>Endpoint</th><th>Render</th></tr>
       </thead>
+      <tbody>
       {#routes}
-        <tr><td>{url_rule}</td><td>
-          {#endpoint}
-            <span title="{.module_name}">{.name}</span>
-          {/endpoint}
+        <tr>
+          <td>{url_rule}</td>
+          <td>
+            {#endpoint}
+              <span title="{.module_name}">{.name}</span>
+            {/endpoint}
             (
-          {#args}
-            <span title="{.source}">{.name}</span>{@sep}, {/sep}
-          {/args}
+            {#args}
+              <span title="{.source}">{.name}</span>{@sep}, {/sep}
+            {/args}
             )
-        </td></tr>
+          </td>
+          <td>
+            {#render}
+              {?.type}
+                {.type}('{.arg}')
+              {:else}
+                {.arg}
+              {/type}
+            {/render}
+          </td>
+        </tr>
       {/routes}
-    </table></div>
-    <br/>
+      </tbody>
+      </table>
+    </div>
   </div>
-  <pre></pre>
   <div class="footer"></div>
   </body>
 </html>
