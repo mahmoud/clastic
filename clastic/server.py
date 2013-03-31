@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import socket
 import signal
 import thread
@@ -71,8 +70,9 @@ def restart_with_reloader():
                 to_mon = []
                 continue
         elif exit_code == 1 and stderr_data:
-            from clastic.meta import MetaApplication
-            err_server = make_server('localhost', 5000, MetaApplication)
+            from clastic import flaw
+            err_app = flaw.create_app(stderr_data, to_mon)
+            err_server = make_server('localhost', 5000, err_app)
             thread.start_new_thread(err_server.serve_forever, ())
             try:
                 reloader_loop(to_mon, 1)
