@@ -12,6 +12,7 @@
     :license: BSD, see LICENSE for more details.
 
 """
+import server
 
 from core import (
     RESERVED_ARGS,
