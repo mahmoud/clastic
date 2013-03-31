@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import socket
 import signal
 import thread
@@ -13,13 +14,17 @@ from werkzeug.serving import reloader_loop, make_server
 
 
 def open_test_socket(host, port):
-    fam = socket.AF_INET4
+    fam = socket.AF_INET
     if ':' in host:
-        fam = getattr(socket, 'AF_INET6', socket.AF_INET4)
-    test_socket = socket.socket(fam, socket.SOCK_STREAM)
-    test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    test_socket.bind((host, port))
-    test_socket.close()
+        fam = getattr(socket, 'AF_INET6', socket.AF_INET)
+    try:
+        test_socket = socket.socket(fam, socket.SOCK_STREAM)
+        test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        test_socket.bind((host, port))
+        test_socket.close()
+        return True
+    except socket.error:
+        return False
 
 
 def _iter_module_files():
@@ -39,11 +44,6 @@ def _iter_module_files():
                 if filename not in unique_files:
                     unique_files.add(filename)
                     yield filename
-
-
-def test():
-    print 'testtesttesttest'
-    return
 
 
 def restart_with_reloader():
@@ -72,19 +72,20 @@ def restart_with_reloader():
                 continue
         elif exit_code == 1 and stderr_data:
             from clastic.meta import MetaApplication
-            print 'running error app'
-            import inspect
-            print len(inspect.stack())
-            # import pdb;pdb.set_trace()
-            def inner():
-                make_server('localhost', 5000, MetaApplication).serve_forever()
-            thread.start_new_thread(inner, ())
+            err_server = make_server('localhost', 5000, MetaApplication)
+            thread.start_new_thread(err_server.serve_forever, ())
             try:
                 reloader_loop(to_mon, 1)
             except KeyboardInterrupt:
-                pass
-            print 'error app returned'
-            continue
+                return 0
+            except SystemExit as se:
+                if se.code == 3:
+                    continue
+                return se.code
+            finally:
+                err_server.shutdown()
+                err_server.server_close()
+            return 0
         else:
             return exit_code
 
