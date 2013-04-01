@@ -3,16 +3,16 @@ from __future__ import unicode_literals
 import os
 import datetime
 
-from clastic.core import Application, RESERVED_ARGS
-from clastic.sinter import getargspec
-from clastic.render import json_response
-from clastic.render import AshesRenderFactory
+from core import Application, RESERVED_ARGS
+from sinter import getargspec
+from render import json_response, AshesRenderFactory
+
 
 _CUR_DIR = os.path.dirname(__file__)
 
 
 def create_app():
-    routes = [('/', get_routes_info, 'base.html'),
+    routes = [('/', get_routes_info, 'meta_base.html'),
               ('/json/', get_routes_info, json_response)]
     resources = {'_meta_start_time': datetime.datetime.utcnow()}
     arf = AshesRenderFactory(_CUR_DIR)
