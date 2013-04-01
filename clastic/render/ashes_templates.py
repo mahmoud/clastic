@@ -23,9 +23,11 @@ _EXT_MAP = {'.dust': None,  # None means default to default_mime
 
 __all__ = ['AshesRenderFactory']
 
+# TODO: how to construct non-200 status code render functions?
+
 
 class AshesRenderFactory(object):
-    def __init__(self, template_paths, default_mime=None, **kw):
+    def __init__(self, template_paths=None, default_mime=None, **kw):
         if isinstance(template_paths, basestring):
             template_paths = [template_paths]
 
@@ -39,6 +41,12 @@ class AshesRenderFactory(object):
         if load_all:
             self.env.load_all()
         self.default_mime = default_mime or 'text/html'
+
+    def register(self, *a, **kw):
+        return self.env.register(*a, **kw)
+
+    def register_source(self, *a, **kw):
+        return self.env.register_source(*a, **kw)
 
     def __call__(self, template_path):
         self.env.load(template_path)  # trigger error if not found

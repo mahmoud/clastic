@@ -1392,6 +1392,11 @@ class BaseAshesEnv(object):
         self.templates[name] = template
         return
 
+    def register_source(self, name, tmpl_src):
+        tmpl = Template(name, tmpl_src, env=self)
+        self.register(tmpl)
+        return tmpl
+
     def filter_ast(self, ast, optimize=True):
         if optimize:
             optimizers = self.optimizers
