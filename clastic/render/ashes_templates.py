@@ -3,7 +3,13 @@ from __future__ import unicode_literals
 
 from werkzeug.wrappers import Response
 
-from ashes import AshesEnv
+try:
+    import ashes
+except ImportError:
+    import _ashes as ashes
+
+
+AshesEnv = ashes.AshesEnv
 
 
 _EXT_MAP = {'.dust': None,  # None means default to default_mime
