@@ -2,28 +2,51 @@ from __future__ import unicode_literals
 
 import os
 import re
-from clastic.core import Application
-from clastic.render import default_response
+from core import Application
+from render import AshesRenderFactory
 
 
-def create_app(error_message, monitored_files=None):
-    routes = [('/', get_message, default_response)]
+def create_app(traceback_string, monitored_files=None):
     non_site_files = _filter_site_files(monitored_files)
-    parsed_tb = _ParsedTB.from_string(error_message)
-    resources = {'error_message': error_message,
+    parsed_tb = _ParsedTB.from_string(traceback_string)
+    resources = {'tb_str': traceback_string,
                  'parsed_error': parsed_tb,
                  'all_mon_files': monitored_files,
                  'mon_files': non_site_files}
-    app = Application(routes, resources)
+    render_fact = AshesRenderFactory()
+    render_fact.register_source('flaw_tmpl', _FLAW_TEMPLATE)
+    routes = [('/', get_flaw_info, 'flaw_tmpl')]
+
+    app = Application(routes, resources, render_fact)
     return app
 
 
-def get_message(error_message, parsed_error, mon_files):
-    return ('whopps, looks like there might be an error (%s): \n%s\n\n'
-            '(monitoring files: %s)') % (parsed_error.exc_type, error_message, mon_files)
+def get_flaw_info(tb_str, parsed_error, mon_files):
+    return {'exc_type': parsed_error.exc_type,
+            'exc_msg': parsed_error.exc_msg,
+            'mon_files': mon_files,
+            'err': parsed_error,
+            'tb_str': tb_str}
 
-#_FLAW_TEMPLATE = """\
-#"""
+
+_FLAW_TEMPLATE = """\
+<html>
+  <head>
+    <title>Oh, Flaw'd: {exc_type} in {err.source_file}</title>
+  </head>
+  <body>
+    <h1>Whopps!</h1>
+
+    <p>Clastic detected a modification, but couldn't restart your application. This is usually the result of a module-level error that prevents one of your application's modules from being imported. Fix the error and try refreshing the page.</p>
+
+    <h2>{exc_type}: {exc_msg}</h2>
+    <h3>Stack trace</h3>
+    <pre>{tb_str}</pre>
+    <br><hr>
+    <p>Monitoring:<ul>{#mon_files}<li>{.}</li>{/mon_files}</ul></p>
+  </body>
+</html>
+"""
 
 _frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+),'
                        r' in (?P<funcname>.+)$')
@@ -34,6 +57,13 @@ class _ParsedTB(object):
         self.exc_type = exc_type_name
         self.exc_msg = exc_msg
         self.frames = list(frames or [])
+
+    @property
+    def source_file(self):
+        try:
+            return self.frames[-1]['filepath']
+        except IndexError:
+            return None
 
     @classmethod
     def from_string(cls, tb_str):
@@ -55,9 +85,19 @@ class _ParsedTB(object):
         return cls(exc_type, exc_msg, frames)
 
 
-
 def _filter_site_files(paths):
     if not paths:
         return []
     site_dir = os.path.dirname(os.__file__)
     return [fn for fn in paths if not fn.startswith(site_dir)]
+
+
+_example_tb = """
+Traceback (most recent call last):
+  File "example.py", line 2, in <module>
+    plarp
+NameError: name 'plarp' is not defined
+"""
+
+if __name__ == '__main__':
+    create_app(_example_tb, [__file__]).serve()
