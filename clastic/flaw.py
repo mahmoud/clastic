@@ -56,25 +56,6 @@ class _ParsedTB(object):
 
 
 
-example = """
-Traceback (most recent call last):
-  File "example.py", line 34, in <module>
-      create_decked_out_app().serve()
-  File "/home/mahmoud/projects/clastic/clastic/core.py", line 147, in serve
-      run_simple(address, port, wrapped_wsgi, **kw)
-  File "/home/mahmoud/projects/clastic/clastic/server.py", line 134, in run_simple
-      run_with_reloader(serve_forever, extra_files, reloader_interval)
-  File "/home/mahmoud/projects/clastic/clastic/server.py", line 107, in run_with_reloader
-      sys.exit(restart_with_reloader())
-  File "/home/mahmoud/projects/clastic/clastic/server.py", line 75, in restart_with_reloader
-      err_app = flaw.create_app(stderr_data, to_mon)
-  File "/home/mahmoud/projects/clastic/clastic/flaw.py", line 10, in create_app
-      non_site_files = _filter_site_files(monitored_files)
-TypeError: _filter_site_files() takes exactly 2 arguments (1 given)
-"""
-
-
-
 def _filter_site_files(paths):
     if not paths:
         return []
