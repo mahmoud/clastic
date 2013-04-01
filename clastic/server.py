@@ -7,12 +7,11 @@ import subprocess
 from itertools import chain
 from ast import literal_eval
 
-import werkzeug.serving
 from werkzeug._internal import _log
 from werkzeug.serving import reloader_loop, make_server
 
 
-def open_test_socket(host, port):
+def open_test_socket(host, port, raise_exc=True):
     fam = socket.AF_INET
     if ':' in host:
         fam = getattr(socket, 'AF_INET6', socket.AF_INET)
@@ -23,10 +22,12 @@ def open_test_socket(host, port):
         test_socket.close()
         return True
     except socket.error:
+        if raise_exc:
+            raise
         return False
 
 
-def _iter_module_files():
+def iter_monitor_files():
     unique_files = set()
     for module in sys.modules.values():
         filename = getattr(module, '__file__', None)
@@ -90,9 +91,6 @@ def restart_with_reloader():
             return exit_code
 
 
-werkzeug.serving.restart_with_reloader = restart_with_reloader
-
-
 def run_with_reloader(main_func, extra_files=None, interval=1):
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
@@ -102,7 +100,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
         except KeyboardInterrupt:
             return
         except SystemExit:
-            mon_list = list(chain(_iter_module_files(), extra_files or ()))
+            mon_list = list(chain(iter_monitor_files(), extra_files or ()))
             sys.stderr.write(repr(mon_list))
             raise
     try:
@@ -111,13 +109,28 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
         pass
 
 
-werkzeug.serving.run_with_reloader = run_with_reloader
-
-
-"""
 def run_simple(hostname, port, application, use_reloader=False,
                use_debugger=False, use_evalex=True, extra_files=None,
                reloader_interval=1, passthrough_errors=False,
                ssl_context=None):
-    pass
-"""
+    if use_debugger:
+        from werkzeug.debug import DebuggedApplication
+        application = DebuggedApplication(application, use_evalex)
+
+    def serve_forever():
+        make_server(hostname, port, application,
+                    passthrough_errors=passthrough_errors,
+                    ssl_context=ssl_context).serve_forever()
+
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        display_hostname = hostname != '*' and hostname or 'localhost'
+        if ':' in display_hostname:
+            display_hostname = '[%s]' % display_hostname
+        _log('info', ' * Running on %s://%s:%d/', ssl_context is None
+             and 'http' or 'https', display_hostname, port)
+
+    if use_reloader:
+        open_test_socket(hostname, port)
+        run_with_reloader(serve_forever, extra_files, reloader_interval)
+    else:
+        serve_forever()

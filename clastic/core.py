@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 from werkzeug.wrappers import Request
 from werkzeug.routing import Map, Rule, RuleFactory
 from werkzeug.exceptions import HTTPException, NotFound
-from werkzeug.serving import run_simple
+from server import run_simple
 
 from sinter import inject, get_arg_names, getargspec
 from middleware import (check_middlewares,
@@ -105,7 +105,6 @@ class Application(Map):
     def serve(self,
               address='0.0.0.0',
               port=5000,
-              processes=1,
               use_meta=True,
               use_lint=True,
               use_reloader=True,
@@ -120,7 +119,7 @@ class Application(Map):
         port = args.port if args.port is not None else port
         kw['use_reloader'] = args.use_reloader and use_reloader
         kw['use_debugger'] = args.use_debugger and use_debugger
-        kw['processes'] = args.processes or processes
+        # kw['processes'] = args.processes or processes
         use_meta = args.use_meta and use_meta
         use_lint = args.use_lint and use_lint
         use_static = args.use_static and use_static
