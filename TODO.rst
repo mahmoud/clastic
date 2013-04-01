@@ -24,6 +24,12 @@ MetaApplication
 * Process start time + pid
 * Parent process start time + ppid
 * System load
+* Application start time
+* Per-route match counters
+* List of middleware, resources, etc.
+* Group by subapplication? (Allow naming applications)
+
+
 
 ## v2
 * Custom URL resolvers?
