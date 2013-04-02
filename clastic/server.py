@@ -12,7 +12,7 @@ from werkzeug.serving import reloader_loop, make_server
 
 
 _MON_PREFIX = '__clastic_mon_files:'
-_LINE_BUFF_MAX_SIZE = 1024
+_STDERR_BUFF_SIZE = 1024
 
 
 def open_test_socket(host, port, raise_exc=True):
@@ -29,6 +29,37 @@ def open_test_socket(host, port, raise_exc=True):
         if raise_exc:
             raise
         return False
+
+
+def enable_tty_echo(tty=None):
+    """
+    Re-enables proper console behavior, primarily for when a reload is
+    triggered at a PDB prompt.
+
+    TODO: context manager for ignoring signals
+    """
+    if tty is None:
+        tty = sys.stdin
+    if not tty.isatty():
+        return
+    try:
+        import termios
+    except ImportError:
+        return
+
+    attr_list = termios.tcgetattr(tty)
+    attr_list[3] |= termios.ECHO
+    try:
+        orig_handler = signal.getsignal(signal.SIGTTOU)
+    except AttributeError:
+        termios.tcsetattr(tty, termios.TCSANOW, attr_list)
+    else:
+        try:
+            signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+            termios.tcsetattr(tty, termios.TCSANOW, attr_list)
+        finally:
+            signal.signal(signal.SIGTTOU, orig_handler)
+    return
 
 
 def iter_monitor_files():
@@ -57,15 +88,11 @@ def restart_with_reloader():
         args = [sys.executable] + sys.argv
         new_environ = os.environ.copy()
         new_environ['WERKZEUG_RUN_MAIN'] = 'true'
-
-        # a weird bug on windows. sometimes unicode strings end up in the
-        # environment and subprocess.call does not like this, encode them
-        # to latin1 and continue.
         if os.name == 'nt':
             for key, value in new_environ.iteritems():
                 if isinstance(value, unicode):
                     new_environ[key] = value.encode('iso-8859-1')
-        line_buff = []
+        stderr_buff = []
         child_proc = subprocess.Popen(args, env=new_environ, stderr=subprocess.PIPE)
         rf = child_proc.stderr
         exit_code, lines = None, []
@@ -80,21 +107,20 @@ def restart_with_reloader():
             cur_line = lines.pop(0)
             if cur_line.startswith(_MON_PREFIX):
                 to_mon = literal_eval(cur_line[len(_MON_PREFIX):])
-                print to_mon[:3]
             else:
                 sys.stderr.write(cur_line)
-                line_buff.append(cur_line)
-                if len(line_buff) > _LINE_BUFF_MAX_SIZE:
-                    line_buff.pop(0)
+                stderr_buff.append(cur_line)
+                if len(stderr_buff) > _STDERR_BUFF_SIZE:
+                    stderr_buff.pop(0)
 
         if exit_code == 3:
             continue
-        elif exit_code == 1 and line_buff:
+        elif exit_code == 1 and stderr_buff:
+            ensure_echo_on()
             from clastic import flaw
-            tb_str = ''.join(line_buff)
+            tb_str = ''.join(stderr_buff)
             err_app = flaw.create_app(tb_str, to_mon)
             err_server = make_server('localhost', 5000, err_app)
-
             thread.start_new_thread(err_server.serve_forever, ())
             try:
                 reloader_loop(to_mon, 1)
@@ -114,6 +140,7 @@ def restart_with_reloader():
 
 def run_with_reloader(main_func, extra_files=None, interval=1):
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
+    ensure_echo_on()
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         thread.start_new_thread(main_func, ())
         try:
