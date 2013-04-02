@@ -116,7 +116,7 @@ def restart_with_reloader():
         if exit_code == 3:
             continue
         elif exit_code == 1 and stderr_buff:
-            ensure_echo_on()
+            enable_tty_echo()
             from clastic import flaw
             tb_str = ''.join(stderr_buff)
             err_app = flaw.create_app(tb_str, to_mon)
@@ -140,7 +140,7 @@ def restart_with_reloader():
 
 def run_with_reloader(main_func, extra_files=None, interval=1):
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
-    ensure_echo_on()
+    enable_tty_echo()
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         thread.start_new_thread(main_func, ())
         try:

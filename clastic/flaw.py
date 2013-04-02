@@ -15,7 +15,8 @@ def create_app(traceback_string, monitored_files=None):
                  'mon_files': non_site_files}
     render_fact = AshesRenderFactory()
     render_fact.register_source('flaw_tmpl', _FLAW_TEMPLATE)
-    routes = [('/', get_flaw_info, 'flaw_tmpl')]
+    routes = [('/', get_flaw_info, 'flaw_tmpl'),
+              ('/<path:_ignored>', get_flaw_info, 'flaw_tmpl')]
 
     app = Application(routes, resources, render_fact)
     return app
