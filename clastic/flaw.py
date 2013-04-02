@@ -92,12 +92,12 @@ def _filter_site_files(paths):
     return [fn for fn in paths if not fn.startswith(site_dir)]
 
 
-_example_tb = """
+if __name__ == '__main__':
+    _example_tb = """
 Traceback (most recent call last):
   File "example.py", line 2, in <module>
     plarp
 NameError: name 'plarp' is not defined
 """
 
-if __name__ == '__main__':
     create_app(_example_tb, [__file__]).serve()
