@@ -70,7 +70,7 @@ def restart_with_reloader():
         rf = child_proc.stderr
         exit_code, lines = None, []
         while exit_code is None or lines:
-            if not child_proc.poll():
+            if child_proc.poll() is None:
                 lines.append(rf.readline())
             elif exit_code is None:
                 lines.extend(rf.readlines())
