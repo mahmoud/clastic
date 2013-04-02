@@ -11,6 +11,10 @@ from werkzeug._internal import _log
 from werkzeug.serving import reloader_loop, make_server
 
 
+_MON_PREFIX = '__clastic_mon_files:'
+_LINE_BUFF_MAX_SIZE = 1024
+
+
 def open_test_socket(host, port, raise_exc=True):
     fam = socket.AF_INET
     if ':' in host:
@@ -61,19 +65,36 @@ def restart_with_reloader():
             for key, value in new_environ.iteritems():
                 if isinstance(value, unicode):
                     new_environ[key] = value.encode('iso-8859-1')
+        line_buff = []
         child_proc = subprocess.Popen(args, env=new_environ, stderr=subprocess.PIPE)
-        _, stderr_data = child_proc.communicate()
-        exit_code = child_proc.returncode
+        rf = child_proc.stderr
+        exit_code, lines = None, []
+        while exit_code is None or lines:
+            if not child_proc.poll():
+                lines.append(rf.readline())
+            elif exit_code is None:
+                lines.extend(rf.readlines())
+                exit_code = child_proc.returncode
+                if not lines:
+                    break
+            cur_line = lines.pop(0)
+            if cur_line.startswith(_MON_PREFIX):
+                to_mon = literal_eval(cur_line[len(_MON_PREFIX):])
+                print to_mon[:3]
+            else:
+                sys.stderr.write(cur_line)
+                line_buff.append(cur_line)
+                if len(line_buff) > _LINE_BUFF_MAX_SIZE:
+                    line_buff.pop(0)
+
         if exit_code == 3:
-            try:
-                to_mon = literal_eval(stderr_data.splitlines()[-1])
-            except:
-                to_mon = []
-                continue
-        elif exit_code == 1 and stderr_data:
+            continue
+        elif exit_code == 1 and line_buff:
             from clastic import flaw
-            err_app = flaw.create_app(stderr_data, to_mon)
+            tb_str = ''.join(line_buff)
+            err_app = flaw.create_app(tb_str, to_mon)
             err_server = make_server('localhost', 5000, err_app)
+
             thread.start_new_thread(err_server.serve_forever, ())
             try:
                 reloader_loop(to_mon, 1)
@@ -101,6 +122,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
             return
         except SystemExit:
             mon_list = list(chain(iter_monitor_files(), extra_files or ()))
+            sys.stderr.write(_MON_PREFIX)
             sys.stderr.write(repr(mon_list))
             raise
     try:
