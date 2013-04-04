@@ -9,6 +9,99 @@ development practices while eliminating global state.
    :backlinks: top
    :local:
 
+Quick Start Guide
+-----------------
+
+Installation
+^^^^^^^^^^^^
+
+Clastic is available on PyPi. You can install it by running this from the command line::
+
+  pip install clastic
+
+Simple Clastic Application
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  from clastic import Application, default_response
+
+  def hello(name='world'):
+      return 'Hello, %s!' % name
+
+  routes = [('/', hello, default_response),
+            ('/<name>', hello, default_response)]
+
+  app = Application(routes)
+  app.serve()
+
+If you run that script and then visit 0.0.0.0:5000 in your browser, you will see the text "Hello, world!". If instead, you 
+visit 0.0.0.0:5000/Julia then you will see the text "Hello, Julia!".
+
+Working With GET and POST Parameters and Cookies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If we add the 'request' argument to any endpoint function, we get access to all of the request data, including any
+parameters or cookies that may have been sent with the request.
+::
+
+  from clastic import Application, default_response
+
+  def fancy(request):
+      result = ''
+      # iterate through all of the GET and POST variables
+      for k in request.values:
+          result += "Found argument '%s' with value '%s'\n" % (k, request.values[k])
+      # iterate through all of the cookies
+      for k in request.cookies:
+          result += "Found cookie '%s' with value '%s'\n" % (k, request.cookies[k])
+      return result
+
+  routes = [('/fancy', fancy, default_response)]
+
+  app = Application(routes)
+  app.serve()
+
+To test out our endpoint, let's create a curl request which sends a GET parameter, a POST parameter, and a cookie::
+
+  curl -X POST --data "post=posted" --cookie "cookie_crisp=delicious" --url "http://0.0.0.0:5000/fancy?get=gotten"
+
+In response, clastic sends the following response::
+
+  Found argument 'post' with value 'posted'
+  Found argument 'get' with value 'gotten'
+  Found cookie 'cookie_crisp' with value 'delicious'
+
+Setting Response Headers and Status Codes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the previous examples, we have been returning a string from our endpoint which gets added as part of the 
+default_response response object. If we want to have more control over the response then we can remove 
+'default_response' from the routes and create our own response object.
+
+In the following example, we alter the response headers and status code to forward the browser back to the main page.
+::
+  from clastic import Application, default_response
+  from werkzeug.wrappers import Response
+
+  def return_home():
+      response = Response()
+
+      # Forward the client browser to the home page.
+      response.headers['Location'] = '/'
+      response.status_code = 301
+
+      return response
+
+  def home():
+      return 'Home, Sweet Home!'
+
+  routes = [('/', home, default_response),
+            ('/return-home', return_home)]
+
+  app = Application(routes)
+  app.serve()
+
+If you visit the page 0.0.0.0:5000/return-home in your browser, it will immediately redirect you to 0.0.0.0:5000 and show 
+the text "Home, Sweet Home!". The response object can do anything that can be done with HTTP headers like setting and 
+deleting cookies, controlling page caching, setting page encoding, and so forth.
 
 Motivation
 ----------
