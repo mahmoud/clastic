@@ -49,8 +49,9 @@ _FLAW_TEMPLATE = """\
 </html>
 """
 
-_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+),'
-                       r' in (?P<funcname>.+)$')
+_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)'
+                       r', in (?P<funcname>.+)$')
+_se_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)')
 
 
 class _ParsedTB(object):
@@ -71,15 +72,21 @@ class _ParsedTB(object):
         if not isinstance(tb_str, unicode):
             tb_str = tb_str.decode('utf-8')
         tb_lines = tb_str.lstrip().splitlines()
-        if not tb_lines[0].strip() == 'Traceback (most recent call last):':
+        if tb_lines[0].strip() == 'Traceback (most recent call last):':
+            frame_lines = tb_lines[1:-1]
+            frame_re = _frame_re
+        elif tb_lines[-1].startswith('SyntaxError'):
+            frame_lines = tb_lines[:-2]
+            frame_re = _se_frame_re
+        else:
             raise ValueError('unrecognized traceback string format')
         exc_str = tb_lines[-1]
         exc_type, _, exc_msg = exc_str.partition(':')
-        frame_lines = tb_lines[1:-1]
+
         frames = []
         for pair_idx in range(0, len(frame_lines), 2):
             frame_line = frame_lines[pair_idx].strip()
-            frame_dict = _frame_re.match(frame_line).groupdict()
+            frame_dict = frame_re.match(frame_line).groupdict()
             frame_dict['source_line'] = frame_lines[pair_idx + 1].strip()
             frames.append(frame_dict)
 
