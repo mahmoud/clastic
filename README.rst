@@ -16,7 +16,7 @@ Installation
 ^^^^^^^^^^^^
 
 Clastic is available `on
-PyPI<https://pypi.python.org/pypi/clastic>`. You can install it by
+PyPI<https://pypi.python.org/pypi/clastic>`_. You can install it by
 running this command::
 
   easy_install clastic
@@ -42,9 +42,9 @@ indecipherable runes::
   app.serve()
 
 If you run ``python hello.py`` at the command line and visit
-`localhost:5000<http://localhost:5000>` in your browser, you will see
+`localhost:5000<http://localhost:5000>`_ in your browser, you will see
 the text ``Hello, world!``. If instead, you visit
-`localhost:5000/Ben<http://localhost:5000/Ben>` then you will see the
+`localhost:5000/Ben<http://localhost:5000/Ben>`_ then you will see the
 text ``Hello, Ben!``. Madness.
 
 Getting fancy with request objects
@@ -76,7 +76,7 @@ GET parameter, a POST parameter, and a cookie::
 
   curl -X POST --data "post=posted" --cookie "cookie_crisp=delicious" --url "http://0.0.0.0:5000/fancy?get=gotten"
 
-In response, Clastic sends the following response::
+In response, Clastic sends the following::
 
   Found argument 'post' with value 'posted'
   Found argument 'get' with value 'gotten'
@@ -87,13 +87,14 @@ So fancy.
 If you're curious how ``request`` got there, read past the end of the
 Quickstart.
 
-Setting Response Headers and Status Codes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Pushing the envelope with Response objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the previous examples, we have been returning strings from our
 endpoints, letting the trusty ``default_response`` handle the rest If
 we want more control, then we can remove ``default_response`` from the
-route and return our own response object directly.
+route, opting to instantiate and return our own ``Response`` object
+directly.
 
 In the following example, we alter the response headers and status
 code to forward the browser back to the main page::
@@ -122,7 +123,7 @@ code to forward the browser back to the main page::
   app = Application(routes)
   app.serve()
 
-If you visit the page `http://localhost:5000/return-home` in your
+If you visit the page `http://localhost:5000/return-home`_ in your
 browser, it will immediately redirect you to the root URL and show the
 text ``Home, Sweet Home!``.
 
