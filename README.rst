@@ -43,8 +43,8 @@ indecipherable runes::
   app.serve()
 
 If you run ``python hello.py`` at the command line and visit
-`http://localhost:5000`_ in your browser, you will see the text
-``Hello, world!``. If instead, you visit `http://localhost:5000/Ben`_
+http://localhost:5000 in your browser, you will see the text
+``Hello, world!``. If instead, you visit http://localhost:5000/Ben
 then you will see the text ``Hello, Ben!``. Madness.
 
 
@@ -124,7 +124,7 @@ code to forward the browser back to the main page::
   app = Application(routes)
   app.serve()
 
-If you visit the page `http://localhost:5000/return-home`_ in your
+If you visit the page http://localhost:5000/return-home in your
 browser, it will immediately redirect you to the root URL and show the
 text ``Home, Sweet Home!``.
 
