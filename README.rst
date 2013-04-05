@@ -16,12 +16,13 @@ Installation
 ^^^^^^^^^^^^
 
 Clastic is available `on
-PyPI<https://pypi.python.org/pypi/clastic>`_. You can install it by
+PyPI <https://pypi.python.org/pypi/clastic>`_. You can install it by
 running this command::
 
   easy_install clastic
 
 (``pip`` works, too.)
+
 
 Hello World!
 ^^^^^^^^^^^^
@@ -42,10 +43,10 @@ indecipherable runes::
   app.serve()
 
 If you run ``python hello.py`` at the command line and visit
-`localhost:5000<http://localhost:5000>`_ in your browser, you will see
-the text ``Hello, world!``. If instead, you visit
-`localhost:5000/Ben<http://localhost:5000/Ben>`_ then you will see the
-text ``Hello, Ben!``. Madness.
+`http://localhost:5000`_ in your browser, you will see the text
+``Hello, world!``. If instead, you visit `http://localhost:5000/Ben`_
+then you will see the text ``Hello, Ben!``. Madness.
+
 
 Getting fancy with request objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
