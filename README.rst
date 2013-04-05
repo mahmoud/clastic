@@ -1,4 +1,4 @@
-clastic
+Clastic
 =======
 
 A functional Python web framework that streamlines explicit
@@ -15,13 +15,20 @@ Quick Start Guide
 Installation
 ^^^^^^^^^^^^
 
-Clastic is available on PyPi. You can install it by running this from the command line::
+Clastic is available `on
+PyPI<https://pypi.python.org/pypi/clastic>`. You can install it by
+running this command::
 
-  pip install clastic
+  easy_install clastic
 
-Simple Clastic Application
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-::
+(``pip`` works, too.)
+
+Hello World!
+^^^^^^^^^^^^
+
+Getting up and running with Clastic is exceedingly difficult. Just try
+and create a file called ``hello.py`` with the following
+indecipherable runes::
 
   from clastic import Application, default_response
 
@@ -34,14 +41,18 @@ Simple Clastic Application
   app = Application(routes)
   app.serve()
 
-If you run that script and then visit 0.0.0.0:5000 in your browser, you will see the text "Hello, world!". If instead, you 
-visit 0.0.0.0:5000/Julia then you will see the text "Hello, Julia!".
+If you run ``python hello.py`` at the command line and visit
+`localhost:5000<http://localhost:5000>` in your browser, you will see
+the text ``Hello, world!``. If instead, you visit
+`localhost:5000/Ben<http://localhost:5000/Ben>` then you will see the
+text ``Hello, Ben!``. Madness.
 
-Working With GET and POST Parameters and Cookies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If we add the 'request' argument to any endpoint function, we get access to all of the request data, including any
-parameters or cookies that may have been sent with the request.
-::
+Getting fancy with request objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If we add the ``request`` argument to any endpoint function, we get
+access to all of the request data, including any GET or POST
+parameters or cookies that may have been sent with the request.::
 
   from clastic import Application, default_response
 
@@ -60,26 +71,37 @@ parameters or cookies that may have been sent with the request.
   app = Application(routes)
   app.serve()
 
-To test out our endpoint, let's create a curl request which sends a GET parameter, a POST parameter, and a cookie::
+Since we're being fancy, let's create a ``curl`` request which sends a
+GET parameter, a POST parameter, and a cookie::
 
   curl -X POST --data "post=posted" --cookie "cookie_crisp=delicious" --url "http://0.0.0.0:5000/fancy?get=gotten"
 
-In response, clastic sends the following response::
+In response, Clastic sends the following response::
 
   Found argument 'post' with value 'posted'
   Found argument 'get' with value 'gotten'
   Found cookie 'cookie_crisp' with value 'delicious'
 
-Setting Response Headers and Status Codes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In the previous examples, we have been returning a string from our endpoint which gets added as part of the 
-default_response response object. If we want to have more control over the response then we can remove 
-'default_response' from the routes and create our own response object.
+So fancy.
 
-In the following example, we alter the response headers and status code to forward the browser back to the main page.
-::
-  from clastic import Application, default_response
-  from werkzeug.wrappers import Response
+If you're curious how ``request`` got there, read past the end of the
+Quickstart.
+
+Setting Response Headers and Status Codes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the previous examples, we have been returning strings from our
+endpoints, letting the trusty ``default_response`` handle the rest If
+we want more control, then we can remove ``default_response`` from the
+route and return our own response object directly.
+
+In the following example, we alter the response headers and status
+code to forward the browser back to the main page::
+
+  from clastic import Application, default_response, Response, redirect
+
+  def home():
+      return 'Home, Sweet Home!'
 
   def return_home():
       response = Response()
@@ -90,18 +112,28 @@ In the following example, we alter the response headers and status code to forwa
 
       return response
 
-  def home():
-      return 'Home, Sweet Home!'
+  def redirect_home():
+      return redirect('/')
 
   routes = [('/', home, default_response),
-            ('/return-home', return_home)]
+            ('/return-home', return_home),
+            ('/redirect-home', redirect_home]
 
   app = Application(routes)
   app.serve()
 
-If you visit the page 0.0.0.0:5000/return-home in your browser, it will immediately redirect you to 0.0.0.0:5000 and show 
-the text "Home, Sweet Home!". The response object can do anything that can be done with HTTP headers like setting and 
-deleting cookies, controlling page caching, setting page encoding, and so forth.
+If you visit the page `http://localhost:5000/return-home` in your
+browser, it will immediately redirect you to the root URL and show the
+text ``Home, Sweet Home!``.
+
+The ``Response`` object gives you complete control over all HTTP
+headers, enabling you to set and delete cookies, play with page
+caching, set page encoding, and so forth. If that sort of fine-grained
+responsibility sounds daunting or tedious, you're not alone, which why
+the most common operations usually have convenience functions, like
+``redirect()``, which is demonstrated in ``redirect_home()``
+above. Clastic also has no-nonsense drop-ins for cookies, HTTP
+caching, and more.
 
 Motivation
 ----------
