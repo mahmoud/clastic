@@ -798,3 +798,9 @@ And thanks to *you* for making it this far in the docs!
 .. _Justin van Winkle: //twitter.com/jvantastic
 .. _Pocoo: //pocoo.org
 .. _Werkzeug: //werkzeug.pocoo.org
+
+
+Misc
+----
+
+- `Tarball of Clastic 0.2.1 <https://pypi.python.org/packages/source/c/clastic/clastic-0.2.1.tar.gz#md5=37cd95f81cf757fd32debf5f091e9b71>`_
