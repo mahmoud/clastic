@@ -1,2 +1,6 @@
-include README.rst
-recursive-include clastic/tests *.py
+include README.rst LICENSE
+recursive-include clastic *
+
+recursive-exclude * *.py[co]
+recursive-exclude * *.coverage
+recursive-exclude * __pycache__
