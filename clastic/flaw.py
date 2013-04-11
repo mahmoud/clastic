@@ -38,7 +38,7 @@ _FLAW_TEMPLATE = """\
   <body>
     <h1>Whopps!</h1>
 
-    <p>Clastic detected a modification, but couldn't restart your application. This is usually the result of a module-level error that prevents one of your application's modules from being imported. Fix the error and try refreshing the page.</p>
+    <p>Clastic detected a modification, but couldn't restart your application. This is often the result of a module-level error that prevents one of your application's modules from being imported. Fix the error and try refreshing the page.</p>
 
     <h2>{exc_type}: {exc_msg}</h2>
     <h3>Stack trace</h3>
@@ -75,7 +75,7 @@ class _ParsedTB(object):
         if tb_lines[0].strip() == 'Traceback (most recent call last):':
             frame_lines = tb_lines[1:-1]
             frame_re = _frame_re
-        elif tb_lines[-1].startswith('SyntaxError'):
+        elif len(tb_lines) > 1 and tb_lines[-2].lstrip().startswith('^'):
             frame_lines = tb_lines[:-2]
             frame_re = _se_frame_re
         else:
