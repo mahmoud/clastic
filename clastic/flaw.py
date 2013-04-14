@@ -31,9 +31,7 @@ def get_flaw_info(tb_str, parsed_error, mon_files):
         last_line = tb_str.splitlines()[-1]
     except:
         last_line = 'Unknown error'
-    return {#'exc_type': parsed_error.exc_type,
-            #'exc_msg': parsed_error.exc_msg,
-            'mon_files': mon_files,
+    return {'mon_files': mon_files,
             'parsed_err': parsed_error,
             'last_line': last_line,
             'tb_str': tb_str}
@@ -106,7 +104,8 @@ class _ParsedTB(object):
             else:
                 break
         for line in reversed(tb_lines):
-            # get the bottom-most line that looks like an "Exception: message" line
+            # get the bottom-most line that looks like an actual Exception
+            # repr(), (i.e., "Exception: message")
             exc_type, sep, exc_msg = line.partition(':')
             if sep and exc_type and len(exc_type.split()) == 1:
                 break
@@ -139,5 +138,4 @@ Traceback (most recent call last):
     plarp
 NameError: name 'plarp' is not defined
 """
-
     create_app(_example_tb, [__file__]).serve()
