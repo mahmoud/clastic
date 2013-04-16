@@ -10,6 +10,7 @@ Core
 * MetaApplication styling and docs
 * license
 
+
 Contrib
 -------
 * Secure cookies/sessions
@@ -18,6 +19,10 @@ Contrib
 * Cline (bottle-like functionality)
 * Example application
 * Form processing middleware?
+* Freshen up debugger
+  * Hide interstitial frames
+* Lighter-weight static content route/middleware/application
+* Document flaw
 
 MetaApplication
 ---------------
