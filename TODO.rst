@@ -1,5 +1,5 @@
-# TODO
-======
+TODO
+====
 
 Core
 ----
@@ -9,7 +9,7 @@ Core
 * Sphinx docs
 * MetaApplication styling and docs
 * license
-
+* Pretty 4xx handlers for dev
 
 Contrib
 -------
