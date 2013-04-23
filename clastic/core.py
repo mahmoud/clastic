@@ -97,6 +97,22 @@ class Application(Map):
 
         return ep_res
 
+    def update(self):
+        """\
+        This function does nothing but prevent Werkzeug from resorting
+        routing rules while maintaining super() semantics.
+
+        In Clastic, routing rules stay in insertion order, whereas
+        Werkzeug reorders them in an attempt to improve performance,
+        often breaking user expectations, rarely making a noticeable
+        speed difference.
+
+        More here: `Clastic issue #3
+        <https://github.com/mahmoud/clastic/issues/3>`_
+        """
+        self._remap = False
+        super(Application, self).update()
+
     def __call__(self, environ, start_response):
         request = Request(environ)
         response = self.respond(request)
