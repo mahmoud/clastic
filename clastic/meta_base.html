@@ -114,15 +114,17 @@
       <tr><td>CPU time, system</td><td>{cpu_times.sys_time} seconds</td></tr>
     </table>
     {/env.proc}
-    {#env.gc}
-    <h4>Python runtime stats</h4>
+    {#env.pyvm}
+    <h4>Python runtime</h4>
     <table>
+      <tr><td>Thread count</td><td>{active_thread_count}</td></tr>
       <tr><td>Object count</td><td>{obj_count}</td></tr>
       <tr><td><abbr title="Garbage collection">GC</abbr> enabled</td><td>{is_enabled}</td></tr>
       <tr><td><abbr title="Garbage collection">GC</abbr> thresholds</td><td>{thresholds}</td></tr>
       <tr><td><abbr title="Garbage collection">GC</abbr> generations</td><td>{counts}</td></tr>
+      <tr><td>Recursion limit</td><td>{recursion_limit}</td></tr>
     </table>
-    {/env.gc}
+    {/env.pyvm}
   </div>
   <div class="footer"></div>
   </body>

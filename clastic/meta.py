@@ -86,7 +86,7 @@ def get_env_info():
     ret = {}
     ret['proc'] = get_proc_info()
     ret['host'] = get_host_info()
-    ret['gc'] = get_gc_info()
+    ret['pyvm'] = get_pyvm_info()
     #ret['sys'] = ret_sys
 
     return ret
@@ -114,11 +114,6 @@ def get_proc_info():
         ret['niceness'] = os.nice(0)
     except AttributeError:
         pass
-    try:
-        ret['active_thread_count'] = len(sys._current_frames())
-    except:
-        ret['active_thread_count'] = None
-    ret['recursion_limit'] = sys.getrecursionlimit()
     return ret
 
 
@@ -136,13 +131,18 @@ def get_host_info():
     return ret
 
 
-def get_gc_info():
+def get_pyvm_info():
     import gc
     ret = {}
     ret['is_enabled'] = gc.isenabled()
     ret['thresholds'] = gc.get_threshold()
     ret['counts'] = gc.get_count()
     ret['obj_count'] = len(gc.get_objects())
+    try:
+        ret['active_thread_count'] = len(sys._current_frames())
+    except:
+        ret['active_thread_count'] = None
+    ret['recursion_limit'] = sys.getrecursionlimit()  # TODO: max_stack_depth?
     return ret
 
 
