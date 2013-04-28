@@ -10,8 +10,8 @@
       <h3>General</h3>
       <table>
         <tr><td>Start time</td><td title="{abs_start_time} UTC">{rel_start_time}</td></tr>
-        <tr><td>PID</td><td>{env.pid}</td></tr>
-        <tr><td>Load Averages</td><td>{env.load_avgs}</td></tr>
+        <tr><td>PID</td><td>{env.proc.pid}</td></tr>
+        <tr><td>Load averages</td><td>{env.host.load_avgs}</td></tr>
       </table>
     </div>
     <div>
@@ -69,7 +69,7 @@
       {/middlewares}
     </div>
     <div>
-      <h3>Resources</h3>
+      <h3>Application Resources</h3>
       {^resources}
       <p>No resources.</p>
       {:else}
@@ -81,6 +81,48 @@
       </table>
       {/resources}
     </div>
+  </div>
+  <div>
+    <h3>Runtime environment</h3>
+    {#env.host}
+    <h4>Host information</h4>
+    <table>
+      <tr><td>Hostname</td><td>{hostname}</td></tr>
+      <tr><td><abbr title="Fully-qualified domain name">FQDN</abbr></td><td>{hostfqdn}</td></tr>
+      <tr><td>Load averages</td><td>{load_avgs}</td></tr>
+      <tr><td><code>uname</code></td><td>{uname}</td></tr>
+      <tr><td>Platform</td><td>{platform}</td></tr>
+    </table>
+    {/env.host}
+    {#env.proc}
+    <h4>IDs and settings</h4>
+    <table>
+      <tr><td>Owner</td><td>{owner}</td></tr>
+      <tr><td><abbr title="Process ID">PID</abbr></td><td>{pid}</td></tr>
+      {?ppid}
+      <tr><td><abbr title="Parent process ID">PPID</abbr></td><td>{ppid}</td></tr>
+      <tr><td><abbr title="Process group ID">PGID</abbr></td><td>{pgid}</td></tr>
+      {/ppid}
+      <tr><td><code>umask</code></td><td>{umask}</td></tr>
+      {?niceness}
+      <tr><td><code>nice</code></td><td>{niceness}</td></tr>
+      {/niceness}
+    </table>
+    <h4>Process resource usage</h4>
+    <table>
+      <tr><td>CPU time, user</td><td>{cpu_times.user_time} seconds</td></tr>
+      <tr><td>CPU time, system</td><td>{cpu_times.sys_time} seconds</td></tr>
+    </table>
+    {/env.proc}
+    {#env.gc}
+    <h4>Python runtime stats</h4>
+    <table>
+      <tr><td>Object count</td><td>{obj_count}</td></tr>
+      <tr><td><abbr title="Garbage collection">GC</abbr> enabled</td><td>{is_enabled}</td></tr>
+      <tr><td><abbr title="Garbage collection">GC</abbr> thresholds</td><td>{thresholds}</td></tr>
+      <tr><td><abbr title="Garbage collection">GC</abbr> generations</td><td>{counts}</td></tr>
+    </table>
+    {/env.gc}
   </div>
   <div class="footer"></div>
   </body>

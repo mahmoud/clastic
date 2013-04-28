@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
 import os
+import sys
+import socket
+import platform
 import datetime
 
 from core import Application, RESERVED_ARGS
@@ -80,14 +83,66 @@ def _rel_datetime(d, other=None):
 
 
 def get_env_info():
-    import os
+    ret = {}
+    ret['proc'] = get_proc_info()
+    ret['host'] = get_host_info()
+    ret['gc'] = get_gc_info()
+    #ret['sys'] = ret_sys
+
+    return ret
+
+
+def get_proc_info():
     ret = {}
     ret['pid'] = os.getpid()
-    ret['times'] = os.times()[:2]
+    _user_t, _sys_t = os.times()[:2]
+    ret['cpu_times'] = {'user_time': _user_t, 'sys_time': _sys_t}
+    ret['cwd'] = os.getcwdu()
+    ret['umask'] = os.umask(os.umask(2))  # have to set to get
+    try:
+        import getpass
+        ret['owner'] = getpass.getuser()
+    except:
+        try:
+            ret['owner'] = os.getuid()
+        except:
+            pass
+    try:
+        # unix-only
+        ret['ppid'] = os.getppid()
+        ret['pgid'] = os.getpgrp()
+        ret['niceness'] = os.nice(0)
+    except AttributeError:
+        pass
+    try:
+        ret['active_thread_count'] = len(sys._current_frames())
+    except:
+        ret['active_thread_count'] = None
+    ret['recursion_limit'] = sys.getrecursionlimit()
+    return ret
+
+
+def get_host_info():
+    ret = {}
+    ret['hostname'] = socket.gethostname()
+    ret['hostfqdn'] = socket.getfqdn()
+    ret['uname'] = platform.uname()
+    ret['platform'] = platform.platform()
+    ret['platform_terse'] = platform.platform(terse=True)
     try:
         ret['load_avgs'] = os.getloadavg()
-    except:
-        ret['load_avgs'] = (None, None, None)
+    except AttributeError:
+        pass
+    return ret
+
+
+def get_gc_info():
+    import gc
+    ret = {}
+    ret['is_enabled'] = gc.isenabled()
+    ret['thresholds'] = gc.get_threshold()
+    ret['counts'] = gc.get_count()
+    ret['obj_count'] = len(gc.get_objects())
     return ret
 
 
