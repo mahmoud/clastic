@@ -112,6 +112,8 @@ def get_proc_info():
         # unix-only
         ret['ppid'] = os.getppid()
         ret['pgid'] = os.getpgrp()
+        # add 0 to get current nice
+        # also, seems to return process group's nice level
         ret['niceness'] = os.nice(0)
     except AttributeError:
         pass
