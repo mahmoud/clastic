@@ -99,6 +99,7 @@ def get_proc_info():
     ret['cpu_times'] = {'user_time': _user_t, 'sys_time': _sys_t}
     ret['cwd'] = os.getcwdu()
     ret['umask'] = os.umask(os.umask(2))  # have to set to get
+    ret['umask_str'] = '{0:03o}'.format(ret['umask'])
     try:
         import getpass
         ret['owner'] = getpass.getuser()
