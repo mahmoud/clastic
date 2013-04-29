@@ -6,12 +6,19 @@ import socket
 import platform
 import datetime
 
+try:
+    import resource
+except ImportError:
+    resource = None
+
 from core import Application, RESERVED_ARGS
 from sinter import getargspec
 from render import json_response, AshesRenderFactory
 
 
 _CUR_DIR = os.path.dirname(__file__)
+
+# TODO: nominal SLA vs real/sampled SLA
 
 
 def create_app():
@@ -58,6 +65,7 @@ def _trunc(str_val, length=70, trailer='...'):
 
 
 def _rel_datetime(d, other=None):
+    # TODO: add decimal rounding factor (default 0)
     if other is None:
         other = datetime.datetime.utcnow()
     diff = other - d
@@ -117,6 +125,7 @@ def get_proc_info():
         ret['niceness'] = os.nice(0)
     except AttributeError:
         pass
+    ret['rusage'] = get_rusage_dict()
     return ret
 
 
@@ -131,6 +140,40 @@ def get_host_info():
         ret['load_avgs'] = os.getloadavg()
     except AttributeError:
         pass
+    return ret
+
+
+def get_rusage_dict(children=False):
+    # TODO:
+    # number of child processes?
+    # number of threads?
+    # page size
+    # what are 'messages'
+    # why are the other RSS fields 0?
+    # why doesn't RSS go down?
+    # difference between a page out and a major fault?
+    if not resource:
+        return {}
+    who = resource.RUSAGE_SELF
+    if children:
+        who = resource.RUSAGE_CHILDREN
+    rr = resource.getrusage(who)
+    ret = {'cpu_times': {'user_time': rr.ru_utime,
+                         'sys_time': rr.ru_stime},
+           'memory': {'max_rss': rr.ru_maxrss,
+                      'shared_rss': rr.ru_ixrss,
+                      'unshared_rss': rr.ru_idrss,
+                      'stack_rss': rr.ru_isrss},
+           'page_faults': {'minor_faults': rr.ru_minflt,
+                           'major_faults': rr.ru_majflt,
+                           'page_outs': rr.ru_nswap},
+           'blocking_io': {'input_ops': rr.ru_inblock,
+                           'output_ops': rr.ru_oublock},
+           'messages': {'sent': rr.ru_msgsnd,
+                        'received': rr.ru_msgrcv},
+           'signals': {'received': rr.ru_nsignals},
+           'ctx_switches': {'voluntary': rr.ru_nvcsw,
+                            'involuntary': rr.ru_nivcsw}}
     return ret
 
 

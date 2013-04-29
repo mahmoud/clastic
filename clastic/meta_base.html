@@ -109,10 +109,31 @@
       {/niceness}
     </table>
     <h4>Process resource usage</h4>
+    {#rusage}
     <table>
       <tr><td>CPU time, user</td><td>{cpu_times.user_time} seconds</td></tr>
       <tr><td>CPU time, system</td><td>{cpu_times.sys_time} seconds</td></tr>
+      {#memory}
+      <tr>
+        <td><abbr title="Resident set size">RSS</abbr></td>
+        <td>{max_rss} ({shared_rss}, {unshared_rss}, {stack_rss})</td>
+      </tr>
+      {/memory}
+      {#page_faults}
+      <tr><td>Page faults</td><td>{major_faults}, {minor_faults}, {page_outs}</td></tr>
+      {/page_faults}
+      {#blocking_io}
+      <tr><td>Blocking IO</td><td>{input_ops}, {output_ops}</td></tr>
+      {/blocking_io}
+      {#ctx_switches}
+      <tr><td>Context switches</td><td>{voluntary}, {involuntary}</td></tr>
+      {/ctx_switches}
+      <tr><td>Signals</td><td>{signals.received}</td></tr>
+      {#messages}
+      <tr><td>Messages</td><td>{sent}, {received}</td></tr>
+      {/messages}
     </table>
+    {/rusage}
     {/env.proc}
     {#env.pyvm}
     <h4>Python runtime</h4>
