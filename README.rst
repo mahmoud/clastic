@@ -803,4 +803,4 @@ And thanks to *you* for making it this far in the docs!
 Misc
 ----
 
-- `Tarball of Clastic 0.2.2 <https://pypi.python.org/packages/source/c/clastic/clastic-0.2.2.tar.gz#md5=7565c25d0023aaf013ee6f0ab941738c>`_
+- `Tarball of Clastic 0.2.3 <https://pypi.python.org/packages/source/c/clastic/clastic-0.2.3.tar.gz#md5=1eac35ef9a98fa8815e8209df8203009>`_
