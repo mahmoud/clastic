@@ -227,7 +227,7 @@ def parse_inline(source):
     if source.startswith('"') and source.endswith('"'):
         source = source[1:-1]
     if not source:
-        return [BufferToken()]
+        return [BufferToken("")]
     tokens = tokenize(source, inline=True)
     return tokens
 
@@ -298,6 +298,7 @@ def tokenize(source, inline=False):
     tokens = []
     com_nocom = comment_re.split(source)
     line_counts = [1]
+
     def _add_token(t):
         # i wish i had nonlocal so bad
         t.start_line = sum(line_counts)
@@ -784,6 +785,10 @@ class Compiler(object):
 #########
 # Runtime
 #########
+
+# Escapes/filters
+
+
 def escape_html(text):
     text = unicode(text)
     # TODO: dust.js doesn't use this, but maybe we should: .replace("'", '&squot;')
@@ -816,7 +821,25 @@ def escape_uri_component(text):
             .replace('&', '%26'))
 
 
-def sep_helper(chunk, context, bodies):
+# Helpers
+
+def first_helper(chunk, context, bodies, params=None):
+    if context.stack.index > 0:
+        return chunk
+    if 'block' in bodies:
+        return bodies['block'](chunk, context)
+    return chunk
+
+
+def last_helper(chunk, context, bodies, params=None):
+    if context.stack.index < context.stack.of - 1:
+        return chunk
+    if 'block' in bodies:
+        return bodies['block'](chunk, context)
+    return chunk
+
+
+def sep_helper(chunk, context, bodies, params=None):
     if context.stack.index == context.stack.of - 1:
         return chunk
     if 'block' in bodies:
@@ -824,19 +847,96 @@ def sep_helper(chunk, context, bodies):
     return chunk
 
 
-def idx_helper(chunk, context, bodies):
+def idx_helper(chunk, context, bodies, params=None):
     if 'block' in bodies:
         return bodies['block'](chunk, context.push(context.stack.index))
     return chunk
 
 
-def idx_1_helper(chunk, context, bodies):
+def idx_1_helper(chunk, context, bodies, params=None):
     if 'block' in bodies:
         return bodies['block'](chunk, context.push(context.stack.index + 1))
     return chunk
 
 
-DEFAULT_HELPERS = {'sep': sep_helper, 'idx': idx_helper, 'idx_1': idx_1_helper}
+def size_helper(chunk, context, bodies, params):
+    try:
+        key = params['key']
+        return chunk.write(str(len(key)))
+    except (KeyError, TypeError):
+        return chunk
+
+
+def _do_compare(chunk, context, bodies, params, cmp_op):
+    "utility function used by @eq, @gt, etc."
+    params = params or {}
+    try:
+        body = bodies['block']
+        key = params['key']
+        value = params['value']
+        typestr = params.get('type', 'string')
+    except KeyError:
+        return chunk
+    rkey = _resolve_value(key, chunk, context)
+    rvalue = _resolve_value(value, chunk, context)
+    crkey, crvalue = _coerce(rkey, typestr), _coerce(rvalue, typestr)
+    if isinstance(crvalue, type(crkey)) and cmp_op(crkey, crvalue):
+        return chunk.render(body, context)
+    elif 'else' in bodies:
+        return chunk.render(bodies['else'], context)
+    return chunk
+
+
+def _resolve_value(item, chunk, context):
+    if not callable(item):
+        return item
+    try:
+        return chunk.tap_render(item, context)
+    except:
+        return None
+
+
+_COERCE_MAP = {
+    'number': float,
+    'string': unicode,
+    'boolean': bool,
+}  # Not implemented: date, context
+
+
+def _coerce(value, typestr):
+    coerce_type = _COERCE_MAP.get(typestr.lower())
+    if not coerce_type or isinstance(value, coerce_type):
+        return value
+    if isinstance(value, basestring):
+        try:
+            value = json.loads(value)
+        except (TypeError, ValueError):
+            pass
+    try:
+        return coerce_type(value)
+    except (TypeError, ValueError):
+        return value
+
+
+def _make_compare_helpers():
+    from functools import partial
+    from operator import eq, ne, lt, le, gt, ge
+    CMP_MAP = {'eq': eq, 'ne': ne, 'gt': gt, 'lt': lt, 'gte': ge, 'lte': le}
+    ret = {}
+    for name, op in CMP_MAP.items():
+        ret[name] = partial(_do_compare, cmp_op=op)
+    return ret
+
+
+DEFAULT_HELPERS = {'first': first_helper,
+                   'last': last_helper,
+                   'sep': sep_helper,
+                   'idx': idx_helper,
+                   'idx_1': idx_1_helper,
+                   'size': size_helper}
+DEFAULT_HELPERS.update(_make_compare_helpers())
+
+# Actual runtime objects
 
 
 class Context(object):
@@ -1048,6 +1148,17 @@ class Chunk(object):
     def render(self, body, context):
         return body(self, context)
 
+    def tap_render(self, body, context):
+        output = []
+
+        def tmp_tap(data):
+            if data:
+                output.append(data)
+            return ''
+        self.tap(tmp_tap)
+        self.render(body, context).untap()
+        return ''.join(output)
+
     def reference(self, elem, context, auto, filters=None):
         if callable(elem):
             # this whole callable thing is a pretty big TODO
@@ -1119,7 +1230,7 @@ class Chunk(object):
         return context.env.load_chunk(elem, self, context)
 
     def helper(self, name, context, bodies, params=None):
-        return context.env.helpers[name](self, context, bodies)
+        return context.env.helpers[name](self, context, bodies, params)
 
     def capture(self, body, context, callback):
         def map_func(chunk):
@@ -1221,6 +1332,7 @@ class Template(object):
         rendered = []
 
         def tmp_cb(err, result):
+            # TODO: get rid of
             if err:
                 print('Error on template %r: %r' % (self.name, err))
                 raise RenderException(err)
@@ -1392,8 +1504,9 @@ class BaseAshesEnv(object):
         self.templates[name] = template
         return
 
-    def register_source(self, name, tmpl_src):
-        tmpl = Template(name, tmpl_src, env=self)
+    def register_source(self, name, source, **kw):
+        kw['env'] = self
+        tmpl = Template(name, source, **kw)
         self.register(tmpl)
         return tmpl
 
@@ -1446,7 +1559,7 @@ class AshesEnv(BaseAshesEnv):
     def load_all(self):
         ret = []
         for loader in self.loaders:
-            ret.extend(loader.load_all())
+            ret.extend(loader.load_all(self))
         return ret
 
 
@@ -1470,7 +1583,7 @@ class TemplatePathLoader(object):
     def __init__(self, root_path, exts=None, encoding='utf-8'):
         self.root_path = os.path.normpath(root_path)
         self.encoding = encoding
-        self.exts = exts or dict(DEFAULT_EXTENSIONS)
+        self.exts = exts or list(DEFAULT_EXTENSIONS)
 
     def load(self, path, env=None):
         env = env or default_env
@@ -1516,23 +1629,72 @@ class FlatteningPathLoader(TemplatePathLoader):
         tmpl.name = name
         return tmpl
 
+try:
+    import bottle
+except ImportError:
+    pass
+else:
+    class AshesBottleTemplate(bottle.BaseTemplate):
+        extensions = list(bottle.BaseTemplate.extensions)
+        extensions.extend(['ash', 'ashes', 'dust'])
+
+        def prepare(self, **options):
+            if not self.source:
+                self.source = self._load_source(self.name)
+                if self.source is None:
+                    raise TemplateNotFound(self.name)
+
+            options['name'] = self.name
+            options['source'] = self.source
+            options['source_file'] = self.filename
+            for key in ('optimize', 'keep_source', 'env'):
+                if key in self.settings:
+                    options.setdefault(key, self.settings[key])
+            env = self.settings.get('env', default_env)
+
+            self.tpl = env.register_source(**options)
+
+        def _load_source(self, name):
+            fname = self.search(name, self.lookup)
+            if not fname:
+                return
+            with codecs.open(fname, "rb", self.encoding) as f:
+                return f.read()
+
+        def render(self, *a, **kw):
+            for dictarg in a:
+                kw.update(dictarg)
+            context = self.defaults.copy()
+            context.update(kw)
+            return self.tpl.render(context)
+
+    from functools import partial as _fp
+    ashes_bottle_template = _fp(bottle.template,
+                                template_adapter=AshesBottleTemplate)
+    ashes_bottle_view = _fp(bottle.view,
+                            template_adapter=AshesBottleTemplate)
+    del bottle
+    del _fp
+
 
 ashes = default_env = AshesEnv()
 
 
 def _main():
+    # TODO: accidentally unclosed tags may consume
+    # trailing buffers without warning
     try:
-        tpl = FlatteningPathLoader('./_test_tmpls', keep_ext=False)
-        ashes.loaders.append(tpl)
-        ashes.load_all()
-
-        rendereds = dict([(k, t.render({})) for k, t in ashes.templates.items()])
+        tmpl = ('{@eq key=hello value="True" type="boolean"}'
+                '{hello}, world'
+                '{:else}'
+                'oh well, world'
+                '{/eq}'
+                ', {@size key=hello/} characters')
+        ashes.register_source('hi', tmpl)
+        print(ashes.render('hi', {'hello': 'greetings'}))
     except Exception as e:
         import pdb;pdb.post_mortem()
         raise
-    else:
-        pass
-        #import pdb;pdb.set_trace()
 
 if __name__ == '__main__':
     _main()
