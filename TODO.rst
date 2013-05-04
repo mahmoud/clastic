@@ -26,14 +26,34 @@ Contrib
 
 MetaApplication
 ---------------
-* Process start time + pid
-* Parent process start time + ppid
-* System load
-* Application start time
-* Per-route match counters
-* List of middleware, resources, etc.
-* Group by subapplication? (Allow naming applications)
+* IDs
+  * Effective uid/gid
+  * Saved-set uid/gid
+  * Supplementary groups
+* Host
+  * Some kernel compile/feature flags
+  * Processor count
+* Process
+  * Basic stuff from /proc/self
+    * Current mem usage
+    * Number of threads
+    * Number of open files
+  * RSS from pages to bytes
+* Python
+  * version
+  * compile flags
+  * runtime flags
+* Application
+  * Per-route match counters
+  * Per-route timing statistics
+  * git revision? last update?
+* Security
+  * Allow bypass for certain IPs
+  * Password protection, otherwise
 
+* Group by subapplication? (Allow naming applications)
+* Split template into partials, etc.
+* P2: better support for child process introspection
 
 
 ## v2
