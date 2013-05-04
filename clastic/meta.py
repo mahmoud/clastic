@@ -126,9 +126,21 @@ def get_proc_info():
     except AttributeError:
         pass
     ret['rusage'] = get_rusage_dict()
+    ret['rlimit'] = get_rlimit_dict()
     return ret
 
 
+def get_rlimit_dict():
+    ret = {}
+    if not resource:
+        return ret
+    rname_val = [(rn[7:].lower(), val) for rn, val in resource.__dict__.items()
+                 if rn.startswith('RLIMIT_')]
+    for rn, val in rname_val:
+        ret[rn] = resource.getrlimit(val)
+    return ret
+
+# TODO: byte order, path, prefix, maxint/64-bit
 def get_host_info():
     ret = {}
     ret['hostname'] = socket.gethostname()

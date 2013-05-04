@@ -115,23 +115,35 @@
       <tr><td>CPU time, system</td><td>{cpu_times.sys_time} seconds</td></tr>
       {#memory}
       <tr>
-        <td><abbr title="Resident set size">RSS</abbr></td>
-        <td>{max_rss} ({shared_rss}, {unshared_rss}, {stack_rss})</td>
+        <td><abbr title="Resident set size">Peak RSS</abbr></td>
+        <td>{max_rss}</td>
+        <!-- Untracked on Linux: -->
+        <!-- Shared: {shared_rss}, Unshared: {unshared_rss}, Stack: {stack_rss} -->
       </tr>
       {/memory}
       {#page_faults}
-      <tr><td>Page faults</td><td>{major_faults}, {minor_faults}, {page_outs}</td></tr>
+      <tr><td>Page faults, major</td><td>{major_faults}</td></tr>
+      <tr><td>Page faults, minor</td><td>{minor_faults}</td></tr>
+      <!-- Untracked on Linux: -->
+      <!-- Page outs: {page_outs} -->
       {/page_faults}
       {#blocking_io}
-      <tr><td>Blocking IO</td><td>{input_ops}, {output_ops}</td></tr>
+      <tr><td>Blocking IO, in</td><td>{input_ops}</td></tr>
+      <tr><td>Blocking IO, out</td><td>{output_ops}</td></tr>
       {/blocking_io}
       {#ctx_switches}
-      <tr><td>Context switches</td><td>{voluntary}, {involuntary}</td></tr>
+      <tr><td>Context switches, voluntary</td><td>{voluntary}</td></tr>
+      <tr><td>Context switches, involuntary</td><td>{involuntary}</td></tr>
       {/ctx_switches}
-      <tr><td>Signals</td><td>{signals.received}</td></tr>
+      <!-- Untracked on Linux: -->
+      <!-- Signals received: {signals.received} -->
       {#messages}
-      <tr><td>Messages</td><td>{sent}, {received}</td></tr>
+      <!-- POSIX messages sent: {sent} -->
+      <!-- POSIX messages received: {received} -->
       {/messages}
+      {#rlimit}
+      <tr><td>File limit (soft, hard)</td><td>{nofile}</td></tr>
+      {/rlimit}
     </table>
     {/rusage}
     {/env.proc}
