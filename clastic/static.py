@@ -7,6 +7,7 @@ from datetime import datetime
 
 from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
+from werkzeug.exceptions import Forbidden, NotFound
 
 from core import Application
 
@@ -21,13 +22,13 @@ def get_file_response(static_roots, path, file_wrapper=None):
         file_wrapper = FileWrapper
     rel_path = os.path.normpath(path)
     if rel_path.startswith(os.pardir):
-        raise Exception('403 not allowed')  # TODO
+        raise Forbidden('attempted to access beyond root hosted directory.')
     for sr in static_roots:
         full_path = pjoin(sr, rel_path)
         if not isfile(full_path):
             continue
-        file_obj = open(full_path, 'rb')
         mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
+        file_obj = open(full_path, 'rb')
         fsize = os.path.getsize(full_path)
         mimetype, encoding = mimetypes.guess_type(full_path)
         if not mimetype:
@@ -36,7 +37,7 @@ def get_file_response(static_roots, path, file_wrapper=None):
             mimetype = default_mimetype
         break
     else:
-        raise Exception('404 not found')  # TODO
+        raise NotFound()
 
     resp = Response(FileWrapper(file_obj))
     resp.content_type = mimetype
