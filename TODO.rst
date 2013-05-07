@@ -5,10 +5,7 @@ Core
 ----
 * nicer next() names
 * polish sub-application mounting
-* PyPI/packaging (mostly done)
 * Sphinx docs
-* MetaApplication styling and docs
-* license
 * Pretty 4xx handlers for dev
 
 Contrib
@@ -22,10 +19,11 @@ Contrib
 * Freshen up debugger
   * Hide interstitial frames
 * Lighter-weight static content route/middleware/application
-* Document flaw
+* Document Flaw Application
 
 MetaApplication
 ---------------
+* MetaApplication styling and docs
 * IDs
   * Effective uid/gid
   * Saved-set uid/gid
