@@ -17,27 +17,35 @@ from core import Application
 default_mimetype = 'text/plain'  # TODO
 
 
-def get_file_response(static_roots, path, file_wrapper=None):
-    if file_wrapper is None:
-        file_wrapper = FileWrapper
+def find_file(path, static_roots, limit_root=True):
     rel_path = os.path.normpath(path)
-    if rel_path.startswith(os.pardir):
-        raise Forbidden('attempted to access beyond root hosted directory.')
+    if rel_path.startswith(os.pardir) and limit_root:
+        raise ValueError('attempted to access beyond root directory')
     for sr in static_roots:
         full_path = pjoin(sr, rel_path)
-        if not isfile(full_path):
-            continue
-        mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
-        file_obj = open(full_path, 'rb')
-        fsize = os.path.getsize(full_path)
-        mimetype, encoding = mimetypes.guess_type(full_path)
-        if not mimetype:
-            # TODO: configurable
-            # TODO: check binary
-            mimetype = default_mimetype
-        break
+        if isfile(full_path):
+            return full_path
     else:
+        return None
+
+
+def get_file_response(path, static_roots, file_wrapper=None):
+    if file_wrapper is None:
+        file_wrapper = FileWrapper
+    try:
+        full_path = find_file(path, static_roots)
+    except ValueError:
+        raise Forbidden()
+    if full_path is None:
         raise NotFound()
+    mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
+    file_obj = open(full_path, 'rb')
+    fsize = os.path.getsize(full_path)
+    mimetype, encoding = mimetypes.guess_type(full_path)
+    if not mimetype:
+        # TODO: configurable
+        # TODO: check binary
+        mimetype = default_mimetype
 
     resp = Response(FileWrapper(file_obj))
     resp.content_type = mimetype
