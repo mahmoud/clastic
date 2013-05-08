@@ -10,18 +10,46 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import Forbidden, NotFound
 
 from core import Application
+from middleware import Middleware
 
 # TODO: caching
-# TODO: check isdir and accessable on static_roots
+# TODO: check isdir and accessable on search_paths
+# TODO: default favicon route?
 
 default_mimetype = 'text/plain'  # TODO
+DEFAULT_MAX_AGE = 360
 
 
-def find_file(path, static_roots, limit_root=True):
+class StaticCachingMiddleware(Middleware):
+    def __init__(self, max_age=DEFAULT_MAX_AGE):
+        self.max_age = max_age
+
+    def endpoint(self, next, request, search_paths, path=None):
+        if path is None:
+            return next()
+        try:
+            full_path = find_file(search_paths, path)
+            if full_path is None:
+                raise NotFound()
+            unix_mtime = int(os.path.getmtime(full_path))
+        except (ValueError, IOError):
+            raise Forbidden()
+        mtime = datetime.utcfromtimestamp(unix_mtime)
+        cached_mtime = request.if_modified_since
+        if mtime == cached_mtime:
+            resp = Response('', 304)
+            resp.cache_control.max_age = 360
+        else:
+            resp = next()
+        resp.cache_control.public = True
+        return resp
+
+
+def find_file(search_paths, path, limit_root=True):
     rel_path = os.path.normpath(path)
     if rel_path.startswith(os.pardir) and limit_root:
         raise ValueError('attempted to access beyond root directory')
-    for sr in static_roots:
+    for sr in search_paths:
         full_path = pjoin(sr, rel_path)
         if isfile(full_path):
             return full_path
@@ -29,17 +57,17 @@ def find_file(path, static_roots, limit_root=True):
         return None
 
 
-def get_file_response(path, static_roots, file_wrapper=None):
+def get_file_response(path, search_paths, file_wrapper=None):
     if file_wrapper is None:
         file_wrapper = FileWrapper
     try:
-        full_path = find_file(path, static_roots)
-    except ValueError:
+        full_path = find_file(search_paths, path)
+        if full_path is None:
+            raise NotFound()
+        file_obj = open(full_path, 'rb')
+    except (ValueError, IOError):
         raise Forbidden()
-    if full_path is None:
-        raise NotFound()
     mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
-    file_obj = open(full_path, 'rb')
     fsize = os.path.getsize(full_path)
     mimetype, encoding = mimetypes.guess_type(full_path)
     if not mimetype:
@@ -54,12 +82,13 @@ def get_file_response(path, static_roots, file_wrapper=None):
     return resp
 
 
-def create_app(static_roots):
-    if isinstance(static_roots, basestring):
-        static_roots = [static_roots]
-    resources = {'static_roots': static_roots}
+def create_app(search_paths):
+    if isinstance(search_paths, basestring):
+        search_paths = [search_paths]
+    resources = {'search_paths': search_paths}
     routes = [('/<path:path>', get_file_response)]
-    app = Application(routes, resources)
+    cmw = StaticCachingMiddleware()
+    app = Application(routes, resources, middlewares=[cmw])
     return app
 
 
