@@ -20,31 +20,6 @@ default_mimetype = 'text/plain'  # TODO
 DEFAULT_MAX_AGE = 360
 
 
-class StaticCachingMiddleware(Middleware):
-    def __init__(self, max_age=DEFAULT_MAX_AGE):
-        self.max_age = max_age
-
-    def endpoint(self, next, request, search_paths, path=None):
-        if path is None:
-            return next()
-        try:
-            full_path = find_file(search_paths, path)
-            if full_path is None:
-                raise NotFound()
-            unix_mtime = int(os.path.getmtime(full_path))
-        except (ValueError, IOError):
-            raise Forbidden()
-        mtime = datetime.utcfromtimestamp(unix_mtime)
-        cached_mtime = request.if_modified_since
-        if mtime == cached_mtime:
-            resp = Response('', 304)
-            resp.cache_control.max_age = 360
-        else:
-            resp = next()
-        resp.cache_control.public = True
-        return resp
-
-
 def find_file(search_paths, path, limit_root=True):
     rel_path = os.path.normpath(path)
     if rel_path.startswith(os.pardir) and limit_root:
@@ -57,6 +32,48 @@ def find_file(search_paths, path, limit_root=True):
         return None
 
 
+def get_file_mtime(path, rounding=0):
+    unix_mtime = round(os.path.getmtime(full_path), rounding)
+    return datetime.utcfromtimestamp(unix_mtime)
+
+
+class StaticLookupMiddleware(Middleware):
+    provides = ('file_path')
+
+    def request(self, next, search_paths, path=None):
+        try:
+            file_path = find_file(search_paths, path)
+            if file_path is None:
+                raise NotFound()
+        except ValueError:
+            raise Forbidden()
+        return next(file_path)
+
+
+class StaticCachingMiddleware(Middleware):
+    def __init__(self, cache_timeout=DEFAULT_MAX_AGE):
+        self.cache_timeout = cache_timeout
+
+    def endpoint(self, next, request, search_paths, path=None):
+        if path is None:
+            return next()
+        try:
+            full_path = find_file(search_paths, path)
+            if full_path is None:
+                raise NotFound()
+        except (ValueError, IOError, OSError):
+            raise Forbidden()
+
+        cached_mtime = request.if_modified_since
+        if mtime == cached_mtime:
+            resp = Response('', 304)
+            resp.cache_control.max_age = 360
+        else:
+            resp = next()
+        resp.cache_control.public = True
+        return resp
+
+
 def get_file_response(path, search_paths, file_wrapper=None):
     if file_wrapper is None:
         file_wrapper = FileWrapper
@@ -65,7 +82,7 @@ def get_file_response(path, search_paths, file_wrapper=None):
         if full_path is None:
             raise NotFound()
         file_obj = open(full_path, 'rb')
-    except (ValueError, IOError):
+    except (ValueError, IOError, OSError):
         raise Forbidden()
     mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
     fsize = os.path.getsize(full_path)
