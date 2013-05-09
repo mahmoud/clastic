@@ -10,14 +10,16 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import Forbidden, NotFound
 
 from core import Application
-from middleware import Middleware
 
-# TODO: caching
-# TODO: check isdir and accessable on search_paths
-# TODO: default favicon route?
 
-default_mimetype = 'text/plain'  # TODO
+# TODO: check isdir and accessible on search_paths
+# TODO: binary check
+# TODO: default favicon.ico StaticApplication?
+
+
 DEFAULT_MAX_AGE = 360
+DEFAULT_TEXT_MIME = 'text/plain'
+DEFAULT_BINARY_MIME = 'application/octet-stream'
 
 
 def find_file(search_paths, path, limit_root=True):
@@ -33,83 +35,59 @@ def find_file(search_paths, path, limit_root=True):
 
 
 def get_file_mtime(path, rounding=0):
-    unix_mtime = round(os.path.getmtime(full_path), rounding)
+    unix_mtime = round(os.path.getmtime(path), rounding)
     return datetime.utcfromtimestamp(unix_mtime)
 
 
-class StaticLookupMiddleware(Middleware):
-    provides = ('file_path')
-
-    def request(self, next, search_paths, path=None):
-        try:
-            file_path = find_file(search_paths, path)
-            if file_path is None:
-                raise NotFound()
-        except ValueError:
-            raise Forbidden()
-        return next(file_path)
-
-
-class StaticCachingMiddleware(Middleware):
-    def __init__(self, cache_timeout=DEFAULT_MAX_AGE):
+class StaticApplication(Application):
+    def __init__(self,
+                 search_paths,
+                 check_paths=True,
+                 cache_timeout=DEFAULT_MAX_AGE,
+                 default_text_mime=DEFAULT_TEXT_MIME,
+                 default_binary_mime=DEFAULT_BINARY_MIME):
+        if isinstance(search_paths, basestring):
+            search_paths = [search_paths]
+        # TODO: process paths
+        self.search_paths = search_paths
         self.cache_timeout = cache_timeout
+        self.default_text_mime = default_text_mime
+        self.default_binary_mime = default_binary_mime
+        routes = [('/<path:path>', self.get_file_response)]
+        super(StaticApplication, self).__init__(routes)
 
-    def endpoint(self, next, request, search_paths, path=None):
-        if path is None:
-            return next()
+    def get_file_response(self, path, request):
         try:
-            full_path = find_file(search_paths, path)
+            full_path = find_file(self.search_paths, path)
             if full_path is None:
                 raise NotFound()
+            file_obj = open(full_path, 'rb')
+            mtime = get_file_mtime(full_path)
+            fsize = os.path.getsize(full_path)
         except (ValueError, IOError, OSError):
             raise Forbidden()
+        mimetype, encoding = mimetypes.guess_type(full_path)
+        if not mimetype:
+            mimetype = self.default_text_mime  # TODO: binary
 
+        resp = Response('')
         cached_mtime = request.if_modified_since
-        if mtime == cached_mtime:
-            resp = Response('', 304)
-            resp.cache_control.max_age = 360
-        else:
-            resp = next()
-        resp.cache_control.public = True
+        if self.cache_timeout:
+            resp.cache_control.public = True
+            if mtime == cached_mtime:
+                file_obj.close()
+                resp.status_code = 304
+                resp.cache_control.max_age = self.cache_timeout
+                return resp
+        file_wrapper = request.environ.get('wsgi.file_wrapper', FileWrapper)
+        resp.response = file_wrapper(file_obj)
+        resp.content_type = mimetype
+        resp.content_length = fsize
+        resp.last_modified = mtime
         return resp
-
-
-def get_file_response(path, search_paths, file_wrapper=None):
-    if file_wrapper is None:
-        file_wrapper = FileWrapper
-    try:
-        full_path = find_file(search_paths, path)
-        if full_path is None:
-            raise NotFound()
-        file_obj = open(full_path, 'rb')
-    except (ValueError, IOError, OSError):
-        raise Forbidden()
-    mtime = datetime.utcfromtimestamp(os.path.getmtime(full_path))
-    fsize = os.path.getsize(full_path)
-    mimetype, encoding = mimetypes.guess_type(full_path)
-    if not mimetype:
-        # TODO: configurable
-        # TODO: check binary
-        mimetype = default_mimetype
-
-    resp = Response(FileWrapper(file_obj))
-    resp.content_type = mimetype
-    resp.content_length = fsize
-    resp.last_modified = mtime
-    return resp
-
-
-def create_app(search_paths):
-    if isinstance(search_paths, basestring):
-        search_paths = [search_paths]
-    resources = {'search_paths': search_paths}
-    routes = [('/<path:path>', get_file_response)]
-    cmw = StaticCachingMiddleware()
-    app = Application(routes, resources, middlewares=[cmw])
-    return app
 
 
 if __name__ == '__main__':
     CUR_DIR = os.path.dirname(os.path.abspath(__file__))
-    app = create_app(CUR_DIR)
+    app = StaticApplication(CUR_DIR)
     app.serve()
