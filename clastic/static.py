@@ -13,13 +13,32 @@ from core import Application
 
 
 # TODO: check isdir and accessible on search_paths
-# TODO: binary check
 # TODO: default favicon.ico StaticApplication?
-
+# TODO: process paths
 
 DEFAULT_MAX_AGE = 360
 DEFAULT_TEXT_MIME = 'text/plain'
 DEFAULT_BINARY_MIME = 'application/octet-stream'
+
+# string.printable doesn't cut it
+_PRINTABLE = ''.join([chr(x) for x in [7, 8, 9, 10, 12, 13, 27] +
+                      range(32, 256)])
+
+
+def is_binary_string(byte_string, sample_size=4096):
+    if len(byte_string) > sample_size:
+        byte_string = byte_string[:sample_size]
+    bin_chars = byte_string.translate(None, _PRINTABLE)
+    return bool(bin_chars)
+
+
+def peek_file(file_obj, size=-1):
+    if not callable(getattr(file_obj, 'seek', None)):
+        raise TypeError('expected seekable file object, not %r' % (file_obj,))
+    cur_pos = file_obj.tell()
+    peek_data = file_obj.read(size)
+    file_obj.seek(cur_pos)
+    return peek_data
 
 
 def find_file(search_paths, path, limit_root=True):
@@ -48,7 +67,6 @@ class StaticApplication(Application):
                  default_binary_mime=DEFAULT_BINARY_MIME):
         if isinstance(search_paths, basestring):
             search_paths = [search_paths]
-        # TODO: process paths
         self.search_paths = search_paths
         self.cache_timeout = cache_timeout
         self.default_text_mime = default_text_mime
@@ -67,8 +85,14 @@ class StaticApplication(Application):
         except (ValueError, IOError, OSError):
             raise Forbidden()
         mimetype, encoding = mimetypes.guess_type(full_path)
+        mimetype = None
         if not mimetype:
-            mimetype = self.default_text_mime  # TODO: binary
+            peeked = peek_file(file_obj, 1024)
+            is_binary = is_binary_string(peeked)
+            if peeked and is_binary:
+                mimetype = self.default_binary_mime
+            else:
+                mimetype = self.default_text_mime  # TODO: binary
 
         resp = Response('')
         cached_mtime = request.if_modified_since
