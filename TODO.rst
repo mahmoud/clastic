@@ -58,6 +58,7 @@ MetaApplication
 * Custom URL resolvers?
 * Failsafe application reloading?
 * Middleware <-> middleware merge hook?
+* basic checks for URL pattern conflicts?
 
 ## Chopping block
 * Allowing duplicate middlewares
