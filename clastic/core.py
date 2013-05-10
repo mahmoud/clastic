@@ -5,7 +5,6 @@ from collections import Sequence
 from argparse import ArgumentParser
 from werkzeug.wrappers import Request
 from werkzeug.routing import Map, Rule, RuleFactory
-from werkzeug.exceptions import HTTPException, NotFound
 from server import run_simple
 
 from sinter import inject, get_arg_names, getargspec
@@ -13,7 +12,6 @@ from middleware import (check_middlewares,
                         merge_middlewares,
                         make_middleware_chain)
 
-# TODO: check for URL pattern conflicts?
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application',
                  '_route', '_endpoint')
@@ -41,13 +39,15 @@ class Application(Map):
         for entry in routes:
             self.add(entry)
 
-    def add(self, entry, rebind_render=True):
+    def add(self, entry, index=None, rebind_render=True):
+        if index is None:
+            index = len(self.routes)
         rf = cast_to_rule_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
         for route in rf.get_rules(self):
             route.bind(self, rebind_render)
-            self.routes.append(route)
-            self._rules.append(route)
+            self.routes.insert(index, route)
+            self._rules.insert(index, route)
             self._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
         self._remap = True
 
@@ -145,13 +145,13 @@ class Application(Map):
             from meta import MetaApplication
             self.add(('/_meta/', MetaApplication))
         if use_static:
-            from werkzeug.wsgi import SharedDataMiddleware
+            from static import StaticApplication
             static_path = args.static_path or static_path or \
                 os.path.join(os.getcwd(), 'static')
             static_prefix = args.static_prefix or static_prefix
             static_prefix = '/' + unicode(static_prefix).lstrip('/')
-            paths = {static_prefix: static_path}
-            wrapped_wsgi = SharedDataMiddleware(wrapped_wsgi, paths)
+            static_app = StaticApplication(static_path)
+            self.add((static_prefix, static_app), index=0)
         if use_lint:
             from werkzeug.contrib.lint import LintMiddleware
             wrapped_wsgi = LintMiddleware(wrapped_wsgi)
