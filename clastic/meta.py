@@ -95,8 +95,6 @@ def get_env_info():
     ret['proc'] = get_proc_info()
     ret['host'] = get_host_info()
     ret['pyvm'] = get_pyvm_info()
-    #ret['sys'] = ret_sys
-
     return ret
 
 

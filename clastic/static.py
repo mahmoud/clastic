@@ -85,7 +85,6 @@ class StaticApplication(Application):
         except (ValueError, IOError, OSError):
             raise Forbidden()
         mimetype, encoding = mimetypes.guess_type(full_path)
-        mimetype = None
         if not mimetype:
             peeked = peek_file(file_obj, 1024)
             is_binary = is_binary_string(peeked)
