@@ -38,13 +38,17 @@ class ClasticJSONEncoder(JSONEncoder):
 
 
 class JSONRender(object):
-    def __init__(self, dev_mode=False):
+    def __init__(self, dev_mode=False, encoding='utf-8'):
         self.dev_mode = dev_mode
-        self.json_encoder = ClasticJSONEncoder(dev_mode=self.dev_mode)
+        self.encoding = encoding
+        self.json_encoder = ClasticJSONEncoder(encoding=encoding,
+                                               dev_mode=self.dev_mode)
 
     def __call__(self, context):
-        ret = self.json_encoder.encode(context)
-        return Response(unicode(ret), mimetype="application/json")
+        json_iter = self.json_encoder.iterencode(context)
+        resp = Response(json_iter, mimetype="application/json")
+        resp.mimetype_params['charset'] = self.encoding
+        return resp
 
 
 class DefaultRender(object):
@@ -63,6 +67,7 @@ class DefaultRender(object):
             except:
                 pass
         return Response(unicode(context), mimetype="text/plain")
+
 
 json_response = JSONRender()
 dev_json_response = JSONRender(True)
