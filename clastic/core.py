@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import os
 from collections import Sequence
 from argparse import ArgumentParser
-from werkzeug.wrappers import Request
+from werkzeug.wrappers import Request, Response
 from werkzeug.routing import Map, Rule, RuleFactory
 from server import run_simple
 
@@ -18,6 +18,9 @@ RESERVED_ARGS = ('request', 'next', 'context', '_application',
 
 
 class Application(Map):
+    request_type = Request
+    response_tpe = Response  # unused atm
+
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, error_handlers=None, **map_kwargs):
         map_kwargs.pop('rules', None)
@@ -114,7 +117,7 @@ class Application(Map):
         super(Application, self).update()
 
     def __call__(self, environ, start_response):
-        request = Request(environ)
+        request = self.request_type(environ)
         response = self.respond(request)
         return response(environ, start_response)
 
