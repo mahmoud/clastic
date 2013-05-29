@@ -7,6 +7,12 @@ import platform
 import datetime
 
 try:
+    from multiprocessing import cpu_count
+    CPU_COUNT = cpu_count()
+except:
+    CPU_COUNT = None
+
+try:
     import resource
 except ImportError:
     resource = None
@@ -144,6 +150,7 @@ def get_host_info():
     ret['hostname'] = socket.gethostname()
     ret['hostfqdn'] = socket.getfqdn()
     ret['uname'] = platform.uname()
+    ret['cpu_count'] = CPU_COUNT
     ret['platform'] = platform.platform()
     ret['platform_terse'] = platform.platform(terse=True)
     try:

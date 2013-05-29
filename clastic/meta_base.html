@@ -89,6 +89,9 @@
     <table>
       <tr><td>Hostname</td><td>{hostname}</td></tr>
       <tr><td><abbr title="Fully-qualified domain name">FQDN</abbr></td><td>{hostfqdn}</td></tr>
+      {#cpu_count}
+      <tr><td><abbr title="Central Processing Unit">CPU</abbr> count</td><td>{cpu_count}</td></tr>
+      {/cpu_count}
       <tr><td>Load averages</td><td>{load_avgs}</td></tr>
       <tr><td><code>uname</code></td><td>{uname}</td></tr>
       <tr><td>Platform</td><td>{platform}</td></tr>
