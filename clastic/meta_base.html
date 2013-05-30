@@ -46,6 +46,9 @@
     table {
       font-size: 12px;
       font-family: "Lucida Sans Typewriter", "Lucida Console", Monaco, "Bitstream Vera Sans Mono", monospace;
+    }
+
+    #route-info table {
       width: 100%;
     }
 
@@ -84,7 +87,7 @@
       <tr><th>Load averages</th><td>{env.host.load_avgs}</td></tr>
     </table>
   </div>
-  <div>
+  <div id="route-info">
     <h3>Routes</h3>
     <table>
       <thead>
