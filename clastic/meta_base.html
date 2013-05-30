@@ -1,167 +1,243 @@
 <!doctype html>
 <html>
-  <head>
-      <title>Clastic Meta Application</title>
-  </head>
-  <body>
-  <h2 class="page_title">Clastic</h2>
-  <div class="content">
-    <div>
-      <h3>General</h3>
-      <table>
-        <tr><td>Start time</td><td title="{abs_start_time} UTC">{rel_start_time}</td></tr>
-        <tr><td>PID</td><td>{env.proc.pid}</td></tr>
-        <tr><td>Load averages</td><td>{env.host.load_avgs}</td></tr>
-      </table>
-    </div>
-    <div>
-      <h3>Routes</h3>
-      <table>
+<head>
+  <title>Clastic Meta Application</title>
+  <style type="text/css">
+    @import url(http://fonts.googleapis.com/css?family=Open+Sans:400,700);
+
+    body {
+      background: whitesmoke;
+      color: #586e75;
+      font-family: 'Open Sans',Arial,sans-serif;
+      font-size: 20px;
+      line-height: 1.5;
+      margin: 0 auto;
+      width: 740px;
+    }
+
+    a {
+      background: #fdf6e3;
+      border-bottom: 1px solid #eee8d5;
+      color: #3389c5;
+      cursor: pointer;
+      padding: 2px 4px 0;
+      text-decoration: none;
+    }
+
+    a:hover {
+      background: #3389c5;
+      border-bottom-color: #065383;
+      color: #fff;
+    }
+
+    code {
+      background: #fff;
+      border: 1px solid #e9e9e9;
+      border-radius: 2px;
+      color: #93a1a1;
+      padding: 1px 4px 0;
+      white-space: nowrap;
+    }
+
+    table {
+      font-size: 12px;
+      font-family: 'Courier New',monospace;
+      width: 100%;
+    }
+
+    td, th {
+      background: #fff;
+      border: 1px solid #e9e9e9;
+      padding: 4px 8px;
+      text-align: left;
+    }
+
+    .builtin {
+      background: #d8f8f8;
+    }
+
+    .middleware {
+      background: #e8e8f8;
+    }
+
+    .resources {
+      background: #d8f8d8;
+    }
+
+    .url {
+      background: #d8e8f8;
+    }
+  </style>
+</head>
+<body>
+<h2 class="page_title">Clastic</h2>
+<div class="content">
+  <div>
+    <h3>General</h3>
+    <table>
+      <tr><th>Start time</th><td title="{abs_start_time} UTC">{rel_start_time}</td></tr>
+      <tr><th>PID</th><td>{env.proc.pid}</td></tr>
+      <tr><th>Load averages</th><td>{env.host.load_avgs}</td></tr>
+    </table>
+  </div>
+  <div>
+    <h3>Routes</h3>
+    <table>
       <thead>
-        <tr><th>URL</th><th>Endpoint</th><th>Render</th></tr>
+      <tr><th>URL</th><th>Endpoint</th><th>Render</th></tr>
       </thead>
       <tbody>
       {#routes}
-        <tr>
-          <td>{url_rule}</td>
-          <td>
-            {#endpoint}
-              <span title="{.module_name}">{.name}</span>
-            {/endpoint}
-            (
-            {#args}
-              <span title="{.source}">{.name}</span>{@sep}, {/sep}
-            {/args}
-            )
-          </td>
-          <td>
-            {#render}
-              {?.type}
-                {.type}('{.arg}')
-              {:else}
-                {.arg}
-              {/type}
-            {/render}
-          </td>
-        </tr>
+      <tr>
+        <td>{url_rule}</td>
+        <td>
+          {#endpoint}
+          <span title="{.module_name}">{.name}</span>
+          {/endpoint}
+          (
+          {#args}
+          <span title="{.source}" class="{.source}">{.name}</span>{@sep}, {/sep}
+          {/args}
+          )
+        </td>
+        <td>
+          {#render}
+          {?.type}
+          {.type}('{.arg}')
+          {:else}
+          {.arg}
+          {/type}
+          {/render}
+        </td>
+      </tr>
       {/routes}
       </tbody>
-      </table>
-    </div>
-    <div>
-      <h3>Application-wide Middlewares</h3>
-      {^middlewares}
-      <p>No middlewares installed.</p>
-      {:else}
-      <table>
-        <thead>
-          <tr><th></th><th>Type</th><th>Provides</th><th>Requires</th></tr>
-        </thead>
-        {#middlewares}
-        <tr>
-          <td>{@idx_1}{.}{/idx_1}</td>
-          <td>{.type_name}</td>
-          <td>{#provides}{.}{@sep}, {/sep}{/provides}</td>
-          <td>{#requires}{.}{@sep}, {/sep}{/requires}</td>
-        </tr>
-        {/middlewares}
-      </table>
-      {/middlewares}
-    </div>
-    <div>
-      <h3>Application Resources</h3>
-      {^resources}
-      <p>No resources.</p>
-      {:else}
-      <table>
-        <thead><th>Name</th><th>Value</th></thead>
-        {#resources}
-          <tr><td>{.key}</td><td>{.value}</td></tr>
-        {/resources}
-      </table>
-      {/resources}
-    </div>
+    </table>
+    <p/>
+    <table>
+      <tr>
+        <th>Legend</th>
+        <td class="builtin">builtin</td>
+        <td class="middleware">middleware</td>
+        <td class="resources">resources</td>
+        <td class="url">url</td>
+      </tr>
+    </table>
   </div>
   <div>
-    <h3>Runtime environment</h3>
-    {#env.host}
-    <h4>Host information</h4>
+    <h3>Application-wide Middlewares</h3>
+    {^middlewares}
+    <p>No middlewares installed.</p>
+    {:else}
     <table>
-      <tr><td>Hostname</td><td>{hostname}</td></tr>
-      <tr><td><abbr title="Fully-qualified domain name">FQDN</abbr></td><td>{hostfqdn}</td></tr>
-      {#cpu_count}
-      <tr><td><abbr title="Central Processing Unit">CPU</abbr> count</td><td>{cpu_count}</td></tr>
-      {/cpu_count}
-      <tr><td>Load averages</td><td>{load_avgs}</td></tr>
-      <tr><td><code>uname</code></td><td>{uname}</td></tr>
-      <tr><td>Platform</td><td>{platform}</td></tr>
-    </table>
-    {/env.host}
-    {#env.proc}
-    <h4>IDs and settings</h4>
-    <table>
-      <tr><td>Owner</td><td>{owner}</td></tr>
-      <tr><td><abbr title="Process ID">PID</abbr></td><td>{pid}</td></tr>
-      {?ppid}
-      <tr><td><abbr title="Parent process ID">PPID</abbr></td><td>{ppid}</td></tr>
-      <tr><td><abbr title="Process group ID">PGID</abbr></td><td>{pgid}</td></tr>
-      {/ppid}
-      <tr><td><code>umask</code></td><td>{umask_str}</td></tr>
-      {?niceness}
-      <tr><td><code>nice</code></td><td>{niceness}</td></tr>
-      {/niceness}
-    </table>
-    <h4>Process resource usage</h4>
-    {#rusage}
-    <table>
-      <tr><td>CPU time, user</td><td>{cpu_times.user_time} seconds</td></tr>
-      <tr><td>CPU time, system</td><td>{cpu_times.sys_time} seconds</td></tr>
-      {#memory}
+      <thead>
+      <tr><th></th><th>Type</th><th>Provides</th><th>Requires</th></tr>
+      </thead>
+      {#middlewares}
       <tr>
-        <td><abbr title="Resident set size">Peak RSS</abbr></td>
-        <td>{max_rss}</td>
-        <!-- Untracked on Linux: -->
-        <!-- Shared: {shared_rss}, Unshared: {unshared_rss}, Stack: {stack_rss} -->
+        <td>{@idx_1}{.}{/idx_1}</td>
+        <td>{.type_name}</td>
+        <td>{#provides}{.}{@sep}, {/sep}{/provides}</td>
+        <td>{#requires}{.}{@sep}, {/sep}{/requires}</td>
       </tr>
-      {/memory}
-      {#page_faults}
-      <tr><td>Page faults, major</td><td>{major_faults}</td></tr>
-      <tr><td>Page faults, minor</td><td>{minor_faults}</td></tr>
-      <!-- Untracked on Linux: -->
-      <!-- Page outs: {page_outs} -->
-      {/page_faults}
-      {#blocking_io}
-      <tr><td>Blocking IO, in</td><td>{input_ops}</td></tr>
-      <tr><td>Blocking IO, out</td><td>{output_ops}</td></tr>
-      {/blocking_io}
-      {#ctx_switches}
-      <tr><td>Context switches, voluntary</td><td>{voluntary}</td></tr>
-      <tr><td>Context switches, involuntary</td><td>{involuntary}</td></tr>
-      {/ctx_switches}
-      <!-- Untracked on Linux: -->
-      <!-- Signals received: {signals.received} -->
-      {#messages}
-      <!-- POSIX messages sent: {sent} -->
-      <!-- POSIX messages received: {received} -->
-      {/messages}
-      {#rlimit}
-      <tr><td>File limit (soft, hard)</td><td>{nofile}</td></tr>
-      {/rlimit}
+      {/middlewares}
     </table>
-    {/rusage}
-    {/env.proc}
-    {#env.pyvm}
-    <h4>Python runtime</h4>
-    <table>
-      <tr><td>Thread count</td><td>{active_thread_count}</td></tr>
-      <tr><td>Object count</td><td>{obj_count}</td></tr>
-      <tr><td><abbr title="Garbage collection">GC</abbr> enabled</td><td>{is_enabled}</td></tr>
-      <tr><td><abbr title="Garbage collection">GC</abbr> thresholds</td><td>{thresholds}</td></tr>
-      <tr><td><abbr title="Garbage collection">GC</abbr> generations</td><td>{counts}</td></tr>
-      <tr><td>Recursion limit</td><td>{recursion_limit}</td></tr>
-    </table>
-    {/env.pyvm}
+    {/middlewares}
   </div>
-  <div class="footer"></div>
-  </body>
+  <div>
+    <h3>Application Resources</h3>
+    {^resources}
+    <p>No resources.</p>
+    {:else}
+    <table>
+      <thead><th>Name</th><th>Value</th></thead>
+      {#resources}
+      <tr><td>{.key}</td><td>{.value}</td></tr>
+      {/resources}
+    </table>
+    {/resources}
+  </div>
+</div>
+<div>
+  <h3>Runtime environment</h3>
+  {#env.host}
+  <h4>Host information</h4>
+  <table>
+    <tr><th>Hostname</th><td>{hostname}</td></tr>
+    <tr><th><abbr title="Fully-qualified domain name">FQDN</abbr></th><td>{hostfqdn}</td></tr>
+    {#cpu_count}
+    <tr><th><abbr title="Central Processing Unit">CPU</abbr> count</th><td>{cpu_count}</td></tr>
+    {/cpu_count}
+    <tr><th>Load averages</th><td>{load_avgs}</td></tr>
+    <tr><th><code>uname</code></th><td>{uname}</td></tr>
+    <tr><th>Platform</th><td>{platform}</td></tr>
+  </table>
+  {/env.host}
+  {#env.proc}
+  <h4>IDs and settings</h4>
+  <table>
+    <tr><th>Owner</th><td>{owner}</td></tr>
+    <tr><th><abbr title="Process ID">PID</abbr></th><td>{pid}</td></tr>
+    {?ppid}
+    <tr><th><abbr title="Parent process ID">PPID</abbr></th><td>{ppid}</td></tr>
+    <tr><th><abbr title="Process group ID">PGID</abbr></th><td>{pgid}</td></tr>
+    {/ppid}
+    <tr><th><code>umask</code></th><td>{umask_str}</td></tr>
+    {?niceness}
+    <tr><th><code>nice</code></th><td>{niceness}</td></tr>
+    {/niceness}
+  </table>
+  <h4>Process resource usage</h4>
+  {#rusage}
+  <table>
+    <tr><th>CPU time, user</th><td>{cpu_times.user_time} seconds</td></tr>
+    <tr><th>CPU time, system</th><td>{cpu_times.sys_time} seconds</td></tr>
+    {#memory}
+    <tr>
+      <th><abbr title="Resident set size">Peak RSS</abbr></th>
+      <td>{max_rss}</td>
+      <!-- Untracked on Linux:-->
+      <!-- Shared:{shared_rss}, Unshared:{unshared_rss}, Stack:{stack_rss} -->
+    </tr>
+    {/memory}
+    {#page_faults}
+    <tr><th>Page faults, major</th><td>{major_faults}</td></tr>
+    <tr><th>Page faults, minor</th><td>{minor_faults}</td></tr>
+    <!-- Untracked on Linux:-->
+    <!-- Page outs:{page_outs} -->
+    {/page_faults}
+    {#blocking_io}
+    <tr><th>Blocking IO, in</th><td>{input_ops}</td></tr>
+    <tr><th>Blocking IO, out</th><td>{output_ops}</td></tr>
+    {/blocking_io}
+    {#ctx_switches}
+    <tr><th>Context switches, voluntary</th><td>{voluntary}</td></tr>
+    <tr><th>Context switches, involuntary</th><td>{involuntary}</td></tr>
+    {/ctx_switches}
+    <!-- Untracked on Linux:-->
+    <!-- Signals received:{signals.received} -->
+    {#messages}
+    <!-- POSIX messages sent:{sent} -->
+    <!-- POSIX messages received:{received} -->
+    {/messages}
+    {#rlimit}
+    <tr><th>File limit (soft, hard)</th><td>{nofile}</td></tr>
+    {/rlimit}
+  </table>
+  {/rusage}
+  {/env.proc}
+  {#env.pyvm}
+  <h4>Python runtime</h4>
+  <table>
+    <tr><th>Thread count</th><td>{active_thread_count}</td></tr>
+    <tr><th>Object count</th><td>{obj_count}</td></tr>
+    <tr><th><abbr title="Garbage collection">GC</abbr> enabled</th><td>{is_enabled}</td></tr>
+    <tr><th><abbr title="Garbage collection">GC</abbr> thresholds</th><td>{thresholds}</td></tr>
+    <tr><th><abbr title="Garbage collection">GC</abbr> generations</th><td>{counts}</td></tr>
+    <tr><th>Recursion limit</th><td>{recursion_limit}</td></tr>
+  </table>
+  {/env.pyvm}
+</div>
+<div class="footer"></div>
+</body>
 </html>
