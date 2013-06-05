@@ -6,7 +6,7 @@ from clastic.render import json_response, AshesRenderFactory
 import os
 import sys
 if os.name != 'posix':
-    sys.exit('platform not supported')
+    raise ImportError('webtop only supports posix platforms')
 import psutil
 from datetime import timedelta
 
