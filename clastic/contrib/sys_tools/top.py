@@ -4,29 +4,33 @@ from clastic import Application
 from clastic.render import json_response, AshesRenderFactory
 
 import os
-import sys
 if os.name != 'posix':
     raise ImportError('webtop only supports posix platforms')
 import psutil
 from datetime import timedelta
 
+_SIZE_SYMBOLS = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+_SIZE_BOUNDS = [(1024 ** i, sym) for i, sym in enumerate(_SIZE_SYMBOLS)]
+_SIZE_RANGES = zip(_SIZE_BOUNDS, _SIZE_BOUNDS[1:])
 
-def bytes2human(n):
+
+def bytes2human(nbytes, ndigits=0):
     """
-    >>> bytes2human(10000)
-    '9K'
+    >>> bytes2human(128991)
+    u'126K'
     >>> bytes2human(100001221)
-    '95M'
+    u'95M'
+    >>> bytes2human(0, 2)
+    u'0.00B'
     """
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i+1)*10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = int(float(n) / prefix[s])
-            return '%s%s' % (value, s)
-    return "%sB" % n
+    abs_bytes = abs(nbytes)
+    for (size, symbol), (next_size, next_symbol) in _SIZE_RANGES:
+        if abs_bytes <= next_size:
+            break
+    hnbytes = float(nbytes) / size
+    return '{hnbytes:.{ndigits}f}{symbol}'.format(hnbytes=hnbytes,
+                                                  ndigits=ndigits,
+                                                  symbol=symbol)
 
 
 def poll():
@@ -61,7 +65,7 @@ def top_structured(procs, procs_status):
     for p in procs:
         # TIME+ column shows process CPU cumulative time and it
         # is expressed as: "mm:ss.ms"
-        if p.dict['cpu_times'] != None:
+        if p.dict['cpu_times'] is not None:
             ctime = timedelta(seconds=sum(p.dict['cpu_times']))
             ctime = "%s:%s.%s" % (ctime.seconds // 60 % 60,
                                   str((ctime.seconds % 60)).zfill(2),
