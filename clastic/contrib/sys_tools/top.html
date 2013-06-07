@@ -2,59 +2,7 @@
 <html>
 <head>
   <title>Top</title>
-  <style type="text/css">
-    body {
-      background: whitesmoke;
-      color: #586e75;
-      font-family: 'Gill Sans', 'Gill Sans MT Light', 'Gill Sans MT', 'Segoe', 'Segoe UI', 'Roboto', 'Droid Sans', 'Ubuntu', sans-serif;
-      font-size: 20px;
-      line-height: 1.2;
-      margin: 0 auto;
-      padding: 0 3% 3% 3%;
-      min-width: 380px;
-      max-width: 960px;
-    }
-
-    h1, h2, h3, h4, h5, h6 {
-      font-weight: 500;
-    }
-
-    a {
-      background: #fdf6e3;
-      border-bottom: 1px solid #eee8d5;
-      color: #3389c5;
-      cursor: pointer;
-      padding: 2px 4px 0;
-      text-decoration: none;
-    }
-
-    a:hover {
-      background: #3389c5;
-      border-bottom-color: #065383;
-      color: #fff;
-    }
-
-    code {
-      background: #fff;
-      border: 1px solid #e9e9e9;
-      border-radius: 2px;
-      color: #93a1a1;
-      padding: 1px 4px 0;
-      white-space: nowrap;
-    }
-
-    table {
-      font-size: 12px;
-      font-family: "Lucida Sans Typewriter", "Lucida Console", Monaco, "Bitstream Vera Sans Mono", monospace;
-    }
-
-    td, th {
-      background: #fff;
-      border: 1px solid #e9e9e9;
-      padding: 4px 8px;
-      text-align: left;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="clastic_assets/common.css">
 </head>
 <body>
 <h1>Top</h1>
@@ -71,7 +19,7 @@
       <th>TIME+</th>
       <th>NAME</th>
     </tr>
-    {#lines}
+    {#entries}
     <tr>
       <td>{pid}</td>
       <td>{user}</td>
@@ -83,7 +31,7 @@
       <td>{time}</td>
       <td>{name}</td>
     </tr>
-    {/lines}
+    {/entries}
   </table>
 </pre>
 </body>
