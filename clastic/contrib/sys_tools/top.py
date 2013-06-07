@@ -5,6 +5,8 @@ if os.name != 'posix':
     # TODO: test on windows
     raise ImportError('webtop only supports posix platforms')
 
+from operator import itemgetter
+
 import clastic
 from clastic import Application, StaticApplication
 from clastic.render import json_response, AshesRenderFactory
@@ -55,20 +57,31 @@ def format_cpu_time(seconds):
 
 
 def get_process_dicts():
-    proc_dicts = []
+    ret = []
     for p in psutil.process_iter():
         try:
-            proc_dicts.append(p.as_dict(_TOP_ATTRS))
+            ret.append(p.as_dict(_TOP_ATTRS))
         except psutil.NoSuchProcess:
             pass
-
-    # return processes sorted by CPU percent usage
-    proc_dicts.sort(key=lambda x: x['cpu_percent'], reverse=True)
-    return proc_dicts
+    return ret
 
 
-def top():
+def top(sort_key='cpu'):
+    # TODO: add sort key middleware
+    _key = itemgetter(sort_key)
     entries = [format_dict(pd) for pd in get_process_dicts()]
+
+    # handle an apparent bug in psutil where the first call of the
+    # process does not return any cpu percentages. sorting by memory
+    # percentages instead.
+    try:
+        sort_total = sum([_key(x) for x in entries if _key(x) is not None])
+        if not sort_total:
+            sort_key = 'mem'
+            _key = itemgetter(sort_key)
+    except TypeError:
+        pass
+    entries.sort(key=_key, reverse=True)
     return {'entries': entries}
 
 
@@ -93,7 +106,6 @@ def format_dict(pd):
 
 
 def create_app():
-    print _ASSET_PATH
     routes = [('/', top, 'top.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', top, json_response)]
