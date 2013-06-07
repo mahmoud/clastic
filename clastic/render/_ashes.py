@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 import os
@@ -10,8 +11,14 @@ import codecs
 import sys
 PY3 = (sys.version_info[0] == 3)
 if PY3:
-    unicode = str
-    basestring = str
+    unicode, basestring = str, str
+
+__version__ = '0.5.3dev'
+__author__ = 'Mahmoud Hashemi'
+__contact__ = 'mahmoudrhashemi@gmail.com'
+__url__ = 'https://github.com/mahmoud/ashes'
+__license__ = 'BSD'
+
 
 # need to add group for literals
 # switch to using word boundary for params section
@@ -158,10 +165,10 @@ class Tag(Token):
 
     @classmethod
     def from_match(cls, match):
-        kw = dict([(k, v.strip()) for k, v in match.groupdict().items()
-                  if v is not None and v.strip()])
-        kw['text'] = match.group(0)
-        obj = cls(**kw)
+        kw = dict([(str(k), v.strip())
+                   for k, v in match.groupdict().items()
+                   if v is not None and v.strip()])
+        obj = cls(text=match.group(0), **kw)
         obj.orig_match = match
         return obj
 
@@ -1651,7 +1658,8 @@ else:
                 if key in self.settings:
                     options.setdefault(key, self.settings[key])
             env = self.settings.get('env', default_env)
-
+            # I truly despise 2.6.4's unicode kwarg bug
+            options = dict([(str(k), v) for k, v in options.iteritems()])
             self.tpl = env.register_source(**options)
 
         def _load_source(self, name):
