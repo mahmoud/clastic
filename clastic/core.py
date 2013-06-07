@@ -19,7 +19,7 @@ RESERVED_ARGS = ('request', 'next', 'context', '_application',
 
 class Application(Map):
     request_type = Request
-    response_tpe = Response  # unused atm
+    response_type = Response  # unused atm
 
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, error_handlers=None, **map_kwargs):
