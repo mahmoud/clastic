@@ -165,12 +165,9 @@ def get_host_info():
 def get_rusage_dict(children=False):
     # TODO:
     # number of child processes?
-    # number of threads?
     # page size
-    # what are 'messages'
-    # why are the other RSS fields 0?
-    # why doesn't RSS go down?
     # difference between a page out and a major fault?
+    # NOTE: values commented with an * are untracked on Linux
     if not resource:
         return {}
     who = resource.RUSAGE_SELF
@@ -180,17 +177,17 @@ def get_rusage_dict(children=False):
     ret = {'cpu_times': {'user_time': rr.ru_utime,
                          'sys_time': rr.ru_stime},
            'memory': {'max_rss': rr.ru_maxrss,
-                      'shared_rss': rr.ru_ixrss,
-                      'unshared_rss': rr.ru_idrss,
-                      'stack_rss': rr.ru_isrss},
+                      'shared_rss': rr.ru_ixrss,    # *
+                      'unshared_rss': rr.ru_idrss,  # *
+                      'stack_rss': rr.ru_isrss},    # *
            'page_faults': {'minor_faults': rr.ru_minflt,
                            'major_faults': rr.ru_majflt,
-                           'page_outs': rr.ru_nswap},
+                           'page_outs': rr.ru_nswap},  # *
            'blocking_io': {'input_ops': rr.ru_inblock,
                            'output_ops': rr.ru_oublock},
-           'messages': {'sent': rr.ru_msgsnd,
-                        'received': rr.ru_msgrcv},
-           'signals': {'received': rr.ru_nsignals},
+           'messages': {'sent': rr.ru_msgsnd,  # *
+                        'received': rr.ru_msgrcv},  # *
+           'signals': {'received': rr.ru_nsignals},  # *
            'ctx_switches': {'voluntary': rr.ru_nvcsw,
                             'involuntary': rr.ru_nivcsw}}
     return ret
