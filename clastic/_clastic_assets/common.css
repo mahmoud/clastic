@@ -49,3 +49,23 @@ td, th {
   padding: 4px 8px;
   text-align: left;
 }
+
+#route-info table {
+  width: 100%;
+}
+
+.arg.builtin {
+  background: #d8f8f8;
+}
+
+.arg.middleware {
+  background: #e8e8f8;
+}
+
+.arg.resources {
+  background: #d8f8d8;
+}
+
+.arg.url {
+  background: #d8e8f8;
+}

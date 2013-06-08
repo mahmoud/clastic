@@ -20,18 +20,20 @@ except ImportError:
 from core import Application, RESERVED_ARGS
 from sinter import getargspec
 from render import json_response, AshesRenderFactory
+from static import StaticApplication
 
-
-_CUR_DIR = os.path.dirname(__file__)
+_CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+_ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 # TODO: nominal SLA vs real/sampled SLA
 
 
 def create_app():
     routes = [('/', get_routes_info, 'meta_base.html'),
+              ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', get_routes_info, json_response)]
     resources = {'_meta_start_time': datetime.datetime.utcnow()}
-    arf = AshesRenderFactory(_CUR_DIR)
+    arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, resources, arf)
     return app
 
