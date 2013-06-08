@@ -26,40 +26,46 @@ _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 # TODO: nominal SLA vs real/sampled SLA
+IS_64BIT = sys.maxsize > 2 ** 32
 
 
 def create_app():
-    routes = [('/', get_routes_info, 'meta_base.html'),
+    routes = [('/', get_all_meta_info, 'meta_base.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-              ('/json/', get_routes_info, json_response)]
+              ('/json/', get_all_meta_info, json_response)]
     resources = {'_meta_start_time': datetime.datetime.utcnow()}
     arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, resources, arf)
     return app
 
 
-def get_routes_info(_application, _meta_start_time):
-    ret = {}
+def get_all_meta_info(_application, _meta_start_time):
     app = _application
-    route_infos = []
+    ret = {}
+    ret['routes'] = get_route_infos(app)
+    ret['resources'] = get_resource_info(app)
+    ret['env'] = get_env_info()
+
+    mw_infos = []
+    for mw in app.middlewares:
+        mw_infos.append(get_mw_info(mw))
+    ret['middlewares'] = mw_infos
+
+    ret['abs_start_time'] = str(_meta_start_time)
+    ret['rel_start_time'] = _rel_datetime(_meta_start_time)
+    return ret
+
+
+def get_route_infos(_application):
+    app = _application
+    ret = []
     for r in app.routes:
         r_info = {}
         r_info['url_rule'] = r.rule
         r_info['endpoint'] = get_endpoint_info(r)
         r_info['render'] = get_render_info(r)
         r_info['args'] = get_route_arg_info(r)
-        route_infos.append(r_info)
-
-    mw_infos = []
-    for mw in app.middlewares:
-        mw_infos.append(get_mw_info(mw))
-
-    ret['abs_start_time'] = str(_meta_start_time)
-    ret['rel_start_time'] = _rel_datetime(_meta_start_time)
-    ret['routes'] = route_infos
-    ret['middlewares'] = mw_infos
-    ret['resources'] = get_resource_info(app)
-    ret['env'] = get_env_info()
+        ret.append(r_info)
     return ret
 
 
@@ -146,6 +152,7 @@ def get_rlimit_dict():
         ret[rn] = resource.getrlimit(val)
     return ret
 
+
 # TODO: byte order, path, prefix, maxint/64-bit
 def get_host_info():
     ret = {}
@@ -194,17 +201,26 @@ def get_rusage_dict(children=False):
 
 
 def get_pyvm_info():
+
+    ret = {}
+    ret['executable'] = sys.executable
+    ret['is_64bit'] = IS_64BIT
+    try:
+        ret['active_thread_count'] = len(sys._current_frames())
+    except:
+        ret['active_thread_count'] = None
+    ret['recursion_limit'] = sys.getrecursionlimit()  # TODO: max_stack_depth?
+    ret['gc'] = get_gc_info()
+    return ret
+
+
+def get_gc_info():
     import gc
     ret = {}
     ret['is_enabled'] = gc.isenabled()
     ret['thresholds'] = gc.get_threshold()
     ret['counts'] = gc.get_count()
     ret['obj_count'] = len(gc.get_objects())
-    try:
-        ret['active_thread_count'] = len(sys._current_frames())
-    except:
-        ret['active_thread_count'] = None
-    ret['recursion_limit'] = sys.getrecursionlimit()  # TODO: max_stack_depth?
     return ret
 
 

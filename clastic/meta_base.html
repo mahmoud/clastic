@@ -164,12 +164,16 @@
   {#env.pyvm}
   <h4>Python runtime</h4>
   <table>
+    <tr><th>Executable</th><td>{executable}</td></tr>
+    <tr><th>64-bit Python</th><td>{is_64bit}</td></tr>
     <tr><th>Thread count</th><td>{active_thread_count}</td></tr>
+    {#gc}
     <tr><th>Object count</th><td>{obj_count}</td></tr>
     <tr><th><abbr title="Garbage collection">GC</abbr> enabled</th><td>{is_enabled}</td></tr>
     <tr><th><abbr title="Garbage collection">GC</abbr> thresholds</th><td>{thresholds}</td></tr>
     <tr><th><abbr title="Garbage collection">GC</abbr> generations</th><td>{counts}</td></tr>
     <tr><th>Recursion limit</th><td>{recursion_limit}</td></tr>
+    {/gc}
   </table>
   {/env.pyvm}
 </div>
