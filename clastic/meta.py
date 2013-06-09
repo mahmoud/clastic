@@ -6,6 +6,7 @@ import socket
 import platform
 import datetime
 
+IS_64BIT = sys.maxsize > 2 ** 32
 try:
     from multiprocessing import cpu_count
     CPU_COUNT = cpu_count()
@@ -26,7 +27,6 @@ _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 # TODO: nominal SLA vs real/sampled SLA
-IS_64BIT = sys.maxsize > 2 ** 32
 
 
 def create_app():
@@ -153,7 +153,7 @@ def get_rlimit_dict():
     return ret
 
 
-# TODO: byte order, path, prefix, maxint/64-bit
+# TODO: byte order, path, prefix
 def get_host_info():
     ret = {}
     ret['hostname'] = socket.gethostname()
