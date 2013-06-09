@@ -8,7 +8,7 @@ from server import run_simple
 from sinter import inject, get_arg_names, getargspec
 from middleware import (check_middlewares,
                         merge_middlewares,
-                        make_middleware_chain)
+                        make_route_chain)
 
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
@@ -38,6 +38,21 @@ class Application(object):
         self.endpoint_args = {}
         for entry in routes:
             self.add(entry)
+
+    @property
+    def request_mw_provides(self):
+        # tmp
+        import itertools
+        req_provides = [mw.provides for mw in self.middlewares if mw.request]
+        return set(itertools.chain.from_iterable(req_provides))
+
+    @property
+    def all_provides(self):
+        # tmp
+        ret = (set(RESERVED_ARGS)
+               | set(self.resources)
+               | set(self.request_mw_provides))
+        return ret - set(['next'])
 
     def add(self, entry, index=None, rebind_render=True):
         if index is None:
@@ -150,8 +165,18 @@ class SubApplication(RuleFactory):
                 yld.rule = self.prefix + yld.rule
                 yield yld
 
+"""
+routes' preprovided:
 
-def app_execute(self, request, **kwargs):
+* builtins
+* middleware request provides
+* path params
+*
+
+"""
+
+
+def dispatch(self, request, **kwargs):
     req_provides = self._execute_req_middlewares(request, **kwargs)
     kwargs.update(req_provides)
     route, path_params = self.match(request)
@@ -159,15 +184,6 @@ def app_execute(self, request, **kwargs):
     kwargs['_path_params'] = path_params
     kwargs.update(path_params)
     return route.execute(request, **kwargs)
-
-
-def get_req_mw_provides(self, middlewares):
-    import itertools
-    req_sigs = [(mw.request, mw.provides)
-                for mw in middlewares if mw.request]
-    req_funcs, req_provides = zip(*req_sigs) or ((), ())
-    req_all_provides = set(itertools.chain.from_iterable(req_provides))
-    return req_all_provides
 
 
 def get_req_mw_chain(self, middleware):
@@ -255,15 +271,20 @@ class Route(Rule):
         merged_mw = merge_middlewares(self._middlewares, middlewares)
         r_copy = self.empty()
         url_map = app.wmap  # TODO: cleanup the werkzeug url map stuff
+        rmp = app.request_mw_provides
         try:
-            r_copy._bind_args(url_map, merged_resources, merged_mw, render_factory)
+            r_copy._bind_args(url_map, merged_resources, merged_mw, rmp, render_factory)
         except:
             raise
-        self._bind_args(url_map, merged_resources, merged_mw, render_factory)
+        self._bind_args(url_map,
+                        merged_resources,
+                        merged_mw,
+                        rmp,
+                        render_factory)
         self._bound_apps += (app,)
         return self
 
-    def _bind_args(self, url_map, resources, middlewares, render_factory):
+    def _bind_args(self, url_map, resources, middlewares, rmp, render_factory):
         super(Route, self).bind(url_map, rebind=True)
         url_args = set(self.arguments)
         builtin_args = set(RESERVED_ARGS)
@@ -271,9 +292,10 @@ class Route(Rule):
 
         tmp_avail_args = {'url': url_args,
                           'builtins': builtin_args,
-                          'resources': resource_args}
+                          'resources': resource_args,
+                          'req_mw': rmp}
         check_middlewares(middlewares, tmp_avail_args)
-        provided = resource_args | builtin_args | url_args
+        provided = resource_args | builtin_args | url_args | rmp
         if callable(render_factory) and self.render_arg is not None \
                 and not callable(self.render_arg):
             _render = render_factory(self.render_arg)
@@ -281,7 +303,7 @@ class Route(Rule):
             _render = self._render
         else:
             _render = lambda context: context
-        _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
+        _execute = make_route_chain(middlewares, self.endpoint, _render, provided)
 
         self._resources.update(resources)
         self._middlewares = middlewares

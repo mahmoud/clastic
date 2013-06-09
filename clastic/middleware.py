@@ -74,7 +74,9 @@ def check_middlewares(middlewares, args_dict=None):
 
     for mw in middlewares:
         check_middleware(mw)
-        for arg_name in mw.provides:
+        for arg_name in mw.endpoint_provides:
+            provided_by[arg_name].append(mw)
+        for arg_name in mw.render_provides:
             provided_by[arg_name].append(mw)
 
     conflicts = [(n, tuple(ps)) for (n, ps) in
@@ -102,7 +104,12 @@ def merge_middlewares(old, new):
 
 
 def make_application_chain(middlewares, dispatch, preprovided):
-    pass
+    req_provided = set(preprovided) - set(['next', 'context', '_route'])
+    req_sigs = [(mw.request, mw.provides)
+                for mw in middlewares if mw.request]
+    req_funcs, req_provides = zip(*req_sigs) or ((), ())
+    req_all_provides = set(itertools.chain.from_iterable(req_provides))
+
 
 
 def make_route_chain(middlewares, endpoint, render, preprovided):
