@@ -19,7 +19,7 @@ from core import (RESERVED_ARGS,
                   SubApplication,
                   Route)
 
-from middleware import Middleware, DummyMiddleware, GetParamMiddleware
+from middleware import Middleware, GetParamMiddleware
 from render import json_response, default_response
 from meta import MetaApplication
 from static import StaticApplication

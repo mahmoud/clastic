@@ -63,6 +63,8 @@ def check_middleware(mw):
 
 
 def check_middlewares(middlewares, args_dict=None):
+    # TODO: does not appear to check mw.endpoint_provides and
+    # mw.render_provides?
     args_dict = args_dict or {}
 
     provided_by = defaultdict(list)
@@ -72,8 +74,8 @@ def check_middlewares(middlewares, args_dict=None):
 
     for mw in middlewares:
         check_middleware(mw)
-        for arg in mw.provides:
-            provided_by[arg].append(mw)
+        for arg_name in mw.provides:
+            provided_by[arg_name].append(mw)
 
     conflicts = [(n, tuple(ps)) for (n, ps) in
                  provided_by.items() if len(ps) > 1]
@@ -99,25 +101,6 @@ def merge_middlewares(old, new):
     return merged
 
 
-class DummyMiddleware(Middleware):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-
-    def request(self, next, request):
-        name = '%s (%s)' % (self.__class__.__name__, id(self))
-        if self.verbose:
-            print name, '- handling', id(request)
-        try:
-            ret = next()
-        except Exception as e:
-            if self.verbose:
-                print name, '- uhoh:', repr(e)
-            raise
-        if self.verbose:
-            print name, '- hooray:', repr(ret)
-        return ret
-
-
 def make_middleware_chain(middlewares, endpoint, render, preprovided):
     """
     Expects de-duplicated and conflict-free middleware/endpoint/render
@@ -129,13 +112,13 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     if 'next' in get_arg_names(render):
         raise NameError(_next_exc_msg % render)
 
-    req_avail = set(preprovided) - set(['next', 'context'])
+    req_avail = set(preprovided) - set(['next', 'context', '_route'])
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
     req_funcs, req_provides = zip(*req_sigs) or ((), ())
     req_all_provides = set(itertools.chain.from_iterable(req_provides))
 
-    ep_avail = req_avail | req_all_provides
+    ep_avail = req_avail | req_all_provides | set(['_route'])
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
     ep_funcs, ep_provides = zip(*ep_sigs) or ((), ())

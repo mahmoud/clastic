@@ -5,9 +5,9 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 #import clastic
-from clastic import Application, DummyMiddleware
+from clastic import Application
 
-from common import hello_world, RequestProvidesName
+from common import hello_world, DummyMiddleware, RequestProvidesName
 
 
 def test_create_empty_application():
