@@ -17,14 +17,15 @@ RESERVED_ARGS = ('request', 'next', 'context', '_application',
                  '_route', '_endpoint')
 
 
-class Application(Map):
+class Application(object):
     request_type = Request
     response_type = Response  # unused atm
 
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, error_handlers=None, **map_kwargs):
         map_kwargs.pop('rules', None)
-        super(Application, self).__init__(**map_kwargs)
+        self.wmap = NonTerribleMap(**map_kwargs)
+        self._map_kwargs = map_kwargs
 
         routes = routes or []
         self.error_handlers = dict(error_handlers or {})
@@ -38,7 +39,6 @@ class Application(Map):
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
         self.endpoint_args = {}
-        self._map_kwargs = map_kwargs
         for entry in routes:
             self.add(entry)
 
@@ -47,12 +47,12 @@ class Application(Map):
             index = len(self.routes)
         rf = cast_to_rule_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        for route in rf.get_rules(self):
+        for route in rf.get_rules(self.wmap):
             route.bind(self, rebind_render)
             self.routes.insert(index, route)
-            self._rules.insert(index, route)
-            self._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
-        self._remap = True
+            self.wmap._rules.insert(index, route)
+            self.wmap._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
+        self.wmap._remap = True
 
     def get_rules(self, r_map=None):
         r_map = self
@@ -61,7 +61,7 @@ class Application(Map):
                 yield rule  # is yielding bound rules bad?
 
     def match(self, request):
-        adapter = self.bind_to_environ(request.environ)
+        adapter = self.wmap.bind_to_environ(request.environ)
         route, url_args = adapter.match(return_rule=True)
         request.path_params = url_args
         injectables = dict(self.resources)
@@ -97,24 +97,7 @@ class Application(Map):
                     return e.get_response(request)
                 else:
                     raise
-
         return ep_res
-
-    def update(self):
-        """\
-        This function does nothing but prevent Werkzeug from resorting
-        routing rules while maintaining super() semantics.
-
-        In Clastic, routing rules stay in insertion order, whereas
-        Werkzeug reorders them in an attempt to improve performance,
-        often breaking user expectations, rarely making a noticeable
-        speed difference.
-
-        More here: `Clastic issue #3
-        <https://github.com/mahmoud/clastic/issues/3>`_
-        """
-        self._remap = False
-        super(Application, self).update()
 
     def __call__(self, environ, start_response):
         request = self.request_type(environ)
@@ -254,12 +237,12 @@ class Route(Rule):
         merged_resources.update(resources)
         merged_mw = merge_middlewares(self._middlewares, middlewares)
         r_copy = self.empty()
+        url_map = app.wmap  # TODO: cleanup the werkzeug url map stuff
         try:
-            r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
+            r_copy._bind_args(url_map, merged_resources, merged_mw, render_factory)
         except:
             raise
-
-        self._bind_args(app, merged_resources, merged_mw, render_factory)
+        self._bind_args(url_map, merged_resources, merged_mw, render_factory)
         self._bound_apps += (app,)
         return self
 
@@ -299,16 +282,6 @@ class Route(Rule):
         return inject(self._execute, injectables)
 
 
-# exec req middlewares
-# -> exec endpoint middlewares
-#  -> endpoint (*get context or response)
-# -> ret endpoint middlewares
-# -> exec render middlewares (if not response)
-#  -> render (*get response)
-# -> ret render middlewares
-# ret req middlewares
-
-
 def cast_to_rule_factory(in_arg):
     if isinstance(in_arg, Route):
         return in_arg
@@ -327,6 +300,24 @@ def cast_to_rule_factory(in_arg):
     if isinstance(in_arg, RuleFactory):
         return in_arg
     raise TypeError('Could not create routes from ' + repr(in_arg))
+
+
+class NonTerribleMap(Map):
+    def update(self):
+        """\
+        This function does nothing but prevent Werkzeug from resorting
+        routing rules while maintaining super() semantics.
+
+        In Clastic, routing rules stay in insertion order, whereas
+        Werkzeug reorders them in an attempt to improve performance,
+        often breaking user expectations, rarely making a noticeable
+        speed difference.
+
+        More here: `Clastic issue #3
+        <https://github.com/mahmoud/clastic/issues/3>`_
+        """
+        self._remap = False
+        super(NonTerribleMap, self).update()
 
 
 def create_dev_server_parser():
