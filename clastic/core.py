@@ -11,8 +11,7 @@ from middleware import (check_middlewares,
                         make_middleware_chain)
 
 
-RESERVED_ARGS = ('request', 'next', 'context', '_application',
-                 '_route', '_endpoint')
+RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
 
 
 class Application(object):
@@ -264,7 +263,6 @@ class Route(Rule):
     def execute(self, request, **kwargs):
         injectables = {'request': request,
                        '_application': self._bound_apps[-1],
-                       '_endpoint': self.endpoint,
                        '_route': self}
         injectables.update(self._resources)
         injectables.update(kwargs)
