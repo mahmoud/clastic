@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 from collections import Sequence
 from argparse import ArgumentParser
@@ -73,8 +71,6 @@ class Application(object):
             injectables['_application'] = self
             injectables.update(path_params)
             request.path_params = path_params
-            # some versions of 2.6 die on unicode kwarg names
-            injectables = dict([(str(k), v) for k, v in injectables.items()])
             ep_res = route.execute(**injectables)
         except Exception as e:
             code = getattr(e, 'code', None)
@@ -137,9 +133,6 @@ class Application(object):
         if use_lint:
             from werkzeug.contrib.lint import LintMiddleware
             wrapped_wsgi = LintMiddleware(wrapped_wsgi)
-        # some versions of 2.6 die on unicode dictionary keys
-        kw = dict([(str(k), v) for k, v in kw.items()])
-
         if kw.get('_jk_just_testing'):
             return True
         run_simple(address, port, wrapped_wsgi, **kw)
