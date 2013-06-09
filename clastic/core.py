@@ -62,24 +62,20 @@ class Application(object):
 
     def match(self, request):
         adapter = self.wmap.bind_to_environ(request.environ)
-        route, url_args = adapter.match(return_rule=True)
-        request.path_params = url_args
-        injectables = dict(self.resources)
-        injectables['request'] = request
-        injectables['_application'] = self
-        injectables.update(url_args)
-        ep_arg_names = route.endpoint_args
-        ep_kwargs = dict([(k, v) for k, v in injectables.items()
-                          if k in ep_arg_names])
-        return route, ep_kwargs
+        route, path_params = adapter.match(return_rule=True)
+        return route, path_params
 
     def respond(self, request):
         try:
-            route, ep_kwargs = self.match(request)
-            ep_kwargs['request'] = request
+            route, path_params = self.match(request)
+            injectables = dict(self.resources)
+            injectables['request'] = request
+            injectables['_application'] = self
+            injectables.update(path_params)
+            request.path_params = path_params
             # some versions of 2.6 die on unicode kwarg names
-            ep_kwargs = dict([(str(k), v) for k, v in ep_kwargs.items()])
-            ep_res = route.execute(**ep_kwargs)
+            injectables = dict([(str(k), v) for k, v in injectables.items()])
+            ep_res = route.execute(**injectables)
         except Exception as e:
             code = getattr(e, 'code', None)
             if code in self.error_handlers:
@@ -88,10 +84,10 @@ class Application(object):
                 handler = self.error_handlers.get(None)
 
             if handler:
-                injectables = {'error': e,
-                               'request': request,
-                               '_application': self}
-                return inject(handler, injectables)
+                err_injectables = {'error': e,
+                                   'request': request,
+                                   '_application': self}
+                return inject(handler, err_injectables)
             else:
                 if code and callable(getattr(e, 'get_response', None)):
                     return e.get_response(request)
