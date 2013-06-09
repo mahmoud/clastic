@@ -29,7 +29,7 @@ def test_create_route_order_list():
     yield eq_, client.get('/api/a').data, 'api: a'
     yield eq_, client.get('/api/a/b').data, 'api: a/b'
 
-    for i, rule in enumerate(app._rules):
+    for i, rule in enumerate(app.wmap._rules):
         yield eq_, rule.rule, routes[i][0]
     return
 
@@ -44,5 +44,5 @@ def test_create_route_order_incr():
     for r in routes:
         app.add(r)
         yield eq_, client.get('/api/a/b').data, 'api: a/b'
-        yield eq_, app._rules[-1].rule, r[0]
+        yield eq_, app.wmap._rules[-1].rule, r[0]
     return
