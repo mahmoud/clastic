@@ -151,6 +151,35 @@ class SubApplication(RuleFactory):
                 yield yld
 
 
+def app_execute(self, request, **kwargs):
+    req_provides = self._execute_req_middlewares(request, **kwargs)
+    kwargs.update(req_provides)
+    route, path_params = self.match(request)
+    kwargs['_route'] = route
+    kwargs['_path_params'] = path_params
+    kwargs.update(path_params)
+    return route.execute(request, **kwargs)
+
+
+def get_req_mw_provides(self, middlewares):
+    import itertools
+    req_sigs = [(mw.request, mw.provides)
+                for mw in middlewares if mw.request]
+    req_funcs, req_provides = zip(*req_sigs) or ((), ())
+    req_all_provides = set(itertools.chain.from_iterable(req_provides))
+    return req_all_provides
+
+
+def get_req_mw_chain(self, middleware):
+    rt_chain, rt_chain_args, rt_unres = make_chain(rt_funcs,
+                                                   rt_provides,
+                                                   rt_func,
+                                                   rt_avail)
+    if rt_unres:
+        raise NameError("unresolved request middleware arguments: %r"
+                        % list(req_unres))
+
+
 class Route(Rule):
     def __init__(self, rule_str, endpoint, render_arg=None, *a, **kw):
         super(Route, self).__init__(rule_str, *a, endpoint=endpoint, **kw)
