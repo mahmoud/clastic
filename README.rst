@@ -406,13 +406,9 @@ advanced usage, and are thus prefixed with an underscore.
 
 ``_route``
    The Route which was matched by the URL and is currently being
-   executed. Also mostly introspective in nature.
-
-``_endpoint``
-   The endpoint function associated with the matched Route. While of
-   limited utility, since the same function is available as an
-   attribute of ``_route``, it can be useful for introspection, or to
-   shortcut execution in extreme cases.
+   executed. Also mostly introspective in nature. ``_route`` has a lot
+   of useful attributes, such as ``endpoint``, which can be used to
+   shortcut execution in an extreme case.
 
 And, that's it! All other argument names are unreserved and yours for
 the binding.
