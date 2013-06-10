@@ -67,16 +67,6 @@ class Application(object):
         route, path_params = adapter.match(return_rule=True)
         return route, path_params
 
-    """
-    route, path_params = self.match(request)
-            injectables = dict(self.resources)
-            injectables['request'] = request
-            injectables['_application'] = self
-            injectables.update(path_params)
-            request.path_params = path_params
-            ep_res = route.execute(**injectables)
-    """
-
     def respond(self, request):
         try:
             ep_res = self._respond(self, request)
@@ -158,26 +148,6 @@ class SubApplication(RuleFactory):
                 yld = rule.empty()
                 yld.rule = self.prefix + yld.rule
                 yield yld
-
-"""
-routes' preprovided:
-
-* builtins
-* middleware request provides
-* path params
-*
-
-"""
-
-
-def dispatch(self, request, **kwargs):
-    req_provides = self._execute_req_middlewares(request, **kwargs)
-    kwargs.update(req_provides)
-    route, path_params = self.match(request)
-    kwargs['_route'] = route
-    kwargs['_path_params'] = path_params
-    kwargs.update(path_params)
-    return route.execute(request, **kwargs)
 
 
 class Route(Rule):
