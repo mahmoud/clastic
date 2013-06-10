@@ -8,7 +8,8 @@ from server import run_simple
 from sinter import inject, get_arg_names, getargspec
 from middleware import (check_middlewares,
                         merge_middlewares,
-                        make_route_chain)
+                        make_route_chain,
+                        make_application_chain)
 
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
@@ -34,6 +35,10 @@ class Application(object):
                             resource_conflicts)
         self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
+        provided = set(self.resources) | set(RESERVED_ARGS)
+        self._respond = make_application_chain(self.middlewares,
+                                               self.match,
+                                               provided)
         self.render_factory = render_factory
         self.endpoint_args = {}
         for entry in routes:
@@ -77,15 +82,19 @@ class Application(object):
         route, path_params = adapter.match(return_rule=True)
         return route, path_params
 
-    def respond(self, request):
-        try:
-            route, path_params = self.match(request)
+    """
+    route, path_params = self.match(request)
             injectables = dict(self.resources)
             injectables['request'] = request
             injectables['_application'] = self
             injectables.update(path_params)
             request.path_params = path_params
             ep_res = route.execute(**injectables)
+    """
+
+    def respond(self, request):
+        try:
+            ep_res = self._respond(self, request)
         except Exception as e:
             code = getattr(e, 'code', None)
             if code in self.error_handlers:
@@ -187,13 +196,7 @@ def dispatch(self, request, **kwargs):
 
 
 def get_req_mw_chain(self, middleware):
-    rt_chain, rt_chain_args, rt_unres = make_chain(rt_funcs,
-                                                   rt_provides,
-                                                   rt_func,
-                                                   rt_avail)
-    if rt_unres:
-        raise NameError("unresolved request middleware arguments: %r"
-                        % list(req_unres))
+    pass
 
 
 class Route(Rule):

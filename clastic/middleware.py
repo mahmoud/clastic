@@ -103,13 +103,55 @@ def merge_middlewares(old, new):
     return merged
 
 
-def make_application_chain(middlewares, dispatch, preprovided):
-    req_provided = set(preprovided) - set(['next', 'context', '_route'])
+def make_application_chain(middlewares, match, preprovided):
+    req_avail = set(preprovided) - set(['next', 'context', '_route'])
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
     req_funcs, req_provides = zip(*req_sigs) or ((), ())
     req_all_provides = set(itertools.chain.from_iterable(req_provides))
+    req_all_avail = req_avail | req_all_provides
+    print 'provides:', req_all_provides
+    print 'avail:', req_avail
+    print 'all avail:', req_all_avail
+    dispatch_func = _create_app_inner(match, req_all_avail, req_all_provides)
 
+    req_chain, req_chain_args, req_unres = make_chain(req_funcs,
+                                                      req_provides,
+                                                      dispatch_func,
+                                                      req_avail)
+    if req_unres:
+        raise NameError("unresolved request middleware arguments: %r"
+                        % list(req_unres))
+
+    return req_chain
+
+
+_APP_INNER_TMPL = """\
+def dispatch({req_mw_provides}):
+    route, path_params = match(request)
+    injectables = {{'request': request,
+                   '_application': _application,
+                   '_route': route,
+                   '_path_params': path_params}}
+    injectables.update(dict({req_mw_arg_str}))
+    injectables.update(path_params)
+    return route.execute(**injectables)
+"""
+
+
+def _create_app_inner(match_func, req_avail, req_mw_provides, verbose=_VERBOSE):
+    rmp_str = ','.join(req_avail)
+    rmp_arg_str = _named_arg_str(req_mw_provides)
+
+    code_str = _APP_INNER_TMPL.format(req_mw_provides=rmp_str,
+                                      req_mw_arg_str=rmp_arg_str)
+    if verbose:
+        print code_str  # pragma: nocover
+    d = {'match': match_func}
+
+    exec compile(code_str, '<string>', 'single') in d
+
+    return d['dispatch']
 
 
 def make_route_chain(middlewares, endpoint, render, preprovided):
@@ -217,6 +259,7 @@ class GetParamMiddleware(Middleware):
         kwargs = {}
         for p_name, p_type in self.params.items():
             kwargs[p_name] = request.args.get(p_name, None, p_type)
+        print kwargs
         return next(**kwargs)
 
     def __repr__(self):
