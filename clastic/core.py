@@ -44,21 +44,6 @@ class Application(object):
         for entry in routes:
             self.add(entry)
 
-    @property
-    def request_mw_provides(self):
-        # tmp
-        import itertools
-        req_provides = [mw.provides for mw in self.middlewares if mw.request]
-        return set(itertools.chain.from_iterable(req_provides))
-
-    @property
-    def all_provides(self):
-        # tmp
-        ret = (set(RESERVED_ARGS)
-               | set(self.resources)
-               | set(self.request_mw_provides))
-        return ret - set(['next'])
-
     def add(self, entry, index=None, rebind_render=True):
         if index is None:
             index = len(self.routes)
@@ -195,10 +180,6 @@ def dispatch(self, request, **kwargs):
     return route.execute(request, **kwargs)
 
 
-def get_req_mw_chain(self, middleware):
-    pass
-
-
 class Route(Rule):
     def __init__(self, rule_str, endpoint, render_arg=None, *a, **kw):
         super(Route, self).__init__(rule_str, *a, endpoint=endpoint, **kw)
@@ -274,20 +255,18 @@ class Route(Rule):
         merged_mw = merge_middlewares(self._middlewares, middlewares)
         r_copy = self.empty()
         url_map = app.wmap  # TODO: cleanup the werkzeug url map stuff
-        rmp = app.request_mw_provides
         try:
-            r_copy._bind_args(url_map, merged_resources, merged_mw, rmp, render_factory)
+            r_copy._bind_args(url_map, merged_resources, merged_mw, render_factory)
         except:
             raise
         self._bind_args(url_map,
                         merged_resources,
                         merged_mw,
-                        rmp,
                         render_factory)
         self._bound_apps += (app,)
         return self
 
-    def _bind_args(self, url_map, resources, middlewares, rmp, render_factory):
+    def _bind_args(self, url_map, resources, middlewares, render_factory):
         super(Route, self).bind(url_map, rebind=True)
         url_args = set(self.arguments)
         builtin_args = set(RESERVED_ARGS)
@@ -295,10 +274,9 @@ class Route(Rule):
 
         tmp_avail_args = {'url': url_args,
                           'builtins': builtin_args,
-                          'resources': resource_args,
-                          'req_mw': rmp}
+                          'resources': resource_args}
         check_middlewares(middlewares, tmp_avail_args)
-        provided = resource_args | builtin_args | url_args | rmp
+        provided = resource_args | builtin_args | url_args
         if callable(render_factory) and self.render_arg is not None \
                 and not callable(self.render_arg):
             _render = render_factory(self.render_arg)

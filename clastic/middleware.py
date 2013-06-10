@@ -78,6 +78,8 @@ def check_middlewares(middlewares, args_dict=None):
             provided_by[arg_name].append(mw)
         for arg_name in mw.render_provides:
             provided_by[arg_name].append(mw)
+        for arg_name in mw.provides:
+            provided_by[arg_name].append(mw)
 
     conflicts = [(n, tuple(ps)) for (n, ps) in
                  provided_by.items() if len(ps) > 1]
@@ -168,6 +170,9 @@ def make_route_chain(middlewares, endpoint, render, preprovided):
     if 'next' in get_arg_names(render):
         raise NameError(_next_exc_msg % render)
 
+    req_provides = [mw.provides for mw in middlewares if mw.request]
+    req_provides = set(itertools.chain.from_iterable(req_provides))
+    preprovided = preprovided | req_provides
     ep_avail = set(preprovided) - set(['next', 'context'])
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
