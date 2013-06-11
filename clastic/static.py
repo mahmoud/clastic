@@ -7,10 +7,9 @@ from datetime import datetime
 
 from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
-from werkzeug.exceptions import Forbidden, NotFound
 
 from core import Application
-
+from errors import Forbidden, NotFound
 
 # TODO: check isdir and accessible on search_paths
 # TODO: default favicon.ico StaticApplication?
