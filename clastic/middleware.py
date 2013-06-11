@@ -74,6 +74,10 @@ def check_middlewares(middlewares, args_dict=None):
         check_middleware(mw)
         for arg in mw.provides:
             provided_by[arg].append(mw)
+        for arg in mw.endpoint_provides:
+            provided_by[arg].append(mw)
+        for arg in mw.render_provides:
+            provided_by[arg].append(mw)
 
     conflicts = [(n, tuple(ps)) for (n, ps) in
                  provided_by.items() if len(ps) > 1]
@@ -122,6 +126,9 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     """
     Expects de-duplicated and conflict-free middleware/endpoint/render
     functions.
+
+    # TODO: better name to differentiate a compiled/chained stack from
+    # the core functions themselves (endpoint/render)
     """
     _next_exc_msg = "argument 'next' reserved for middleware use only (%r)"
     if 'next' in get_arg_names(endpoint):

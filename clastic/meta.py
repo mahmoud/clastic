@@ -18,7 +18,7 @@ try:
 except ImportError:
     resource = None
 
-from core import Application, RESERVED_ARGS
+from core import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec
 from render import json_response, AshesRenderFactory
 from static import StaticApplication
@@ -60,6 +60,8 @@ def get_route_infos(_application):
     app = _application
     ret = []
     for r in app.routes:
+        if isinstance(r, NullRoute):
+            continue
         r_info = {}
         r_info['url_rule'] = r.rule
         r_info['endpoint'] = get_endpoint_info(r)

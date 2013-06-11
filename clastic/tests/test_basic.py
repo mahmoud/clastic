@@ -5,9 +5,9 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 #import clastic
-from clastic import Application, DummyMiddleware
+from clastic import Application
 
-from common import hello_world, RequestProvidesName
+from common import hello_world, DummyMiddleware, RequestProvidesName
 
 
 def test_create_empty_application():
@@ -75,8 +75,8 @@ def test_subapplication_basic():
                       resources={'name': 'Kurt'},
                       middlewares=[dum2])
 
-    yield eq_, len(app.routes), 2
-    yield eq_, len(set([r.rule for r in app.routes])), 2
+    yield eq_, len(app.routes), 3  # 2 + 1 sentinel route
+    yield eq_, len(set([r.rule for r in app.routes])), 3
     yield eq_, len(app.routes[0]._middlewares), 1  # middleware merging
 
     resp = Client(no_name_app, BaseResponse).get('/')
@@ -87,3 +87,5 @@ def test_subapplication_basic():
     yield eq_, resp.data, 'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/beta/')
     yield eq_, resp.data, 'Hello, Kurt!'
+    resp = Client(app, BaseResponse).get('/larp4lyfe/')
+    yield eq_, resp.status_code, 404
