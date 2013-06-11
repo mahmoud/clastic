@@ -8,6 +8,7 @@ from werkzeug.routing import Map, Rule, RuleFactory
 from server import run_simple
 
 from sinter import inject, get_arg_names, getargspec
+from errors import NotFound
 from middleware import (check_middlewares,
                         merge_middlewares,
                         make_middleware_chain)
@@ -28,7 +29,8 @@ class Application(object):
 
         routes = routes or []
         self.error_handlers = dict(error_handlers or {})
-        self.routes = [NullRoute()]  # sentinel route
+        self.routes = []
+
         self.resources = dict(resources or {})
         resource_conflicts = [r for r in RESERVED_ARGS if r in self.resources]
         if resource_conflicts:
@@ -38,6 +40,9 @@ class Application(object):
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
         self.endpoint_args = {}
+
+        self._null_route = NullRoute()
+        self._null_route.bind(self)
         for entry in routes:
             self.add(entry)
 
@@ -46,15 +51,14 @@ class Application(object):
             index = len(self.routes)
         rf = cast_to_rule_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        try:
-            sentinel_route = self.routes.pop()
-            for route in rf.get_rules(self.wmap):
-                route.bind(self, rebind_render)
-                self.routes.insert(index, route)
-                self.wmap._rules.insert(index, route)
-                self.wmap._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
-        finally:
-            self.routes.append(sentinel_route)
+        for route in rf.get_rules(self.wmap):
+            self._add_route(route, index, rebind_render)
+
+    def _add_route(self, route, index, rebind_render):
+        route.bind(self, rebind_render)
+        self.routes.insert(index, route)
+        self.wmap._rules.insert(index, route)
+        self.wmap._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
         self.wmap._remap = True
 
     def get_rules(self, r_map=None):
@@ -63,15 +67,13 @@ class Application(object):
             for rule in rf.get_rules(r_map):
                 yield rule  # is yielding bound rules bad?
 
-    def match(self, request):
-        adapter = self.wmap.bind_to_environ(request.environ)
-        route, path_params = adapter.match(return_rule=True)
-        return route, path_params
-
     def respond(self, request):
         try:
             adapter = self.wmap.bind_to_environ(request.environ)
             route, path_params = adapter.match(return_rule=True)
+        except NotFound:
+            route, path_params = self._null_route, {}
+        try:
             injectables = {'_application': self,
                            'request': request,
                            '_route': route}
@@ -284,7 +286,8 @@ class Route(Rule):
 class NullRoute(Route):
     def __init__(self):
         rule_str = '/<path:_ignored>'
-        super(Route, self).__init__(rule_str, endpoint=self.not_found)
+        super(NullRoute, self).__init__(rule_str, endpoint=self.not_found)
+        self.build_only = True
 
     def not_found(self, request):
         raise NotFound()

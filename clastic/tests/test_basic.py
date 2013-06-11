@@ -75,8 +75,8 @@ def test_subapplication_basic():
                       resources={'name': 'Kurt'},
                       middlewares=[dum2])
 
-    yield eq_, len(app.routes), 3  # 2 + 1 sentinel route
-    yield eq_, len(set([r.rule for r in app.routes])), 3
+    yield eq_, len(app.routes), 2
+    yield eq_, len(set([r.rule for r in app.routes])), 2
     yield eq_, len(app.routes[0]._middlewares), 1  # middleware merging
 
     resp = Client(no_name_app, BaseResponse).get('/')
