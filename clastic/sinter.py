@@ -58,8 +58,8 @@ def chain_argspec(func_list, provides):
         def_offs = -len(defaults) if defaults else None
         undefaulted, defaulted = arg_names[:def_offs], arg_names[def_offs:]
         optional_sofar.update(defaulted)
-        # keep track of defaults so that e.g. endpoint default param can pick up
-        # request injected/provided param
+        # keep track of defaults so that e.g. endpoint default param
+        # can pick up request injected/provided param
         required_sofar |= set(undefaulted) - provided_sofar
         provided_sofar.update(p)
 

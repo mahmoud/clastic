@@ -8,8 +8,7 @@ from server import run_simple
 from sinter import inject, get_arg_names, getargspec
 from middleware import (check_middlewares,
                         merge_middlewares,
-                        make_route_chain,
-                        make_application_chain)
+                        make_middleware_chain)
 
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
@@ -36,9 +35,6 @@ class Application(object):
         self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
         provided = set(self.resources) | set(RESERVED_ARGS)
-        self._respond = make_application_chain(self.middlewares,
-                                               self.match,
-                                               provided)
         self.render_factory = render_factory
         self.endpoint_args = {}
         for entry in routes:
@@ -57,7 +53,7 @@ class Application(object):
         self.wmap._remap = True
 
     def get_rules(self, r_map=None):
-        r_map = self
+        r_map = r_map or self
         for rf in self.routes:
             for rule in rf.get_rules(r_map):
                 yield rule  # is yielding bound rules bad?
@@ -69,7 +65,14 @@ class Application(object):
 
     def respond(self, request):
         try:
-            ep_res = self._respond(self, request)
+            adapter = self.wmap.bind_to_environ(request.environ)
+            route, path_params = adapter.match(return_rule=True)
+            injectables = {'_application': self,
+                           'request': request,
+                           '_route': route}
+            injectables.update(path_params)
+            injectables.update(self.resources)
+            ep_res = route.execute(**injectables)  # TODO
         except Exception as e:
             code = getattr(e, 'code', None)
             if code in self.error_handlers:
@@ -254,7 +257,7 @@ class Route(Rule):
             _render = self._render
         else:
             _render = lambda context: context
-        _execute = make_route_chain(middlewares, self.endpoint, _render, provided)
+        _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
 
         self._resources.update(resources)
         self._middlewares = middlewares

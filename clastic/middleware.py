@@ -63,8 +63,6 @@ def check_middleware(mw):
 
 
 def check_middlewares(middlewares, args_dict=None):
-    # TODO: does not appear to check mw.endpoint_provides and
-    # mw.render_provides?
     args_dict = args_dict or {}
 
     provided_by = defaultdict(list)
@@ -74,12 +72,12 @@ def check_middlewares(middlewares, args_dict=None):
 
     for mw in middlewares:
         check_middleware(mw)
-        for arg_name in mw.endpoint_provides:
-            provided_by[arg_name].append(mw)
-        for arg_name in mw.render_provides:
-            provided_by[arg_name].append(mw)
-        for arg_name in mw.provides:
-            provided_by[arg_name].append(mw)
+        for arg in mw.provides:
+            provided_by[arg].append(mw)
+        for arg in mw.endpoint_provides:
+            provided_by[arg].append(mw)
+        for arg in mw.render_provides:
+            provided_by[arg].append(mw)
 
     conflicts = [(n, tuple(ps)) for (n, ps) in
                  provided_by.items() if len(ps) > 1]
@@ -105,64 +103,32 @@ def merge_middlewares(old, new):
     return merged
 
 
-def make_application_chain(middlewares, match, preprovided):
-    req_avail = set(preprovided) - set(['next', 'context', '_route'])
-    req_sigs = [(mw.request, mw.provides)
-                for mw in middlewares if mw.request]
-    req_funcs, req_provides = zip(*req_sigs) or ((), ())
-    req_all_provides = set(itertools.chain.from_iterable(req_provides))
-    req_all_avail = req_avail | req_all_provides
-    print 'provides:', req_all_provides
-    print 'avail:', req_avail
-    print 'all avail:', req_all_avail
-    dispatch_func = _create_app_inner(match, req_all_avail, req_all_provides)
+class DummyMiddleware(Middleware):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
-    req_chain, req_chain_args, req_unres = make_chain(req_funcs,
-                                                      req_provides,
-                                                      dispatch_func,
-                                                      req_avail)
-    if req_unres:
-        raise NameError("unresolved request middleware arguments: %r"
-                        % list(req_unres))
-
-    return req_chain
+    def request(self, next, request):
+        name = '%s (%s)' % (self.__class__.__name__, id(self))
+        if self.verbose:
+            print name, '- handling', id(request)
+        try:
+            ret = next()
+        except Exception as e:
+            if self.verbose:
+                print name, '- uhoh:', repr(e)
+            raise
+        if self.verbose:
+            print name, '- hooray:', repr(ret)
+        return ret
 
 
-_APP_INNER_TMPL = """\
-def dispatch({req_mw_provides}):
-    route, path_params = match(request)
-    injectables = {{'request': request,
-                   '_application': _application,
-                   '_route': route,
-                   '_path_params': path_params}}
-    injectables.update(dict({req_mw_arg_str}))
-    injectables.update(path_params)
-    return route.execute(**injectables)
-"""
-
-
-def _create_app_inner(match_func, req_avail, req_mw_provides, verbose=_VERBOSE):
-    rmp_str = ','.join(req_avail)
-    rmp_arg_str = _named_arg_str(req_mw_provides)
-
-    code_str = _APP_INNER_TMPL.format(req_mw_provides=rmp_str,
-                                      req_mw_arg_str=rmp_arg_str)
-    if verbose:
-        print code_str  # pragma: nocover
-    d = {'match': match_func}
-
-    exec compile(code_str, '<string>', 'single') in d
-
-    return d['dispatch']
-
-
-def make_route_chain(middlewares, endpoint, render, preprovided):
+def make_middleware_chain(middlewares, endpoint, render, preprovided):
     """
     Expects de-duplicated and conflict-free middleware/endpoint/render
     functions.
 
     # TODO: better name to differentiate a compiled/chained stack from
-    the core functions themselves (endpoint/render)
+    # the core functions themselves (endpoint/render)
     """
     _next_exc_msg = "argument 'next' reserved for middleware use only (%r)"
     if 'next' in get_arg_names(endpoint):
@@ -170,10 +136,13 @@ def make_route_chain(middlewares, endpoint, render, preprovided):
     if 'next' in get_arg_names(render):
         raise NameError(_next_exc_msg % render)
 
-    req_provides = [mw.provides for mw in middlewares if mw.request]
-    req_provides = set(itertools.chain.from_iterable(req_provides))
-    preprovided = preprovided | req_provides
-    ep_avail = set(preprovided) - set(['next', 'context'])
+    req_avail = set(preprovided) - set(['next', 'context'])
+    req_sigs = [(mw.request, mw.provides)
+                for mw in middlewares if mw.request]
+    req_funcs, req_provides = zip(*req_sigs) or ((), ())
+    req_all_provides = set(itertools.chain.from_iterable(req_provides))
+
+    ep_avail = req_avail | req_all_provides
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
     ep_funcs, ep_provides = zip(*ep_sigs) or ((), ())
@@ -197,16 +166,24 @@ def make_route_chain(middlewares, endpoint, render, preprovided):
         raise NameError("unresolved render middleware arguments: %r"
                         % list(rn_unres))
 
-    rt_args = (ep_args | rn_args) - set(['context'])
-    rt_func = _create_route_inner(ep_chain,
-                                  rn_chain,
-                                  rt_args,
-                                  ep_args,
-                                  rn_args)
-    return rt_func
+    req_args = (ep_args | rn_args) - set(['context'])
+    req_func = _create_request_inner(ep_chain,
+                                     rn_chain,
+                                     req_args,
+                                     ep_args,
+                                     rn_args)
+    req_chain, req_chain_args, req_unres = make_chain(req_funcs,
+                                                      req_provides,
+                                                      req_func,
+                                                      req_avail)
+    if req_unres:
+        raise NameError("unresolved request middleware arguments: %r"
+                        % list(req_unres))
+    return req_chain
 
 
-_REQ_INNER_TMPL = '''\
+_REQ_INNER_TMPL = \
+'''
 def process_request({all_args}):
     context = endpoint({endpoint_args})
     if isinstance(context, BaseResponse):
@@ -221,9 +198,9 @@ def _named_arg_str(args):
     return ', '.join([a + '=' + a for a in args])
 
 
-def _create_route_inner(endpoint, render, all_args,
-                        endpoint_args, render_args,
-                        verbose=_VERBOSE):
+def _create_request_inner(endpoint, render, all_args,
+                          endpoint_args, render_args,
+                          verbose=_VERBOSE):
     all_args_str = ','.join(all_args)
     ep_args_str = _named_arg_str(endpoint_args)
     rn_args_str = _named_arg_str(render_args)
@@ -264,7 +241,6 @@ class GetParamMiddleware(Middleware):
         kwargs = {}
         for p_name, p_type in self.params.items():
             kwargs[p_name] = request.args.get(p_name, None, p_type)
-        print kwargs
         return next(**kwargs)
 
     def __repr__(self):
