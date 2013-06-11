@@ -1,4 +1,5 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
+
 import os
 from werkzeug.contrib.securecookie import SecureCookie
 

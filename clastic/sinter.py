@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import types
 import inspect
 from inspect import ArgSpec

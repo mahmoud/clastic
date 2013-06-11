@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
 
 import os
 import re
@@ -30,14 +30,14 @@ def get_flaw_info(tb_str, parsed_error, mon_files):
     try:
         last_line = tb_str.splitlines()[-1]
     except:
-        last_line = 'Unknown error'
+        last_line = u'Unknown error'
     return {'mon_files': mon_files,
             'parsed_err': parsed_error,
             'last_line': last_line,
             'tb_str': tb_str}
 
 
-_FLAW_TEMPLATE = """\
+_FLAW_TEMPLATE = u"""\
 <html>
   <head>
     <title>Oh, Flaw'd: {exc_type} in {err.source_file}</title>
@@ -132,7 +132,7 @@ def _filter_site_files(paths):
 
 
 if __name__ == '__main__':
-    _example_tb = """
+    _example_tb = u"""
 Traceback (most recent call last):
   File "example.py", line 2, in <module>
     plarp
