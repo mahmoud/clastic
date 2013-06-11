@@ -26,7 +26,7 @@ class Application(object):
 
         routes = routes or []
         self.error_handlers = dict(error_handlers or {})
-        self.routes = []
+        self.routes = [NullRoute()]  # sentinel route
         self.resources = dict(resources or {})
         resource_conflicts = [r for r in RESERVED_ARGS if r in self.resources]
         if resource_conflicts:
@@ -34,7 +34,6 @@ class Application(object):
                             resource_conflicts)
         self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
-        provided = set(self.resources) | set(RESERVED_ARGS)
         self.render_factory = render_factory
         self.endpoint_args = {}
         for entry in routes:
@@ -45,11 +44,15 @@ class Application(object):
             index = len(self.routes)
         rf = cast_to_rule_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        for route in rf.get_rules(self.wmap):
-            route.bind(self, rebind_render)
-            self.routes.insert(index, route)
-            self.wmap._rules.insert(index, route)
-            self.wmap._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
+        try:
+            sentinel_route = self.routes.pop()
+            for route in rf.get_rules(self.wmap):
+                route.bind(self, rebind_render)
+                self.routes.insert(index, route)
+                self.wmap._rules.insert(index, route)
+                self.wmap._rules_by_endpoint.setdefault(route.endpoint, []).append(route)
+        finally:
+            self.routes.append(sentinel_route)
         self.wmap._remap = True
 
     def get_rules(self, r_map=None):
@@ -148,6 +151,8 @@ class SubApplication(RuleFactory):
     def get_rules(self, url_map):
         for rules in self.app.get_rules(url_map):
             for rule in rules.get_rules(url_map):
+                if isinstance(rule, NullRoute):
+                    continue
                 yld = rule.empty()
                 yld.rule = self.prefix + yld.rule
                 yield yld
@@ -272,6 +277,15 @@ class Route(Rule):
         injectables.update(self._resources)
         injectables.update(kwargs)
         return inject(self._execute, injectables)
+
+
+class NullRoute(Route):
+    def __init__(self):
+        rule_str = '/<path:_ignored>'
+        super(Route, self).__init__(rule_str, endpoint=self.not_found)
+
+    def not_found(self, request):
+        raise NotFound()
 
 
 def cast_to_rule_factory(in_arg):
