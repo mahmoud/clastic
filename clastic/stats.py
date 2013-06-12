@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+from collections import namedtuple
 
 from core import Application
 from middleware import Middleware
@@ -11,6 +12,7 @@ from render import default_response
 
 class StatsMiddleware(Middleware):
     def __init__(self):
+        self.hits = []
         self.per_route_resp_counts = {}
         self.per_route_perfs = {}
 
@@ -25,7 +27,8 @@ class StatsMiddleware(Middleware):
             resp = next()
             resp_type = getattr(resp, 'status_code', type(resp))
         except Exception as e:
-            resp_type = type(e)
+            # see Werkzeug #388
+            resp_type = getattr(e, 'code', type(e))
             raise
         finally:
             try:
