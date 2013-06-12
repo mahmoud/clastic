@@ -69,11 +69,11 @@ class Application(object):
 
     def respond(self, request):
         try:
-            adapter = self.wmap.bind_to_environ(request.environ)
-            route, path_params = adapter.match(return_rule=True)
-        except NotFound:
-            route, path_params = self._null_route, {}
-        try:
+            try:
+                adapter = self.wmap.bind_to_environ(request.environ)
+                route, path_params = adapter.match(return_rule=True)
+            except NotFound:
+                route, path_params = self._null_route, {}
             injectables = {'_application': self,
                            'request': request,
                            '_route': route}
