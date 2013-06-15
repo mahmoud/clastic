@@ -31,13 +31,13 @@ Getting up and running with Clastic is exceedingly difficult. Just try
 and create a file called ``hello.py`` with the following
 indecipherable runes::
 
-  from clastic import Application, default_response
+  from clastic import Application, render_basic
 
   def hello(name='world'):
       return 'Hello, %s!' % name
 
-  routes = [('/', hello, default_response),
-            ('/<name>', hello, default_response)]
+  routes = [('/', hello, render_basic),
+            ('/<name>', hello, render_basic)]
 
   app = Application(routes)
   app.serve()
@@ -55,7 +55,7 @@ If we add the ``request`` argument to any endpoint function, we get
 access to all of the request data, including any GET or POST
 parameters or cookies that may have been sent with the request.::
 
-  from clastic import Application, default_response
+  from clastic import Application, render_basic
 
   def fancy(request):
       result = ''
@@ -67,7 +67,7 @@ parameters or cookies that may have been sent with the request.::
           result += "Found cookie '%s' with value '%s'\n" % (k, request.cookies[k])
       return result
 
-  routes = [('/fancy', fancy, default_response)]
+  routes = [('/fancy', fancy, render_basic)]
 
   app = Application(routes)
   app.serve()
@@ -92,15 +92,15 @@ Pushing the envelope with Response objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the previous examples, we have been returning strings from our
-endpoints, letting the trusty ``default_response`` handle the rest If
-we want more control, then we can remove ``default_response`` from the
+endpoints, letting the trusty ``render_basic`` handle the rest If
+we want more control, then we can remove ``render_basic`` from the
 route, opting to instantiate and return our own ``Response`` object
 directly.
 
 In the following example, we alter the response headers and status
 code to forward the browser back to the main page::
 
-  from clastic import Application, default_response, Response, redirect
+  from clastic import Application, render_basic, Response, redirect
 
   def home():
       return 'Home, Sweet Home!'
@@ -117,7 +117,7 @@ code to forward the browser back to the main page::
   def redirect_home():
       return redirect('/')
 
-  routes = [('/', home, default_response),
+  routes = [('/', home, render_basic),
             ('/return-home', return_home),
             ('/redirect-home', redirect_home]
 
@@ -295,13 +295,13 @@ A simple example
 Arguments are simply checked by name. Consider the following
 "Hello, World!" Application::
 
-  from clastic import Application, default_response
+  from clastic import Application, render_basic
 
   def hello(name='world'):
       return 'Hello, %s!' % name
 
-  routes = [('/', hello, default_response),
-            ('/<name>', hello, default_response)]
+  routes = [('/', hello, render_basic),
+            ('/<name>', hello, render_basic)]
 
   app = Application(routes)
   app.serve()
