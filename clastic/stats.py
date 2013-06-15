@@ -5,7 +5,7 @@ from collections import namedtuple
 
 from core import Application
 from middleware import Middleware
-from render import default_response
+from render import render_basic
 
 # TODO: what are some sane-default intervals?
 
@@ -117,7 +117,7 @@ def _get_stats_dict(_application):
 
 
 def _create_app():
-    routes = [('/', _get_stats_dict, default_response)]
+    routes = [('/', _get_stats_dict, render_basic)]
     mws = [StatsMiddleware()]
     app = Application(routes, middlewares=mws)
     return app

@@ -51,7 +51,7 @@ class JSONRender(object):
         return resp
 
 
-class DefaultRender(object):
+class BasicRender(object):
     def __init__(self, dev_mode=True):
         self.json_render = JSONRender(dev_mode=dev_mode)
 
@@ -69,6 +69,15 @@ class DefaultRender(object):
         return Response(unicode(context), mimetype="text/plain")
 
 
-json_response = JSONRender()
-dev_json_response = JSONRender(True)
-default_response = DefaultRender()
+render_json = JSONRender()
+render_json_dev = JSONRender(dev_mode=True)
+render_basic = BasicRender()
+
+
+#TODO: deprecate
+
+
+DefaultRender = BasicRender
+json_response = render_json
+dev_json_response = render_json_dev
+default_response = render_basic
