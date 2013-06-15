@@ -6,7 +6,7 @@ import json
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from clastic import Application, json_response, render_basic
+from clastic import Application, render_json, render_basic
 from clastic.middleware import SimpleContextProcessor, ContextProcessor
 from common import (hello_world,
                     hello_world_str,
@@ -16,7 +16,7 @@ from common import (hello_world,
 
 def test_simple_ctx_proc():
     add_name_lang = SimpleContextProcessor(name='Kurt', language='en')
-    app = Application([('/', hello_world_ctx, json_response)],
+    app = Application([('/', hello_world_ctx, render_json)],
                       middlewares=[add_name_lang])
     c = Client(app, BaseResponse)
     resp = c.get('/')
@@ -28,7 +28,7 @@ def test_simple_ctx_proc():
 def test_ctx_proc_req():
     req_provides_name = RequestProvidesName()
     add_name_lang = ContextProcessor(['name'], {'language': 'en'})
-    app = Application([('/', hello_world_ctx, json_response)],
+    app = Application([('/', hello_world_ctx, render_json)],
                       middlewares=[req_provides_name, add_name_lang])
     c = Client(app, BaseResponse)
     resp = c.get('/')
@@ -43,7 +43,7 @@ def test_ctx_proc_req():
 
 def test_ctx_proc_overwrite():
     add_name = ContextProcessor(defaults={'name': 'Kurt'}, overwrite=True)
-    app = Application([('/', hello_world_ctx, json_response)],
+    app = Application([('/', hello_world_ctx, render_json)],
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
@@ -53,7 +53,7 @@ def test_ctx_proc_overwrite():
 
 def test_ctx_proc_empty():
     add_name = ContextProcessor()
-    app = Application([('/', hello_world_ctx, json_response)],
+    app = Application([('/', hello_world_ctx, render_json)],
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')

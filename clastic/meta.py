@@ -20,7 +20,7 @@ except ImportError:
 
 from core import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec
-from render import json_response, AshesRenderFactory
+from render import render_json, AshesRenderFactory
 from static import StaticApplication
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +32,7 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 def create_app():
     routes = [('/', get_all_meta_info, 'meta_base.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-              ('/json/', get_all_meta_info, json_response)]
+              ('/json/', get_all_meta_info, render_json)]
     resources = {'_meta_start_time': datetime.datetime.utcnow()}
     arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, resources, arf)

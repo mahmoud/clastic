@@ -18,12 +18,12 @@ import json
 _CUR_DIR = os.path.dirname(__file__)
 
 
-def test_json_render(json_response=None):
-    if json_response is None:
-        json_response = JSONRender(dev_mode=True)
-    app = Application([('/', hello_world_ctx, json_response),
-                       ('/<name>/', hello_world_ctx, json_response),
-                       ('/beta/<name>/', complex_context, json_response)])
+def test_json_render(render_json=None):
+    if render_json is None:
+        render_json = JSONRender(dev_mode=True)
+    app = Application([('/', hello_world_ctx, render_json),
+                       ('/<name>/', hello_world_ctx, render_json),
+                       ('/beta/<name>/', complex_context, render_json)])
 
     yield ok_, callable(app.routes[0]._execute)
     yield ok_, callable(app.routes[0]._render)
@@ -48,8 +48,8 @@ def test_json_render(json_response=None):
 
 
 #def test_default_json_render():
-#    from clastic.render import json_response
-#    for t in test_json_render(json_response):
+#    from clastic.render import render_json
+#    for t in test_json_render(render_json):
 #        yield t
 
 

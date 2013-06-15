@@ -9,7 +9,7 @@ from operator import itemgetter
 
 import clastic
 from clastic import Application, StaticApplication
-from clastic.render import json_response, AshesRenderFactory
+from clastic.render import render_json, AshesRenderFactory
 
 _CLASTIC_PATH = os.path.dirname(os.path.abspath(clastic.__file__))
 _ASSET_PATH = os.path.join(_CLASTIC_PATH, '_clastic_assets')
@@ -108,7 +108,7 @@ def format_dict(pd):
 def create_app():
     routes = [('/', top, 'top.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-              ('/json/', top, json_response)]
+              ('/json/', top, render_json)]
     arf = AshesRenderFactory(os.path.dirname(__file__))
     app = Application(routes, {}, arf)
     return app
