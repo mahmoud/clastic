@@ -6,7 +6,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.render import JSONRender, default_response
+from clastic.render import JSONRender, render_basic
 
 from common import (hello_world_str,
                     hello_world_html,
@@ -54,11 +54,11 @@ def test_json_render(json_response=None):
 
 
 def test_default_render():
-    app = Application([('/', hello_world_ctx, default_response),
-                       ('/<name>/', hello_world_ctx, default_response),
-                       ('/text/<name>/', hello_world_str, default_response),
-                       ('/html/<name>/', hello_world_html, default_response),
-                       ('/beta/<name>/', complex_context, default_response)])
+    app = Application([('/', hello_world_ctx, render_basic),
+                       ('/<name>/', hello_world_ctx, render_basic),
+                       ('/text/<name>/', hello_world_str, render_basic),
+                       ('/html/<name>/', hello_world_html, render_basic),
+                       ('/beta/<name>/', complex_context, render_basic)])
 
     yield ok_, callable(app.routes[0]._execute)
     yield ok_, callable(app.routes[0]._render)

@@ -7,7 +7,7 @@ from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.render import ashes
-from clastic.render import AshesRenderFactory, default_response
+from clastic.render import AshesRenderFactory, render_basic
 
 from common import hello_world_ctx, complex_context
 
@@ -44,7 +44,7 @@ def test_ashes_mixed():
     ashes_render = AshesRenderFactory(_TMPL_DIR)
     tmpl = 'basic_template.html'
     app = Application([('/', hello_world_ctx, tmpl),
-                       ('/json/', hello_world_ctx, default_response)],
+                       ('/json/', hello_world_ctx, render_basic)],
                       render_factory=ashes_render)
 
     c = Client(app, BaseResponse)

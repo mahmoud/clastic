@@ -4,7 +4,7 @@ from nose.tools import raises, eq_, ok_
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from clastic import Application, default_response
+from clastic import Application, render_basic
 
 
 def api(api_path):
@@ -21,9 +21,9 @@ def three_segments(one, two, three):
 
 def test_create_route_order_list():
     "tests route order when routes are added as a list"
-    routes = [('/api/<path:api_path>', api, default_response),
-              ('/<one>/<two>', two_segments, default_response),
-              ('/<one>/<two>/<three>', three_segments, default_response)]
+    routes = [('/api/<path:api_path>', api, render_basic),
+              ('/<one>/<two>', two_segments, render_basic),
+              ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = Application(routes)
     client = Client(app, BaseResponse)
     yield eq_, client.get('/api/a').data, 'api: a'
@@ -36,9 +36,9 @@ def test_create_route_order_list():
 
 def test_create_route_order_incr():
     "tests route order when routes are added incrementally"
-    routes = [('/api/<path:api_path>', api, default_response),
-              ('/<one>/<two>', two_segments, default_response),
-              ('/<one>/<two>/<three>', three_segments, default_response)]
+    routes = [('/api/<path:api_path>', api, render_basic),
+              ('/<one>/<two>', two_segments, render_basic),
+              ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = Application()
     client = Client(app, BaseResponse)
     for r in routes:

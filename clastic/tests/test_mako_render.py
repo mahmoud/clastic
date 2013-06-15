@@ -7,7 +7,7 @@ from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.render.mako_templates import mako, MakoRenderFactory
-from clastic.render import default_response
+from clastic.render import render_basic
 
 from common import hello_world_ctx, complex_context
 
@@ -55,7 +55,7 @@ def test_mako_mixed():
     mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'basic_template.html'
     app = Application([('/', hello_world_ctx, tmpl),
-                       ('/json/', hello_world_ctx, default_response)],
+                       ('/json/', hello_world_ctx, render_basic)],
                       render_factory=mako_render)
 
     c = Client(app, BaseResponse)

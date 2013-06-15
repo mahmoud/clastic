@@ -4,7 +4,7 @@ from nose.tools import eq_
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from clastic import Application, default_response
+from clastic import Application, render_basic
 from clastic.session import CookieSessionMiddleware
 
 from common import session_hello_world
@@ -12,8 +12,8 @@ from common import session_hello_world
 
 def test_cookie_session():
     cookie_session = CookieSessionMiddleware()
-    app = Application([('/', session_hello_world, default_response),
-                       ('/<name>/', session_hello_world, default_response)],
+    app = Application([('/', session_hello_world, render_basic),
+                       ('/<name>/', session_hello_world, render_basic)],
                       middlewares=[cookie_session])
     ic = Client(app, BaseResponse)
     resp = ic.get('/')

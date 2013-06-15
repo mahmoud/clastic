@@ -6,7 +6,7 @@ import json
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from clastic import Application, json_response, default_response
+from clastic import Application, json_response, render_basic
 from clastic.middleware import SimpleContextProcessor, ContextProcessor
 from common import (hello_world,
                     hello_world_str,
@@ -72,7 +72,7 @@ def test_ctx_proc_direct_resp():
 
 def test_ctx_proc_nonctx():
     add_name = ContextProcessor(defaults={'name': 'Kurt'})
-    app = Application([('/', hello_world_str, default_response)],
+    app = Application([('/', hello_world_str, render_basic)],
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
