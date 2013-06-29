@@ -2,13 +2,14 @@
 <html>
 <head>
   <title>Clastic Meta Application</title>
+  <link rel="stylesheet" type="text/css" href="clastic_assets/normalize.css">
   <link rel="stylesheet" type="text/css" href="clastic_assets/common.css">
 </head>
 <body>
-<h2 class="page_title">Clastic</h2>
+<h1 class="page_title">Clastic</h1>
 <div class="content">
   <div>
-    <h3>General</h3>
+    <h2>General</h2>
     <table>
       <tr><th>Start time</th><td title="{abs_start_time} UTC">{rel_start_time}</td></tr>
       <tr><th>PID</th><td>{env.proc.pid}</td></tr>
@@ -16,7 +17,7 @@
     </table>
   </div>
   <div id="route-info">
-    <h3>Routes</h3>
+    <h2>Routes</h2>
     <table>
       <thead>
       <tr><th>URL</th><th>Endpoint</th><th>Render</th></tr>
@@ -60,7 +61,7 @@
     </table>
   </div>
   <div>
-    <h3>Application-wide Middlewares</h3>
+    <h2>Application-wide Middlewares</h2>
     {^middlewares}
     <p>No middlewares installed.</p>
     {:else}
@@ -80,7 +81,7 @@
     {/middlewares}
   </div>
   <div>
-    <h3>Application Resources</h3>
+    <h2>Application Resources</h2>
     {^resources}
     <p>No resources.</p>
     {:else}
@@ -94,9 +95,9 @@
   </div>
 </div>
 <div>
-  <h3>Runtime environment</h3>
+  <h2>Runtime environment</h2>
   {#env.host}
-  <h4>Host information</h4>
+  <h3>Host information</h3>
   <table>
     <tr><th>Hostname</th><td>{hostname}</td></tr>
     <tr><th><abbr title="Fully-qualified domain name">FQDN</abbr></th><td>{hostfqdn}</td></tr>
@@ -109,7 +110,7 @@
   </table>
   {/env.host}
   {#env.proc}
-  <h4>IDs and settings</h4>
+  <h3>IDs and settings</h3>
   <table>
     <tr><th>Owner</th><td>{owner}</td></tr>
     <tr><th><abbr title="Process ID">PID</abbr></th><td>{pid}</td></tr>
@@ -122,7 +123,7 @@
     <tr><th><code>nice</code></th><td>{niceness}</td></tr>
     {/niceness}
   </table>
-  <h4>Process resource usage</h4>
+  <h3>Process resource usage</h3>
   {#rusage}
   <table>
     <tr><th>CPU time, user</th><td>{cpu_times.user_time} seconds</td></tr>
@@ -162,7 +163,7 @@
   {/rusage}
   {/env.proc}
   {#env.pyvm}
-  <h4>Python runtime</h4>
+  <h3>Python runtime</h3>
   <table>
     <tr><th>Executable</th><td>{executable}</td></tr>
     <tr><th>64-bit Python</th><td>{is_64bit}</td></tr>
