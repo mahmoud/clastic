@@ -3,7 +3,12 @@
 import os
 import re
 from core import Application
+from static import StaticApplication
 from render import AshesRenderFactory
+
+
+_CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+_ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 
 def create_app(traceback_string, monitored_files=None):
@@ -20,6 +25,7 @@ def create_app(traceback_string, monitored_files=None):
     render_fact = AshesRenderFactory()
     render_fact.register_source('flaw_tmpl', _FLAW_TEMPLATE)
     routes = [('/', get_flaw_info, 'flaw_tmpl'),
+              ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/<path:_ignored>', get_flaw_info, 'flaw_tmpl')]
 
     app = Application(routes, resources, render_fact)
@@ -38,21 +44,24 @@ def get_flaw_info(tb_str, parsed_error, mon_files):
 
 
 _FLAW_TEMPLATE = u"""\
+<!doctype html>
 <html>
   <head>
     <title>Oh, Flaw'd: {exc_type} in {err.source_file}</title>
+    <link rel="stylesheet" type="text/css" href="/clastic_assets/normalize.css">
+    <link rel="stylesheet" type="text/css" href="/clastic_assets/common.css">
   </head>
   <body>
-    <h1>Whopps!</h1>
+    <h1 class="page_title">Whopps!</h1>
 
     <p>Clastic detected a modification, but couldn't restart your application. This is often the result of a module-level error that prevents one of your application's modules from being imported. Fix the error and try refreshing the page.</p>
 
     {#parsed_err}
-      <h2 class="parsed-error-h2">{exc_type}: {exc_msg}</h2>
+      <h2 class="parsed-error-h2">{exc_type}<p>{exc_msg}</p></h2>
     {:else}
       <h2 class="unparsed-error-h2">{last_line}</h2>
     {/parsed_err}
-    <h3>Stack trace</h3>
+    <h2>Stack trace</h2>
     <pre>{tb_str}</pre>
     <br><hr>
     <p>Monitoring:<ul>{#mon_files}<li>{.}</li>{/mon_files}</ul></p>

@@ -2,16 +2,33 @@ body {
   background: whitesmoke;
   color: #586e75;
   font-family: 'Gill Sans', 'Gill Sans MT Light', 'Gill Sans MT', 'Segoe', 'Segoe UI', 'Roboto', 'Droid Sans', 'Ubuntu', sans-serif;
-  font-size: 20px;
+  font-size: 10pt;
   line-height: 1.2;
   margin: 0 auto;
-  padding: 0 3% 3% 3%;
+  padding: 1% 3% 3% 3%;
   min-width: 380px;
   max-width: 960px;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
+}
+
+h1 {
+  font-size: 22pt;
+}
+
+h2 {
+  font-size: 16pt;
+}
+
+h2 p {
+  font-size: 12pt;
+  margin-left: 1em;
+}
+
+h3 {
+  font-size: 14pt;
 }
 
 a {
@@ -41,6 +58,8 @@ code {
 table {
   font-size: 12px;
   font-family: "Lucida Sans Typewriter", "Lucida Console", Monaco, "Bitstream Vera Sans Mono", monospace;
+  border-spacing: 1px;
+  border-collapse: separate;
 }
 
 td, th {
