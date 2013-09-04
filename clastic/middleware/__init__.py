@@ -8,3 +8,4 @@ from .core import (Middleware,
 from .url import GetParamMiddleware
 from .context import (ContextProcessor,
                       SimpleContextProcessor)
+from .compress import GzipMiddleware
