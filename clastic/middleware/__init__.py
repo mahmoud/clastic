@@ -9,3 +9,4 @@ from .url import GetParamMiddleware
 from .context import (ContextProcessor,
                       SimpleContextProcessor)
 from .compress import GzipMiddleware
+from .profile import SimpleProfileMiddleware
