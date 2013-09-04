@@ -5,6 +5,8 @@ from .core import (Middleware,
                    merge_middlewares,
                    make_middleware_chain,
                    DummyMiddleware,
-                   GetParamMiddleware,
                    ContextProcessor,
                    SimpleContextProcessor)
+
+
+from .url import GetParamMiddleware
