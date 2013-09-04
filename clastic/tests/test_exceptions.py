@@ -7,9 +7,9 @@ from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from common import hello_world, RequestProvidesName
-from clastic.exceptions import (make_error_handler_map,
-                                BadGateway,
-                                Forbidden)
+from clastic.errors import (make_error_handler_map,
+                            BadGateway,
+                            Forbidden)
 
 def exc_endpoint():
     raise RuntimeError()
