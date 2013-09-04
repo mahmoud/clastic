@@ -10,3 +10,4 @@ from .context import (ContextProcessor,
                       SimpleContextProcessor)
 from .compress import GzipMiddleware
 from .profile import SimpleProfileMiddleware
+from .client_cache import HTTPCacheMiddleware
