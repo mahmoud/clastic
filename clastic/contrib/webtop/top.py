@@ -13,6 +13,7 @@ from clastic.render import render_json, AshesRenderFactory
 
 _CLASTIC_PATH = os.path.dirname(os.path.abspath(clastic.__file__))
 _ASSET_PATH = os.path.join(_CLASTIC_PATH, '_clastic_assets')
+_CUR_PATH = os.path.dirname(__file__)
 
 import psutil
 from datetime import timedelta
@@ -109,9 +110,10 @@ def create_app():
     routes = [('/', top, 'top.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', top, render_json)]
-    arf = AshesRenderFactory(os.path.dirname(__file__))
+    arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, {}, arf)
     return app
+
 
 if __name__ == '__main__':
     create_app().serve()
