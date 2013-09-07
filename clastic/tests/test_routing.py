@@ -57,13 +57,27 @@ def test_http_methods_success():
               POST('/', ep, render_basic),
               PUT('/', ep, render_basic),
               DELETE('/', ep, render_basic)]
+    import pdb;pdb.set_trace()
     app = Application(routes)
     client = Client(app, BaseResponse)
     methods = ('get', 'post', 'put', 'delete')
-    for method in methods:
-        req_func = getattr(client, method)
-        resp_data = req_func('/').data
-        # lololol yay eval()
-        route_methods = eval(resp_data) - set(['HEAD'])
-        yield eq_, set([method.upper()]), route_methods
+    status_map = {}
+    for correct_method in methods:
+        for attempted_method in methods:
+            req_func = getattr(client, attempted_method)
+            #print req_func
+            resp = req_func('/')
+            status_code = resp.status_code
+            try:
+                status_map[status_code] += 1
+            except KeyError:
+                status_map[status_code] = 1
+
+            if status_code == 200:
+                resp_data = resp.data
+                # lololol yay eval()
+                route_methods = eval(resp_data) - set(['HEAD'])
+                yield eq_, set([correct_method.upper()]), route_methods
+    yield eq_, status_map[200], len(routes)
+    yield eq_, status_map.get(405), len(routes) * (len(methods) - 1)
     return
