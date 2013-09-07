@@ -283,6 +283,30 @@ class Route(Rule):
         return inject(self._execute, injectables)
 
 
+class GET(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('GET',)
+        return super(GET, self).__init__(*a, **kw)
+
+
+class POST(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('POST',)
+        return super(POST, self).__init__(*a, **kw)
+
+
+class PUT(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('PUT',)
+        return super(PUT, self).__init__(*a, **kw)
+
+
+class DELETE(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('DELETE',)
+        return super(DELETE, self).__init__(*a, **kw)
+
+
 class NullRoute(Route):
     def __init__(self):
         rule_str = '/<path:_ignored>'
