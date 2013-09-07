@@ -214,7 +214,8 @@ class Route(Rule):
         return self._render
 
     def empty(self):
-        ret = Route(self.rule, self.endpoint, self.render_arg)
+        self_type = type(self)
+        ret = self_type(self.rule, self.endpoint, self.render_arg)
         ret.__dict__.update(super(Route, self).empty().__dict__)
         ret._middlewares = tuple(self._middlewares)
         ret._resources = dict(self._resources)
@@ -286,29 +287,29 @@ class Route(Rule):
 class GET(Route):
     def __init__(self, *a, **kw):
         kw['methods'] = ('GET',)
-        return super(GET, self).__init__(*a, **kw)
+        super(GET, self).__init__(*a, **kw)
 
 
 class POST(Route):
     def __init__(self, *a, **kw):
         kw['methods'] = ('POST',)
-        return super(POST, self).__init__(*a, **kw)
+        super(POST, self).__init__(*a, **kw)
 
 
 class PUT(Route):
     def __init__(self, *a, **kw):
         kw['methods'] = ('PUT',)
-        return super(PUT, self).__init__(*a, **kw)
+        super(PUT, self).__init__(*a, **kw)
 
 
 class DELETE(Route):
     def __init__(self, *a, **kw):
         kw['methods'] = ('DELETE',)
-        return super(DELETE, self).__init__(*a, **kw)
+        super(DELETE, self).__init__(*a, **kw)
 
 
 class NullRoute(Route):
-    def __init__(self):
+    def __init__(self, *a, **kw):
         rule_str = '/<path:_ignored>'
         super(NullRoute, self).__init__(rule_str, endpoint=self.not_found)
         self.build_only = True
