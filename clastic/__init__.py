@@ -17,7 +17,11 @@ import server
 from core import (RESERVED_ARGS,
                   Application,
                   SubApplication,
-                  Route)
+                  Route,
+                  GET,
+                  POST,
+                  PUT,
+                  DELETE)
 
 from middleware import Middleware, GetParamMiddleware
 from render import render_json, render_json_dev, render_basic
