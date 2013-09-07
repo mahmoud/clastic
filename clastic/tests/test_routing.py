@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 from nose.tools import raises, eq_, ok_
-from json import loads
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
