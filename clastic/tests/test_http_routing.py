@@ -9,7 +9,6 @@ from clastic import GET, POST, PUT, DELETE
 
 
 def test_http_methods_success():
-    "tests route order when routes are added incrementally"
     ep = lambda _route: repr(_route.methods)
     routes = [GET('/get', ep, render_basic),
               POST('/post', ep, render_basic),
