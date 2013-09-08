@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
 from nose.tools import eq_
 
@@ -8,7 +10,7 @@ from clastic import Application, render_basic
 from clastic import GET, POST, PUT, DELETE
 
 
-def test_http_methods_success():
+def test_http_method_routes():
     ep = lambda _route: repr(_route.methods)
     routes = [GET('/get', ep, render_basic),
               POST('/post', ep, render_basic),

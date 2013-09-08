@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
 from nose.tools import raises, eq_, ok_
 
@@ -46,37 +48,4 @@ def test_create_route_order_incr():
         app.add(r)
         yield eq_, client.get('/api/a/b').data, 'api: a/b'
         yield eq_, app.wmap._rules[-1].rule, r[0]
-    return
-
-
-def test_http_methods_success():
-    "tests route order when routes are added incrementally"
-    ep = lambda _route: repr(_route.methods)
-    routes = [GET('/', ep, render_basic),
-              POST('/', ep, render_basic),
-              PUT('/', ep, render_basic),
-              DELETE('/', ep, render_basic)]
-    import pdb;pdb.set_trace()
-    app = Application(routes)
-    client = Client(app, BaseResponse)
-    methods = ('get', 'post', 'put', 'delete')
-    status_map = {}
-    for correct_method in methods:
-        for attempted_method in methods:
-            req_func = getattr(client, attempted_method)
-            #print req_func
-            resp = req_func('/')
-            status_code = resp.status_code
-            try:
-                status_map[status_code] += 1
-            except KeyError:
-                status_map[status_code] = 1
-
-            if status_code == 200:
-                resp_data = resp.data
-                # lololol yay eval()
-                route_methods = eval(resp_data) - set(['HEAD'])
-                yield eq_, set([correct_method.upper()]), route_methods
-    yield eq_, status_map[200], len(routes)
-    yield eq_, status_map.get(405), len(routes) * (len(methods) - 1)
     return
