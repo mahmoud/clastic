@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 
+"""
+One notable (if incremental) improvement over Werkzeug's error system
+is that 400-level requests share a common base class
+(BadRequest). Same goes for do 500-coded requests
+(InternalServerError).
+"""
+
 
 class HTTPException(object):
     status_code = None
@@ -8,10 +15,6 @@ class HTTPException(object):
 
 class BadRequest(HTTPException):
     code = 400
-
-
-class InternalServerError(HTTPException):
-    code = 500
 
 
 class Unauthorized(BadRequest):
@@ -53,6 +56,10 @@ class Conflict(BadRequest):
 
 class Gone(BadRequest):
     code = 410
+
+
+class InternalServerError(HTTPException):
+    code = 500
 
 
 class NotImplemented(InternalServerError):
