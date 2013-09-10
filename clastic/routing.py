@@ -59,3 +59,68 @@ def _main():
 
 if __name__ == '__main__':
     _main()
+
+
+
+
+"""
+Routing notes
+-------------
+
+After being betrayed by Werkzeug routing in too many fashions, and
+after reviewing many designs, a new routing scheme has been designed.
+
+Clastic's existing pattern (inherited from Werkzeug) does have some
+nice things going for it. Django routes with regexes, which can be
+semantically confusing, bug-prone, and unspecialized for
+URLs. Clastic/Werkzeug offer a constrained syntax/grammar that is
+specialized to URL pattern generation. It aims to be:
+
+ * Clear
+ * Correct
+ * Validatable
+
+The last item is of course the most important. (Lookin at you Werkzeug.)
+
+Since Werkzeug's constraining of syntax led to a better system,
+Clastic's routing took it a step further. Take a look at some examples:
+
+ 1. '/about/'
+ 2. '/blog/{post_id?int}'
+ 3. '/api/{service}/{path+}'
+ 4. '/polish_maths/{operation:str}/{numbers+float}'
+
+1. Static patterns work as expected.
+
+2. The '?' indicates "zero or one", like regex. The post_id will be
+converted to an integer. Invalid or missing values yield a value of
+None into the 0-or-1 binding.
+
+3. Bindings are of type 'str' (i.e., string/text/unicode object) by
+default, so here we have a single-segment, string 'service'
+binding. We also accept a 'path' binding. '+' means 1-or-more, and the
+type is string.
+
+4. Here we do some Polish-notation math. The operation comes
+first. Using an explicit 'str' is ok. Numbers is a repeating path of
+floats.
+
+
+Besides correctness, there are a couple improvements over
+Werkzeug. The system does not mix type and arity (Werkzeug's "path"
+converter was special because it consumed more than one path
+segment). There are just a few built-in converters, for the
+convenience of easy type conversion, not full-blown validation. It's
+always confusing to get a vague 404 when better error messages could
+have been produced (there are middlewares available for this).
+
+(Also, in Werkzeug I found the commonly-used '<path:path>' to be
+confusing. Which is the variable, which is the converter? {path+} is
+better ;))
+
+
+# TODO: should slashes be optional? _shouldn't they_?
+# TODO: detect invalid URL pattern
+# TODO: ugly corollary? unicode characters. (maybe)
+
+"""
