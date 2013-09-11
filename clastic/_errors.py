@@ -60,6 +60,37 @@ class Gone(BadRequest):
     code = 410
 
 
+class LengthRequired(BadRequest):
+    code = 411
+
+
+class PreconditionFailed(BadRequest):
+    code = 412
+
+
+class RequestEntityTooLarge(BadRequest):
+    "more like ErrorNameTooLong, amirite?"
+    code = 413
+
+
+class RequestURITooLong(BadRequest):
+    "... shit."
+    code = 414
+
+
+class UnsupportedMediaType(BadRequest):
+    code = 415
+
+
+class RequestedRangeNotSatisfiable(BadRequest):
+    code = 416
+
+
+class ExpectationFailed(BadRequest):
+    "Can't. always. get. what you want."
+    code = 417
+
+
 class InternalServerError(HTTPException):
     code = 500
 
