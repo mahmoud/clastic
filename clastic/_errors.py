@@ -7,9 +7,11 @@ is that 400-level requests share a common base class
 (InternalServerError).
 """
 
+from werkzeug.wrappers import BaseResponse
 
-class HTTPException(object):
-    status_code = None
+
+class HTTPException(BaseResponse, Exception):
+    code = None
     description = ''
 
 
@@ -72,3 +74,11 @@ class BadGateway(InternalServerError):
 
 class ServiceUnavailable(InternalServerError):
     code = 503
+
+
+class GatewayTimeout(InternalServerError):
+    code = 504
+
+
+class HTTPVersionNotSupported(InternalServerError):
+    code = 505
