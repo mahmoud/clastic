@@ -3,7 +3,7 @@
 import re
 
 
-BINDING = re.compile('\{(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\}')
+BINDING = re.compile('\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\>')
 TYPES = {'int': int, 'float': float, 'unicode': unicode, 'str': unicode}
 path_component = '(?P<%s>(/[\w%%\d])%s)'
 
@@ -51,9 +51,11 @@ def compile_route(s):
 
 
 def _main():
-    raw, converters = compile_route('/a/b/{t:int}/thing/{das+int}')
+    raw, converters = compile_route('/a/b/<t:int>/thing/<das+int>')
     print raw
     d = re.match(raw, '/a/b/1/thing/1/2/3/4/').groupdict()
+    print d
+    d = re.match(raw, '/a/b/1/thing/hi/').groupdict()
     print d
 
 
