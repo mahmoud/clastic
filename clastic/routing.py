@@ -44,10 +44,19 @@ class RoutePattern(object):
         self.regex, self.converters = self._compile(pattern)
 
     def match_url(self, url):
+        ret = {}
         match = self.regex.match(url)
         if not match:
             return None
-        return self.groupdict()
+        groups = match.groupdict()
+        try:
+            for conv_name, conv in self.converters.items():
+                ret[conv_name] = conv(groups[conv_name])
+        except KeyError:
+            return None  # TODO
+        except (TypeError, ValueError):
+            return None
+        return ret
 
     def _compile(self, pattern):
         processed = []
@@ -91,15 +100,11 @@ class RoutePattern(object):
 
 
 def _main():
-    regex, converters = compile_route('/a/b/<t:int>/thing/<das+int>')
-    print regex.pattern
-    d = regex.match('/a/b/1/thing/1/2/3/4/').groupdict()
+    rp = RoutePattern('/a/b/<t:int>/thing/<das+int>')
+    d = rp.match_url('/a/b/1/thing/1/2/3/4/')
     print d
 
-    for conv_name, conv in converters.items():
-        print conv_name, conv(d[conv_name])
-
-    d = regex.match('/a/b/1/thing/hi/').groupdict()
+    d = rp.match_url('/a/b/1/thing/hi/')
     print d
 
 
