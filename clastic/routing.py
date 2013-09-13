@@ -3,17 +3,20 @@
 import re
 
 
-BINDING = re.compile('\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\>')
+BINDING = re.compile(r'\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\>')
 TYPES = {'int': int, 'float': float, 'unicode': unicode, 'str': unicode}
-path_component = '(?P<%s>(/[\w%%\d])%s)'
+_path_seg_tmpl = '(?P<%s>(/[\w%%\d])%s)'
 
 
-def map_convert(f):
-    return lambda value: map(f, (None, value.split('/')))
+def build_converter(converter, multi=False):
+    if multi:
+        def multi_converter(value):
+            return map(converter, value.split('/')[1:])
+        return multi_converter
 
-
-def safe_convert(f):
-    return lambda value: f(value.replace('/', ''))
+    def single_converter(value):
+        return converter(value.replace('/', ''))
+    return single_converter
 
 
 def compile_route(s):
@@ -41,11 +44,11 @@ def compile_route(s):
             raise ValueError('duplicate path binding %s' % name)
 
         if type_name and parsed['op']:
-            converters[name] = map_convert(converter)
+            converters[name] = build_converter(converter)
         else:
-            converters[name] = safe_convert(converter)
+            converters[name] = build_converter(converter)
 
-        processed[-1] += path_component % (name, parsed['op'])
+        processed[-1] += _path_seg_tmpl % (name, parsed['op'])
 
     return '/'.join(processed), converters
 
@@ -55,6 +58,10 @@ def _main():
     print raw
     d = re.match(raw, '/a/b/1/thing/1/2/3/4/').groupdict()
     print d
+
+    for conv_name, conv in converters.items():
+        print conv_name, conv(d[conv_name])
+
     d = re.match(raw, '/a/b/1/thing/hi/').groupdict()
     print d
 
