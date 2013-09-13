@@ -6,6 +6,11 @@ import re
 BINDING = re.compile(r'\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\>')
 TYPES = {'int': int, 'float': float, 'unicode': unicode, 'str': unicode}
 _path_seg_tmpl = '(?P<%s>(/[\w%%\d])%s)'
+_OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
+                 '?': False,
+                 ':': False,
+                 '+': True,
+                 '*': True}
 
 
 def build_converter(converter, multi=False):
@@ -21,36 +26,40 @@ def build_converter(converter, multi=False):
 
 def compile_route(s):
     processed = []
-    converters = {}
+    var_converter_map = {}
 
     for part in s.split('/'):
         match = BINDING.match(part)
         if not match:
             processed.append(part)
             continue
-
         parsed = match.groupdict()
-        name, type_name = parsed['name'], parsed['type']
-        if parsed['op'] == ':':
+        name, type_name, op_char = parsed['name'], parsed['type'], parsed['op']
+        if name in var_converter_map:
+            raise ValueError('duplicate path binding %s' % name)
+        if op_char:
+            if op_char == ':':
+                op_char = ''
             if not type_name:
                 raise ValueError('%s expected a type specifier' % part)
-            parsed['op'] = ''
-
-        converter = TYPES.get(type_name)
-        if type_name and not converter:
-            raise ValueError('unknown type specifier %s' % type_name)
-
-        if name in converters:
-            raise ValueError('duplicate path binding %s' % name)
-
-        if type_name and parsed['op']:
-            converters[name] = build_converter(converter)
+            try:
+                converter = TYPES[type_name]
+            except KeyError:
+                raise ValueError('unknown type specifier %s' % type_name)
         else:
-            converters[name] = build_converter(converter)
+            converter = unicode
 
-        processed[-1] += _path_seg_tmpl % (name, parsed['op'])
+        try:
+            multi = _OP_ARITY_MAP[op_char]
+        except KeyError:
+            raise ValueError('unknown arity operator %r, expected one of %r'
+                             % (op_char, _OP_ARITY_MAP.keys()))
+        var_converter_map[name] = build_converter(converter, multi=multi)
 
-    return '/'.join(processed), converters
+        path_seg_pattern = _path_seg_tmpl % (name, op_char)
+        processed[-1] += path_seg_pattern
+
+    return '/'.join(processed), var_converter_map
 
 
 def _main():
