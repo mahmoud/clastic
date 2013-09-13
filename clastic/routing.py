@@ -59,19 +59,20 @@ def compile_route(s):
         path_seg_pattern = _path_seg_tmpl % (name, op_char)
         processed[-1] += path_seg_pattern
 
-    return '/'.join(processed), var_converter_map
+    regex = re.compile('/'.join(processed))
+    return regex, var_converter_map
 
 
 def _main():
-    raw, converters = compile_route('/a/b/<t:int>/thing/<das+int>')
-    print raw
-    d = re.match(raw, '/a/b/1/thing/1/2/3/4/').groupdict()
+    regex, converters = compile_route('/a/b/<t:int>/thing/<das+int>')
+    print regex.pattern
+    d = regex.match('/a/b/1/thing/1/2/3/4/').groupdict()
     print d
 
     for conv_name, conv in converters.items():
         print conv_name, conv(d[conv_name])
 
-    d = re.match(raw, '/a/b/1/thing/hi/').groupdict()
+    d = regex.match('/a/b/1/thing/hi/').groupdict()
     print d
 
 
