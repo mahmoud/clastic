@@ -28,43 +28,66 @@ def build_converter(converter, optional=False, multi=False):
     return single_converter
 
 
-def compile_route(s):
-    processed = []
-    var_converter_map = {}
+def collapse_token(text, token=None, sub=None):
+    "Collapses whitespace to spaces by default"
+    if token is None:
+        sub = sub or ' '
+        return ' '.join(text.split())
+    else:
+        sub = sub or token
+        return sub.join([s for s in text.split(token) if s])
 
-    for part in s.split('/'):
-        match = BINDING.match(part)
+
+class RoutePattern(object):
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self.regex, self.converters = self._compile(pattern)
+
+    def match_url(self, url):
+        match = self.regex.match(url)
         if not match:
-            processed.append(part)
-            continue
-        parsed = match.groupdict()
-        name, type_name, op_char = parsed['name'], parsed['type'], parsed['op']
-        if name in var_converter_map:
-            raise ValueError('duplicate path binding %s' % name)
-        if op_char:
-            if op_char == ':':
-                op_char = ''
-            if not type_name:
-                raise ValueError('%s expected a type specifier' % part)
+            return None
+        return self.groupdict()
+
+    def _compile(self, pattern):
+        processed = []
+        var_converter_map = {}
+
+        for part in pattern.split('/'):
+            match = BINDING.match(part)
+            if not match:
+                processed.append(part)
+                continue
+            parsed = match.groupdict()
+            name, type_name, op = parsed['name'], parsed['type'], parsed['op']
+            if name in var_converter_map:
+                raise ValueError('duplicate path binding %s' % name)
+            if op:
+                if op == ':':
+                    op = ''
+                if not type_name:
+                    raise ValueError('%s expected a type specifier' % part)
+                try:
+                    converter = TYPES[type_name]
+                except KeyError:
+                    raise ValueError('unknown type specifier %s' % type_name)
+            else:
+                converter = unicode
+
             try:
-                converter = TYPES[type_name]
+                multi = _OP_ARITY_MAP[op]
             except KeyError:
-                raise ValueError('unknown type specifier %s' % type_name)
-        else:
-            converter = unicode
+                _tmpl = 'unknown arity operator %r, expected one of %r'
+                raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
+            var_converter_map[name] = build_converter(converter, multi=multi)
 
-        try:
-            multi = _OP_ARITY_MAP[op_char]
-        except KeyError:
-            raise ValueError('unknown arity operator %r, expected one of %r'
-                             % (op_char, _OP_ARITY_MAP.keys()))
-        var_converter_map[name] = build_converter(converter, multi=multi)
+            path_seg_pattern = _path_seg_tmpl % (name, op)
+            processed[-1] += path_seg_pattern
 
-        path_seg_pattern = _path_seg_tmpl % (name, op_char)
-        processed[-1] += path_seg_pattern
+        regex = re.compile('/'.join(processed))
+        return regex, var_converter_map
 
-    regex = re.compile('/'.join(processed))
-    return regex, var_converter_map
+
 
 
 def _main():
