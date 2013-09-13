@@ -13,13 +13,17 @@ _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '*': True}
 
 
-def build_converter(converter, multi=False):
+def build_converter(converter, optional=False, multi=False):
     if multi:
         def multi_converter(value):
+            if not value and optional:
+                return []
             return [converter(v) for v in value.split('/')[1:]]
         return multi_converter
 
     def single_converter(value):
+        if not value and optional:
+            return None
         return converter(value.replace('/', ''))
     return single_converter
 
