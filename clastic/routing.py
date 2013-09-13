@@ -16,7 +16,7 @@ _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
 def build_converter(converter, multi=False):
     if multi:
         def multi_converter(value):
-            return map(converter, value.split('/')[1:])
+            return [converter(v) for v in value.split('/')[1:]]
         return multi_converter
 
     def single_converter(value):
