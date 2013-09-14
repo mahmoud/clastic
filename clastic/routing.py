@@ -3,8 +3,15 @@
 import re
 
 
-BINDING = re.compile(r'\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:*]*)(?P<type>\w+)*\>')
-TYPES = {'int': int, 'float': float, 'unicode': unicode, 'str': unicode}
+BINDING = re.compile(r'<'
+                     r'(?P<name>[A-Za-z_]\w*)'
+                     r'(?P<op>[?+:*]*)'
+                     r'(?P<type>\w+)*'
+                     r'>')
+TYPE_CONV_MAP = {'int': int,
+                 'float': float,
+                 'unicode': unicode,
+                 'str': unicode}
 _path_seg_tmpl = '(?P<%s>(/[\w%%\d])%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '?': False,
@@ -77,7 +84,7 @@ class RoutePattern(object):
                 if not type_name:
                     raise ValueError('%s expected a type specifier' % part)
                 try:
-                    converter = TYPES[type_name]
+                    converter = TYPE_CONV_MAP[type_name]
                 except KeyError:
                     raise ValueError('unknown type specifier %s' % type_name)
             else:
@@ -97,6 +104,26 @@ class RoutePattern(object):
         return regex, var_converter_map
 
 
+S_REDIRECT = 'redirect'
+S_NORMALIZE = 'normalize'
+S_STRICT = 'strict'
+
+
+class RouteMap(object):
+    def __init__(self, patterns):
+        self._pattern_list = list(patterns)
+
+    def add_pattern(self, pattern):
+        if not isinstance(pattern, RoutePattern):
+            pattern = RoutePattern(pattern)
+        self._pattern_list.append(pattern)
+
+    def match_url(self, url, slashes=S_NORMALIZE):
+        for p in self._pattern_list:
+            bindings = p.match_url(url)
+            if bindings is not None:
+                return p
+        raise KeyError()
 
 
 def _main():
@@ -180,5 +207,6 @@ better ;))
 # TODO: should slashes be optional? _shouldn't they_?
 # TODO: detect invalid URL pattern
 # TODO: ugly corollary? unicode characters. (maybe)
+# TODO: optional segments shouldn't appear anywhere but the tail of the URL
 
 """
