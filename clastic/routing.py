@@ -3,7 +3,7 @@
 import re
 
 
-BINDING = re.compile(r'\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:]*)(?P<type>\w+)*\>')
+BINDING = re.compile(r'\<(?P<name>[A-Za-z_]\w*)(?P<op>[?+:*]*)(?P<type>\w+)*\>')
 TYPES = {'int': int, 'float': float, 'unicode': unicode, 'str': unicode}
 _path_seg_tmpl = '(?P<%s>(/[\w%%\d])%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
@@ -105,6 +105,13 @@ def _main():
     print d
 
     d = rp.match_url('/a/b/1/thing/hi/')
+    print d
+
+    d = rp.match_url('/a/b/1/thing/')
+    print d
+
+    rp = RoutePattern('/a/b/<t:int>/thing/<das*int>')
+    d = rp.match_url('/a/b/1/thing/')
     print d
 
 
