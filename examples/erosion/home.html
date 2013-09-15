@@ -1,3 +1,110 @@
 <html>
-  <p>hello world</p>
+<head>
+  <meta charset='utf-8'>
+  <title>Erosion</title>
+  <script type='text/javascript' src='/static/jquery.js'></script>
+  <link rel='stylesheet' href='/static/style.css' type='text/css'>
+  <script type='text/javascript'>
+    $(function() {
+
+      $('#target-url').bind('keyup change', function() {
+        // If the URL field has any content, disable the local file
+        if($(this).val()) {
+          $('#target-local').attr('disabled', 'disabled');
+          $('#target-local').parent().addClass('note');
+          return
+        }
+        // renable if empty
+        $('#target-local').removeAttr('disabled');
+        $('#target-local').parent().removeClass('note');
+
+      });
+
+      $('#target-local').bind('keyup change', function() {
+        // If the local file field has any content, disable URL
+        if($(this).val()) {
+          $('#target-url').attr('disabled', 'disabled');
+          $('#target-url').parent().addClass('note');
+          return
+        }
+        // renable if empty
+        $('#target-url').removeAttr('disabled');
+        $('#target-url').parent().removeClass('note');
+
+      });
+
+    });
+  </script>
+</head>
+<body>
+  <div class='content'>
+
+    <h1>Erosion</h1>
+    <p class='tagline'>Exogenetic linkrot for limited sharing.</p>
+    <div class='box'>
+
+      <h2>Create a URL</h2>
+      <div class='new'>
+        <form action='post'>
+
+          <p class='target'>
+            <label for='target-url'>Web URL:</label>
+            <input type='text' id='target-url' name='url'>
+          </p>
+
+          <p class='or'>or</p>
+
+          <p class='target'>
+            <label for='target-local'>Local file: </label>
+            <span class='input-prefix'>/path/to/erosion/</span>
+            <input type='text' id='target-local' name='local'>
+          </p>
+
+          <p>
+            <label for='short'>Shortened as:</label>
+            <span class='input-prefix'>http://localhost:5000/</span>
+            <input type='text' name='short'>
+            <span class='note'>(optional)</span>
+          </p>
+
+          <p>
+            <label for='click_expiry'>Click expiration:</label>
+            <input type='int' name='click_expiry' size='3' value='1'>
+          </p>
+
+          <p>
+            <span class='date-expiry-l'>Time expiration:</span>
+            <input type='radio' name='date_expiry' id='after-mins' value='mins'>
+            <label for='after-mins' class='date-expiry'>five minutes</label>
+            <input type='radio' name='date_expiry' id='after-hour' value='hour'>
+            <label for='after-hour' class='date-expiry'>one hour</label>
+            <input type='radio' name='date_expiry' id='after-day' value='day'>
+            <label for='after-day' class='date-expiry'>one day</label>
+            <input type='radio' name='date_expiry' id='after-month' value='month'>
+            <label for='after-month' class='date-expiry'>one month</label>
+            <input type='radio' name='date_expiry' id='after-none' value='never' checked='yes'>
+            <label for='after-none' class='date-expiry'>never</label>
+          </p>
+
+          <input type='submit' value='Submit'>
+
+        </form>
+      </div>
+    </div>
+    <div class='content'>
+
+      <h2>Manage URLs</h2>
+
+      <ul>
+        <li>
+          <a href='#'>http://localhost:5000/flcl</a> >> <a href='#' class='note'>http://flcl.info</a> : Used 0 of 1 times : <a href='#'>Expire</a>
+        </li>
+        <li>
+          <span class='dead'>http://localhost:5000/linkrot</span> Expired
+        </li>
+      </ul>
+      <footer class='content note'>An example application for <a href='https://github.com/mahmoud/clastic'>clastic</a>.</footer>
+    </div>
+  </div>
+</body>
 </html>
