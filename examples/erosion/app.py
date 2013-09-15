@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import string
 from collections import OrderedDict
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -17,12 +18,39 @@ except ImportError:
 from clastic import Application
 from clastic.render import render_json, AshesRenderFactory
 
+# TODO: yell if static hosting is the same location as the application assets
+
+
+_CHAR_LIST = string.ascii_lowercase + string.digits
+_CHAR_LIST = sorted(set(_CHAR_LIST) - set('l'))
+_CHAR_IDX_MAP = dict((c, i) for i, c in enumerate(_CHAR_LIST))
+_CHARSET_LEN = len(_CHAR_LIST)
+
+
+def id_decode(text):
+    ret = 0
+    for i, c in enumerate(text[::-1]):
+        ret += _CHARSET_LEN ** i * _CHAR_IDX_MAP[c]
+    return ret
+
+
+def id_encode(id_int):
+    ret = ''
+    id_int = abs(id_int)
+    while id_int:
+        ret = _CHAR_LIST[id_int % _CHARSET_LEN] + ret
+        id_int /= _CHARSET_LEN
+    return ret or _CHAR_LIST[0]
+
 
 def home():
     return {}
 
 
-def add_entry(target, name=None, expiry=None, clicks=None):
+def add_entry(target, alias=None, expiry=None, clicks=None):
+    if target.startswith('/'):
+        # check accessibility/existence of file?
+        pass
     pass
 
 
@@ -35,7 +63,6 @@ def fetch_entry(link_map, link_alias):
         pass  # delegate to static application
     else:
         pass  # use temporary redirect
-    pass
 
 
 def get_link_list(link_list_path=None):
@@ -61,16 +88,25 @@ def main():
     app.serve()
 
 
+class LinkEntry(object):
+    def __init__(self, alias, target, expiry=None, max_count=None, count=0):
+        self.alias = alias
+        self.target = target
+        self.max_count = max_count
+        self.expire_time = expiry
+        self.count = count
+
+
 class LinkMap(object):
     def __init__(self, path):
         self.path = path
         entries = _load_entries_from_file(path)
         self.link_map = OrderedDict(entries)
 
-    def add_link(self, alias, target):
+    def add_link(self, alias, target, expiry=None, max_count=None):
         if alias in self.link_map:
             raise ValueError('alias already in use %r' % alias)
-        self.link_map[alias] = target
+        self.link_map[alias] = LinkEntry(alias, target, expiry, max_count)
 
     def get_target(self, alias):
         return self.link_map[alias]
