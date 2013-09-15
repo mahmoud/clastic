@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import string
+import codecs
 from collections import OrderedDict
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -15,10 +16,13 @@ try:
 except ImportError:
     print "make sure you've got werkzeug and other dependencies installed"
 
-from clastic import Application
-from clastic.render import render_json, AshesRenderFactory
+from clastic import Application, POST, redirect
+from clastic.errors import Forbidden
+from clastic.render import AshesRenderFactory
 
 # TODO: yell if static hosting is the same location as the application assets
+
+_DEFAULT_LINKS_FILE_PATH = os.path.join(_CUR_PATH, 'links.txt')
 
 
 _CHAR_LIST = string.ascii_lowercase + string.digits
@@ -54,15 +58,18 @@ def add_entry(target, alias=None, expiry=None, clicks=None):
     pass
 
 
-def fetch_entry(link_map, link_alias):
+def fetch_entry(link_map, link_alias, request, local_static_app=None):
     try:
         target = link_map.get_entry(link_alias)
     except KeyError:
-        raise  # 404? 403? 402?
+        return Forbidden()  # 404? 402?
     if target.startswith('/'):
-        pass  # delegate to static application
+        if local_static_app:
+            return local_static_app.get_file_response(target, request)
+        else:
+            return Forbidden()
     else:
-        pass  # use temporary redirect
+        return redirect(target, code=307)
 
 
 def get_link_list(link_list_path=None):
@@ -72,12 +79,11 @@ def get_link_list(link_list_path=None):
 
 
 def create_app(link_list_path=None, local_root=None):
-    link_list_path = link_list_path or os.path.join(_CUR_PATH, 'links.txt')
+    link_list_path = link_list_path or _DEFAULT_LINKS_FILE_PATH
     link_map = LinkMap(link_list_path)
     resources = {'link_map': link_map}
-    routes = [('/', home, 'home.html'),
-              ('/submit', add_entry),
-              ('/list', get_link_list, 'list.html')]
+    routes = [('/', home, 'home.html')]
+              #POST('/submit', add_entry)]
     arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, resources, arf)
     return app
@@ -95,6 +101,13 @@ class LinkEntry(object):
         self.max_count = max_count
         self.expire_time = expiry
         self.count = count
+
+    @classmethod
+    def from_dict(cls, **kwargs):
+        return cls(**kwargs)
+
+    def to_dict(self):
+        return dict(self.__dict__)
 
 
 class LinkMap(object):
@@ -114,11 +127,22 @@ class LinkMap(object):
     def save(self):
         # TODO: high-water mark appending
         with open(self.path, 'w') as f:
-            for alias, target in self.link_map.iteritems():
-                entry = json.dumps({'alias': alias, 'target': target})
-                f.write(entry)
+            for alias, entry in self.link_map.iteritems():
+                entry_json = json.dumps(entry.to_dict())
+                f.write(entry_json)
                 f.write('\n')
         # sync
+
+
+def _load_entries_from_file(path):
+    ret = []
+    if not os.path.exists(path):
+        return ret
+    with codecs.open(path, 'r', 'utf-8') as f:
+        for line in f:
+            entry_dict = json.loads(line)
+            ret.append(LinkEntry.from_dict(entry_dict))
+    return ret
 
 
 if __name__ == '__main__':
