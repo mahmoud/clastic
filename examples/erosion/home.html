@@ -52,13 +52,14 @@
             <input type='text' id='target-url' name='url'>
           </p>
 
+          {#local_root}
           <p class='or'>or</p>
-
           <p class='target'>
             <label for='target-local'>Local file: </label>
-            <span class='input-prefix'>/path/to/erosion/</span>
+            <span class='input-prefix'>{local_root}</span>
             <input type='text' id='target-local' name='local'>
           </p>
+          {/local_root}
 
           <p>
             <label for='short'>Shortened as:</label>

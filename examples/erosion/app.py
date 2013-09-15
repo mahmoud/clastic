@@ -19,6 +19,7 @@ except ImportError:
 from clastic import Application, POST, redirect
 from clastic.errors import Forbidden
 from clastic.render import AshesRenderFactory
+from clastic.middleware import SimpleContextProcessor
 from clastic.middleware.form import PostDataMiddleware
 
 # TODO: yell if static hosting is the same location as the application assets
@@ -80,18 +81,20 @@ def get_link_list(link_list_path=None):
 def create_app(link_list_path=None, local_root=None):
     link_list_path = link_list_path or _DEFAULT_LINKS_FILE_PATH
     link_map = LinkMap(link_list_path)
-    resources = {'link_map': link_map}
+    resources = {'link_map': link_map, 'local_root': local_root}
 
+    scp = SimpleContextProcessor('local_root')
     pdm = PostDataMiddleware(['target', 'alias'])
     routes = [('/', home, 'home.html'),
               POST('/submit', add_entry)]
     arf = AshesRenderFactory(_CUR_PATH)
-    app = Application(routes, resources, arf, [pdm])
+    app = Application(routes, resources, arf, [pdm, scp])
     return app
 
 
 def main():
-    app = create_app()
+    app = create_app(local_root='/tmp/')
+    #app = create_app()
     app.serve()
 
 
