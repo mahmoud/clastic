@@ -13,7 +13,7 @@ PY3 = (sys.version_info[0] == 3)
 if PY3:
     unicode, basestring = str, str
 
-__version__ = '0.5.3dev'
+__version__ = '0.5.3'
 __author__ = 'Mahmoud Hashemi'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/ashes'
@@ -240,8 +240,8 @@ def parse_inline(source):
 
 
 def inline_to_dust_ast(tokens):
-    if tokens and isinstance(tokens[0], BufferToken):
-        body = ['literal', tokens[0].text]
+    if tokens and all(isinstance(t, BufferToken) for t in tokens):
+        body = ['literal', ''.join(t.text for t in tokens)]
     else:
         body = ['body']
         for b in tokens:
@@ -1485,7 +1485,7 @@ class BaseAshesEnv(object):
     def _load_template(self, name):
         for loader in self.loaders:
             try:
-                source = loader.load(name)
+                source = loader.load(name, env=self)
             except TemplateNotFound:
                 continue
             else:
