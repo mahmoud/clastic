@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 <head>
   <meta charset='utf-8'>
@@ -8,26 +9,26 @@
     $(function() {
 
       $('#target-url').bind('keyup change', function() {
-        // If the URL field has any content, disable the local file
+        /* If the URL field has any content, disable the local file */
         if($(this).val()) {
           $('#target-local').attr('disabled', 'disabled');
           $('#target-local').parent().addClass('note');
           return
         }
-        // renable if empty
+        /* reenable if empty */
         $('#target-local').removeAttr('disabled');
         $('#target-local').parent().removeClass('note');
 
       });
 
       $('#target-local').bind('keyup change', function() {
-        // If the local file field has any content, disable URL
+        /* If the local file field has any content, disable URL */
         if($(this).val()) {
           $('#target-url').attr('disabled', 'disabled');
           $('#target-url').parent().addClass('note');
           return
         }
-        // renable if empty
+        /* reenable if empty */
         $('#target-url').removeAttr('disabled');
         $('#target-url').parent().removeClass('note');
 
@@ -45,7 +46,7 @@
 
       <h2>Create a URL</h2>
       <div class='new'>
-        <form action='post'>
+        <form method="POST" action="/submit">
 
           <p class='target'>
             <label for='target-url'>Web URL:</label>
@@ -77,13 +78,13 @@
             <span class='date-expiry-l'>Time expiration:</span>
             <input type='radio' name='date_expiry' id='after-mins' value='mins'>
             <label for='after-mins' class='date-expiry'>five minutes</label>
-            <input type='radio' name='date_expiry' id='after-hour' value='hour'>
+            <input type='radio' name='date_expiry' id='after-hour' value='hour' checked="yes">
             <label for='after-hour' class='date-expiry'>one hour</label>
             <input type='radio' name='date_expiry' id='after-day' value='day'>
             <label for='after-day' class='date-expiry'>one day</label>
             <input type='radio' name='date_expiry' id='after-month' value='month'>
             <label for='after-month' class='date-expiry'>one month</label>
-            <input type='radio' name='date_expiry' id='after-none' value='never' checked='yes'>
+            <input type='radio' name='date_expiry' id='after-none' value='never'>
             <label for='after-none' class='date-expiry'>never</label>
           </p>
 
@@ -98,7 +99,7 @@
 
       <ul>
         <li>
-          <a href='#'>http://localhost:5000/flcl</a> >> <a href='#' class='note'>http://flcl.info</a> : Used 0 of 1 times : <a href='#'>Expire</a>
+          <a href='#'>http://localhost:5000/flcl</a> &gt;&gt; <a href='#' class='note'>http://flcl.info</a> : Used 0 of 1 times : <a href='#'>Expire</a>
         </li>
         <li>
           <span class='dead'>http://localhost:5000/linkrot</span> Expired
