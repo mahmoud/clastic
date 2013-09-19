@@ -18,6 +18,7 @@ except ImportError:
     print "make sure you've got werkzeug and other dependencies installed"
 
 from clastic import Application, POST, redirect
+from clastic.utils import Redirector
 from clastic.errors import Forbidden
 from clastic.render import AshesRenderFactory
 from clastic.middleware import SimpleContextProcessor
@@ -78,16 +79,18 @@ def add_entry_render(context, link_map):
     return redirect('/', code=303)
 
 
-def fetch_entry(link_map, link_alias, request, local_static_app=None):
+def get_entry(link_map, alias, request, local_static_app=None):
     try:
-        target = link_map.get_entry(link_alias)
+        entry = link_map.get_entry(alias)
     except KeyError:
         return Forbidden()  # 404? 402?
-    if target.startswith('/'):
+    target_location = entry.target
+    if target_location.startswith('/'):
         if local_static_app:
             return local_static_app.get_file_response(target, request)
         return Forbidden()
-    return redirect(target, code=307)
+    else:
+        return redirect('http://' + target_location, code=301)
 
 
 def create_app(link_list_path=None, local_root=None):
@@ -95,17 +98,20 @@ def create_app(link_list_path=None, local_root=None):
     link_map = LinkMap(link_list_path)
     resources = {'link_map': link_map, 'local_root': local_root}
 
-    scp = SimpleContextProcessor('local_root')
     pdm = PostDataMiddleware({'target_url': unicode,
                               'target_file': unicode,
                               'alias': unicode,
                               'max_count': int,
                               'expiry_time': unicode})
-    redirect_home = make_redirector('/')
+    submit_route = POST('/submit', add_entry, add_entry_render)
+    submit_route._middlewares.append(pdm)
+
     routes = [('/', home, 'home.html'),
-              POST('/submit', add_entry, add_entry_render)]
+              submit_route,
+              ('/<path:alias>', get_entry)]
+    scp = SimpleContextProcessor('local_root')
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    app = Application(routes, resources, arf, [pdm, scp])
+    app = Application(routes, resources, arf, [scp])
     return app
 
 
@@ -152,11 +158,11 @@ class LinkMap(object):
         self.link_map = OrderedDict([(e.alias, e) for e in entries])
 
     def add_entry(self, target, alias=None, expiry=None, max_count=None):
+        next_id = self._get_next_id()
+        if not alias:
+            alias = id_encode(next_id)
         if alias in self.link_map:
             raise ValueError('alias already in use %r' % alias)
-        next_id = self._get_next_id()
-        if alias is None:
-            alias = id_encode(next_id)
         expire_time = self._get_expiry_time(expiry)
 
         entry = LinkEntry(next_id, target, alias, expire_time, max_count)
@@ -181,7 +187,7 @@ class LinkMap(object):
             last_id = 41660
         return last_id + 1
 
-    def get_target(self, alias):
+    def get_entry(self, alias):
         return self.link_map[alias]
 
     def save(self):
