@@ -63,18 +63,10 @@ def home():
     return {}
 
 
-def add_entry(target, alias=None, expiry=None, clicks=None):
-    expiry = expiry or _DEFAULT_EXPIRY
-    expiry_seconds = _EXPIRY_MAP[expiry]
-    if expiry_seconds is _NEVER:
-        expiry_seconds = None
-    cur_time = time.time()
-    expiry_time = int(cur_time + expiry_seconds)
+def add_entry_render(context):
+    print 'yay', context
+    return redirect('/', code=303)
 
-    if target.startswith('/'):
-        # check accessibility/existence of file?
-        pass
-    pass
 
 
 def fetch_entry(link_map, link_alias, request, local_static_app=None):
@@ -103,9 +95,8 @@ def create_app(link_list_path=None, local_root=None):
     scp = SimpleContextProcessor('local_root')
     pdm = PostDataMiddleware(['target', 'alias'])
     redirect_home = make_redirect('/')
-    submit_route = POST('/submit', link_map.add_entry, redirect_home)
     routes = [('/', home, 'home.html'),
-              submit_route]
+              POST('/submit', link_map.add_entry, add_entry_render)]
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
     app = Application(routes, resources, arf, [pdm, scp])
     return app
@@ -130,7 +121,7 @@ class LinkEntry(object):
         self.alias = alias
         self.target = target
         self.max_count = max_count
-        self.expire_time = expiry_time
+        self.expiry_time = expiry_time
         self.count = count
 
     @classmethod
@@ -139,6 +130,12 @@ class LinkEntry(object):
 
     def to_dict(self):
         return dict(self.__dict__)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        kwargs = self.__dict__
+        return ('{cn}({link_id}, {target!r}, {alias!r}, '
+                '{expiry_time}, {max_count}, {count})'.format(cn=cn, **kwargs))
 
 
 class LinkMap(object):
