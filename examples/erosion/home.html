@@ -50,41 +50,41 @@
 
           <p class='target'>
             <label for='target-url'>Web URL:</label>
-            <input type='text' id='target-url' name='url'>
+            <input type='text' id='target-url' name='target_url'>
           </p>
 
           {#local_root}
           <p class='or'>or</p>
           <p class='target'>
-            <label for='target-local'>Local file: </label>
+            <label for='target-file'>Local file: </label>
             <span class='input-prefix'>{local_root}</span>
-            <input type='text' id='target-local' name='local'>
+            <input type='text' id='target-file' name='target_file'>
           </p>
           {/local_root}
 
           <p>
-            <label for='short'>Shortened as:</label>
+            <label for='alias'>Shortened as:</label>
             <span class='input-prefix'>http://localhost:5000/</span>
-            <input type='text' name='short'>
+            <input type='text' name='alias'>
             <span class='note'>(optional)</span>
           </p>
 
           <p>
-            <label for='click_expiry'>Click expiration:</label>
-            <input type='int' name='click_expiry' size='3' value='1'>
+            <label for='max-count'>Click expiration:</label>
+            <input id='max-count' name='max_count' size='3' value='1'>
           </p>
 
           <p>
             <span class='date-expiry-l'>Time expiration:</span>
-            <input type='radio' name='date_expiry' id='after-mins' value='mins'>
+            <input type='radio' name='expiry_time' id='after-mins' value='mins'>
             <label for='after-mins' class='date-expiry'>five minutes</label>
-            <input type='radio' name='date_expiry' id='after-hour' value='hour' checked="yes">
+            <input type='radio' name='expiry_time' id='after-hour' value='hour' checked="yes">
             <label for='after-hour' class='date-expiry'>one hour</label>
-            <input type='radio' name='date_expiry' id='after-day' value='day'>
+            <input type='radio' name='expiry_time' id='after-day' value='day'>
             <label for='after-day' class='date-expiry'>one day</label>
-            <input type='radio' name='date_expiry' id='after-month' value='month'>
+            <input type='radio' name='expiry_time' id='after-month' value='month'>
             <label for='after-month' class='date-expiry'>one month</label>
-            <input type='radio' name='date_expiry' id='after-none' value='never'>
+            <input type='radio' name='expiry_time' id='after-none' value='never'>
             <label for='after-none' class='date-expiry'>never</label>
           </p>
 

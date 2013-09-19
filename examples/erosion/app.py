@@ -63,10 +63,19 @@ def home():
     return {}
 
 
-def add_entry_render(context):
-    print 'yay', context
-    return redirect('/', code=303)
+def add_entry(link_map, target_url, target_file, alias,
+              expiry_time, max_count):
+    target = target_url or target_file
+    if not target:
+        raise ValueError('expected one of target url or file')
+    entry = link_map.add_entry(target, alias, expiry_time, max_count)
+    return {'entry': entry}
 
+
+def add_entry_render(context, link_map):
+    print 'yay', context
+    link_map.save()
+    return redirect('/', code=303)
 
 
 def fetch_entry(link_map, link_alias, request, local_static_app=None):
@@ -81,28 +90,26 @@ def fetch_entry(link_map, link_alias, request, local_static_app=None):
     return redirect(target, code=307)
 
 
-def get_link_list(link_list_path=None):
-    if link_list_path is None:
-        link_list_path = os.path.join(_CUR_PATH, 'link_list.csv')
-    pass
-
-
 def create_app(link_list_path=None, local_root=None):
     link_list_path = link_list_path or _DEFAULT_LINKS_FILE_PATH
     link_map = LinkMap(link_list_path)
     resources = {'link_map': link_map, 'local_root': local_root}
 
     scp = SimpleContextProcessor('local_root')
-    pdm = PostDataMiddleware(['target', 'alias'])
-    redirect_home = make_redirect('/')
+    pdm = PostDataMiddleware({'target_url': unicode,
+                              'target_file': unicode,
+                              'alias': unicode,
+                              'max_count': int,
+                              'expiry_time': unicode})
+    redirect_home = make_redirector('/')
     routes = [('/', home, 'home.html'),
-              POST('/submit', link_map.add_entry, add_entry_render)]
+              POST('/submit', add_entry, add_entry_render)]
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
     app = Application(routes, resources, arf, [pdm, scp])
     return app
 
 
-def make_redirect(location='/', code=301):
+def make_redirector(location='/', code=301):
     def _redirect():
         return redirect(location, code=code)
     return _redirect
@@ -125,8 +132,8 @@ class LinkEntry(object):
         self.count = count
 
     @classmethod
-    def from_dict(cls, **kwargs):
-        return cls(**kwargs)
+    def from_dict(cls, in_dict):
+        return cls(**in_dict)
 
     def to_dict(self):
         return dict(self.__dict__)
@@ -144,11 +151,6 @@ class LinkMap(object):
         entries = _load_entries_from_file(path)
         self.link_map = OrderedDict([(e.alias, e) for e in entries])
 
-    def add_link(self, alias, target, expiry=None, max_count=None):
-        if alias in self.link_map:
-            raise ValueError('alias already in use %r' % alias)
-        self.link_map[alias] = LinkEntry(alias, target, expiry, max_count)
-
     def add_entry(self, target, alias=None, expiry=None, max_count=None):
         if alias in self.link_map:
             raise ValueError('alias already in use %r' % alias)
@@ -157,7 +159,7 @@ class LinkMap(object):
             alias = id_encode(next_id)
         expire_time = self._get_expiry_time(expiry)
 
-        entry = LinkEntry(next_id, alias, expire_time, max_count)
+        entry = LinkEntry(next_id, target, alias, expire_time, max_count)
         self.link_map[entry.alias] = entry
         return entry
 
