@@ -3,7 +3,7 @@
 import os
 from werkzeug.contrib.securecookie import SecureCookie
 
-from middleware import Middleware
+from .core import Middleware
 import json
 
 

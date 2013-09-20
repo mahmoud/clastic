@@ -18,6 +18,7 @@ from clastic.errors import Forbidden
 from clastic.render import AshesRenderFactory
 from clastic.middleware import SimpleContextProcessor
 from clastic.middleware.form import PostDataMiddleware
+from clastic.middleware.session import CookieSessionMiddleware
 
 # TODO: yell if static hosting is the same location as the application assets
 
@@ -74,16 +75,12 @@ def create_app(link_list_path=None, local_root=None):
     routes = [('/', home, 'home.html'),
               submit_route,
               ('/<path:alias>', get_entry)]
+    csm = CookieSessionMiddleware()
     scp = SimpleContextProcessor('local_root')
+
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    app = Application(routes, resources, arf, [scp])
+    app = Application(routes, resources, arf, [csm, scp])
     return app
-
-
-def make_redirector(location='/', code=301):
-    def _redirect():
-        return redirect(location, code=code)
-    return _redirect
 
 
 def main():
