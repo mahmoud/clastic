@@ -7,12 +7,49 @@ is that 400-level requests share a common base class
 (InternalServerError).
 """
 
+"""
+Clastic HTTP exceptions seek to provide a general structure for errors
+that readily translates to common human- and machine-readable formats
+(i.e., JSON, XML, HTML, plain text). It does so with the following
+fields:
+
+- code (required): Defines the fundamental class of error, as
+  according to the HTTP spec, usually implied by the HTTPException
+  subclass being used
+- message: A short message describing the error, defaulting to
+  the one specified by HTTP (e.g., 403 -> "Forbidden",
+  404 -> "Not Found")
+- error_type: A short value specifying the specific subtype of HTTP
+  (e.g., for 403, "http://example.net/errors/invalid_token")
+- error_detail: A longer-form description of the message, used as
+  the body of the response. Could include an explanation of the error,
+  trace information, or unique identifiers. Structured values
+  will be JSON-ified.
+
+TODO: naming scheme?
+"""
+
 from werkzeug.wrappers import BaseResponse
 
 
 class HTTPException(BaseResponse, Exception):
     code = None
-    description = ''
+    message = ''
+
+    def __init__(self, error_detail=None, **kwargs):
+        self.error_detail = error_detail  # TODO: could be streamed
+        self.error_type = kwargs.pop('error_type', None)
+        self.message = kwargs.pop('message', self.message)
+        self.code = kwargs.pop('code', self.code)
+
+        headers = kwargs.pop('headers', None)
+        mimetype = kwargs.pop('mimetype', None)
+        content_type = kwargs.pop('content_type', None)
+        super(HTTPException, self).__init__(response=self.error_detail,
+                                            status=self.code,
+                                            headers=headers,
+                                            mimetype=mimetype,
+                                            content_type=content_type)
 
 
 class BadRequest(HTTPException):
