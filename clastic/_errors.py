@@ -27,6 +27,7 @@ fields:
   will be JSON-ified.
 
 TODO: naming scheme?
+TODO: HTTPException could well be a metaclass
 """
 
 from werkzeug.wrappers import BaseResponse
@@ -34,13 +35,16 @@ from werkzeug.wrappers import BaseResponse
 
 class HTTPException(BaseResponse, Exception):
     code = None
-    message = ''
+    default_status = 500
+    message = 'Error'
+    detail = 'An unspecified error occurred.'
 
     def __init__(self, error_detail=None, **kwargs):
         self.error_detail = error_detail  # TODO: could be streamed
         self.error_type = kwargs.pop('error_type', None)
         self.message = kwargs.pop('message', self.message)
         self.code = kwargs.pop('code', self.code)
+        self.is_breaking = kwargs.pop('is_breaking', True)
 
         headers = kwargs.pop('headers', None)
         mimetype = kwargs.pop('mimetype', None)
