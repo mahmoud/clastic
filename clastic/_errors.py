@@ -140,24 +140,40 @@ class Conflict(BadRequest):
 
 class Gone(BadRequest):
     code = 410
+    message = "Gone"
+    detail = ("The requested resource is no longer available on this"
+              " server and there is no forwarding address.")
 
 
 class LengthRequired(BadRequest):
     code = 411
+    message = "Length required"
+    detail = ("A request for this resource is required to have a"
+              " valid Content-Length header.")
 
 
 class PreconditionFailed(BadRequest):
     code = 412
+    message = "Precondition failed"
+    detail = ("A required precondition on the request for this"
+              " resource failed positive evaluation.")
 
 
 class RequestEntityTooLarge(BadRequest):
     "more like ErrorNameTooLong, amirite?"
     code = 413
+    message = "Request entity too large"
+    detail = ("The method/resource combination requested does"
+              " not allow data to be transmitted, or the data"
+              " volume exceeds the capacity limit.")
 
 
 class RequestURITooLong(BadRequest):
     "... shit."
     code = 414
+    message = "Request URL too long"
+    detail = ("The length of the requested URL exceeds the"
+              " limit for this endpoint/server.")
 
 
 class UnsupportedMediaType(BadRequest):
