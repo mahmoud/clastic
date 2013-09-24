@@ -40,7 +40,7 @@ class HTTPException(BaseResponse, Exception):
     detail = 'An unspecified error occurred.'
 
     def __init__(self, detail=None, **kwargs):
-        # TODO: could be streamed
+        # TODO: detail could be streamed
         self.detail = detail or self.detail
         self.error_type = kwargs.pop('error_type', None)
         self.message = kwargs.pop('message', self.message)
@@ -59,10 +59,18 @@ class HTTPException(BaseResponse, Exception):
 
 class BadRequest(HTTPException):
     code = 400
+    message = "Bad Request"
+    detail = ("Your web client or proxy sent a request"
+              " that this endpoint could not understand.")
 
 
 class Unauthorized(BadRequest):
     code = 401
+    message = "Authentication required"
+    detail = ("The endpoint could not verify that your client"
+              " is authorized to access this resource. Check"
+              " that your client is capable of authenticating"
+              " and that the proper credentials were provided.")
 
 
 class PaymentRequired(BadRequest):
