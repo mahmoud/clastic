@@ -178,15 +178,25 @@ class RequestURITooLong(BadRequest):
 
 class UnsupportedMediaType(BadRequest):
     code = 415
+    message = "Unsupported media type"
+    detail = ("The server does not support the media type"
+              " transmitted in the request. Try a different media"
+              " type or check your Content-Type header and try again.")
 
 
 class RequestedRangeNotSatisfiable(BadRequest):
     code = 416
+    message = "Requested range not satisfiable"
+    detail = ("The client sent a ranged request not fulfillable by"
+              " this endpoint.")
 
 
 class ExpectationFailed(BadRequest):
     "Can't. always. get. what you want."
     code = 417
+    message = "Expectation failed"
+    detail = ("The server could not meet the requirements indicated in"
+              " the request's Expect header(s).")
 
 
 class InternalServerError(HTTPException):
