@@ -29,6 +29,14 @@ fields:
 TODO: naming scheme?
 TODO: HTTPException could well be a metaclass
 TODO: enable detail to be a templatable thing?
+
+Possible values to support templating:
+
+* Target URL
+* Referring URL
+* Method
+* Allowed methods
+
 """
 
 from werkzeug.wrappers import BaseResponse
@@ -42,9 +50,9 @@ class HTTPException(BaseResponse, Exception):
     def __init__(self, detail=None, **kwargs):
         # TODO: detail could be streamed
         self.detail = detail or self.detail
-        self.error_type = kwargs.pop('error_type', None)
         self.message = kwargs.pop('message', self.message)
         self.code = kwargs.pop('code', self.code)
+        self.error_type = kwargs.pop('error_type', None)
         self.is_breaking = kwargs.pop('is_breaking', True)
 
         headers = kwargs.pop('headers', None)
@@ -76,34 +84,58 @@ class Unauthorized(BadRequest):
 class PaymentRequired(BadRequest):
     "HTTP cares about your paywall."
     code = 402
+    message = "Payment required"
+    detail = ("This endpoint requires payment. Money doesn't"
+              " grow on HTTPs, you know.")
 
 
 class Forbidden(BadRequest):
     code = 403
+    message = "Access forbidden"
+    detail = ("You don't have permission to access the requested"
+              " resource.")
 
 
 class NotFound(BadRequest):
     code = 404
+    message = "Resource not found"
+    detail = "The requested URL was not found on this server."
 
 
 class MethodNotAllowed(BadRequest):
     code = 405
+    message = "Method not allowed"
+    detail = "The method used is not allowed for the requested URL."
 
 
 class NotAcceptable(BadRequest):
     code = 406
+    message = "Available content not acceptable"
+    detail = ("The endpoint cannot generate a response acceptable"
+              " by your client (as specified by your client's"
+              " Accept header values.")
 
 
 class ProxyAuthenticationRequired(BadRequest):
     code = 407
+    message = "Proxy authentication required"
+    detail = ("A proxy between your server and the client requires"
+              " authentication to access this resource.")
 
 
 class RequestTimeout(BadRequest):
     code = 408
+    message = "Request timed out"
+    detail = ("The server cancelled the request because the client"
+              " did not complete the request within the alotted time.")
 
 
 class Conflict(BadRequest):
     code = 409
+    message = "A conflict occurred"
+    detail = ("The endpoint cancelled the request due to a potential"
+              " conflict with existing server state, such as a"
+              " duplicate filename.")
 
 
 class Gone(BadRequest):
