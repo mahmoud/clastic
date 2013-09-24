@@ -19,12 +19,12 @@ fields:
 - message: A short message describing the error, defaulting to
   the one specified by HTTP (e.g., 403 -> "Forbidden",
   404 -> "Not Found")
-- error_type: A short value specifying the specific subtype of HTTP
-  (e.g., for 403, "http://example.net/errors/invalid_token")
-- error_detail: A longer-form description of the message, used as
+- detail: A longer-form description of the message, used as
   the body of the response. Could include an explanation of the error,
   trace information, or unique identifiers. Structured values
   will be JSON-ified.
+- error_type: A short value specifying the specific subtype of HTTP
+  (e.g., for 403, "http://example.net/errors/invalid_token")
 
 TODO: naming scheme?
 TODO: HTTPException could well be a metaclass
@@ -35,12 +35,12 @@ from werkzeug.wrappers import BaseResponse
 
 class HTTPException(BaseResponse, Exception):
     code = None
-    default_status = 500
     message = 'Error'
     detail = 'An unspecified error occurred.'
 
-    def __init__(self, error_detail=None, **kwargs):
-        self.error_detail = error_detail  # TODO: could be streamed
+    def __init__(self, detail=None, **kwargs):
+        # TODO: could be streamed
+        self.detail = detail or self.detail
         self.error_type = kwargs.pop('error_type', None)
         self.message = kwargs.pop('message', self.message)
         self.code = kwargs.pop('code', self.code)
@@ -49,7 +49,7 @@ class HTTPException(BaseResponse, Exception):
         headers = kwargs.pop('headers', None)
         mimetype = kwargs.pop('mimetype', None)
         content_type = kwargs.pop('content_type', None)
-        super(HTTPException, self).__init__(response=self.error_detail,
+        super(HTTPException, self).__init__(response=self.detail,
                                             status=self.code,
                                             headers=headers,
                                             mimetype=mimetype,
@@ -154,3 +154,7 @@ class GatewayTimeout(InternalServerError):
 
 class HTTPVersionNotSupported(InternalServerError):
     code = 505
+
+
+if __name__ == '__main__':
+    print GatewayTimeout()
