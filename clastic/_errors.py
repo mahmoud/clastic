@@ -28,6 +28,7 @@ fields:
 
 TODO: naming scheme?
 TODO: HTTPException could well be a metaclass
+TODO: enable detail to be a templatable thing?
 """
 
 from werkzeug.wrappers import BaseResponse
