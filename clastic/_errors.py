@@ -42,6 +42,20 @@ Possible values to support templating:
 from werkzeug.wrappers import BaseResponse
 
 
+ERROR_CODE_MAP = None
+
+
+def _module_init():
+    global ERROR_CODE_MAP
+    ERROR_CODE_MAP = {}
+    for k, v in globals().items():
+        try:
+            if issubclass(v, HTTPException):
+                ERROR_CODE_MAP[v.code] = v
+        except (TypeError, AttributeError):
+            pass
+
+
 class HTTPException(BaseResponse, Exception):
     code = None
     message = 'Error'
@@ -243,6 +257,8 @@ class HTTPVersionNotSupported(InternalServerError):
     detail = ("The endpoint does not support the version of HTTP specified"
               " by the request.")
 
+
+_module_init()
 
 if __name__ == '__main__':
     print GatewayTimeout()
