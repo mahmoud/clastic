@@ -218,6 +218,43 @@ class ExpectationFailed(BadRequest):
               " the request's Expect header(s).")
 
 
+class ImATeapot(BadRequest):
+    "Standards committees are known for their senses of humor."
+    code = 418
+    message = "I'm a teapot: short, stout."
+    detail = ("This server is a teapot, not a coffee machine, and would"
+              " like to apologize in advance if it is a Java machine.")
+
+
+class UnprocessableEntity(BadRequest):
+    code = 422
+    message = "Unprocessable entity"
+    detail = ("The client sent a well-formed request, but the endpoint"
+              " encountered other semantic errors within the data.")
+
+
+class PreconditionRequired(BadRequest):
+    code = 428
+    message = "Precondition required"
+    detail = ("This endpoint requires a request with a conditional clause."
+              " Try resubmitting the request with an 'If-Match' or "
+              " 'If-Unmodified-Since' HTTP header.")
+
+
+class TooManyRequests(BadRequest):
+    code = 429
+    message = "Too many requests"
+    detail = ("The client has exceeded the allowed rate of requests for"
+              " this resource. Please wait and try again later.")
+
+
+class RequestHeaderFieldsTooLarge(BadRequest):
+    code = 431
+    message = "Request header fields too large"
+    detail = ("One or more HTTP header fields exceeded the maximum"
+              " allowed size.")
+
+
 class InternalServerError(HTTPException):
     code = 500
     message = "Internal server error"
@@ -268,3 +305,4 @@ _module_init()
 if __name__ == '__main__':
     gt = GatewayTimeout()
     print repr(gt)
+    print len(ERROR_CODE_MAP)
