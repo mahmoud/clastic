@@ -201,26 +201,47 @@ class ExpectationFailed(BadRequest):
 
 class InternalServerError(HTTPException):
     code = 500
+    message = "Internal server error"
+    detail = ("The server encountered an internal error and was unable"
+              " to complete your request.")
 
 
 class NotImplemented(InternalServerError):
     code = 501
+    message = "Response behavior not implemented"
+    detail = ("The resource requested has either not been implemented or"
+              " does not yet support the action requested by the client.")
 
 
 class BadGateway(InternalServerError):
     code = 502
+    message = "Bad gateway"
+    detail = ("The endpoint received an invalid response from an upstream"
+              " server while processing your request. Check that all"
+              " upstream dependencies are properly configured and running.")
 
 
 class ServiceUnavailable(InternalServerError):
     code = 503
+    message = "Service or resource unavailable"
+    detail = ("The service or resource requested is temporarily unavailable"
+              " due to maintenance downtime or capacity issues. Please try"
+              " again later.")
 
 
 class GatewayTimeout(InternalServerError):
     code = 504
+    message = "Gateway timeout"
+    detail = ("The endpoint timed out while waiting for a response from an"
+              " upstream server. check that all upstream dependencies are"
+              " properly configured and running.")
 
 
 class HTTPVersionNotSupported(InternalServerError):
     code = 505
+    message = "HTTP version not supported"
+    detail = ("The endpoint does not support the version of HTTP specified"
+              " by the request.")
 
 
 if __name__ == '__main__':
