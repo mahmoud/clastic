@@ -28,6 +28,7 @@ fields:
 
 TODO: naming scheme?
 TODO: HTTPException could well be a metaclass
+TODO: weird print/repr bug (prints blank)
 TODO: enable detail to be a templatable thing?
 
 Possible values to support templating:
@@ -77,6 +78,10 @@ class HTTPException(BaseResponse, Exception):
                                             headers=headers,
                                             mimetype=mimetype,
                                             content_type=content_type)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '%s(message=%r)' % (cn, getattr(self, 'message', ''))
 
 
 class BadRequest(HTTPException):
@@ -261,4 +266,5 @@ class HTTPVersionNotSupported(InternalServerError):
 _module_init()
 
 if __name__ == '__main__':
-    print GatewayTimeout()
+    gt = GatewayTimeout()
+    print repr(gt)
