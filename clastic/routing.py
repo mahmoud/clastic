@@ -1,6 +1,28 @@
 # -*- coding: utf-8 -*-
 
 import re
+from _errors import NotFound
+
+S_REDIRECT = 'redirect'
+S_NORMALIZE = 'normalize'
+S_STRICT = 'strict'
+
+
+class RouteMap(object):
+    def __init__(self, patterns):
+        self._pattern_list = list(patterns)
+
+    def add_pattern(self, pattern):
+        if not isinstance(pattern, RoutePattern):
+            pattern = RoutePattern(pattern)
+        self._pattern_list.append(pattern)
+
+    def match_url(self, url, slashes=S_NORMALIZE):
+        for p in self._pattern_list:
+            bindings = p.match_url(url)
+            if bindings is not None:
+                return p
+        raise NotFound(is_breaking=False)
 
 
 BINDING = re.compile(r'<'
@@ -104,28 +126,6 @@ class RoutePattern(object):
         return regex, var_converter_map
 
 
-S_REDIRECT = 'redirect'
-S_NORMALIZE = 'normalize'
-S_STRICT = 'strict'
-
-
-class RouteMap(object):
-    def __init__(self, patterns):
-        self._pattern_list = list(patterns)
-
-    def add_pattern(self, pattern):
-        if not isinstance(pattern, RoutePattern):
-            pattern = RoutePattern(pattern)
-        self._pattern_list.append(pattern)
-
-    def match_url(self, url, slashes=S_NORMALIZE):
-        for p in self._pattern_list:
-            bindings = p.match_url(url)
-            if bindings is not None:
-                return p
-        raise KeyError()
-
-
 def _main():
     rp = RoutePattern('/a/b/<t:int>/thing/<das+int>')
     d = rp.match_url('/a/b/1/thing/1/2/3/4/')
@@ -167,7 +167,7 @@ specialized to URL pattern generation. It aims to be:
 
 The last item is of course the most important. (Lookin at you Werkzeug.)
 
-Since Werkzeug's constraining of syntax led to a better system,
+Werkzeug's constraints on syntax led to a better system, so
 Clastic's routing took it a step further. Take a look at some examples:
 
  1. '/about/'
