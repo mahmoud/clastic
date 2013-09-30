@@ -9,20 +9,37 @@ S_STRICT = 'strict'
 
 
 class RouteMap(object):
-    def __init__(self, patterns):
-        self._pattern_list = list(patterns)
+    def __init__(self, routes=None):
+        self._route_list = list(routes or [])
 
-    def add_pattern(self, pattern):
-        if not isinstance(pattern, RoutePattern):
-            pattern = RoutePattern(pattern)
-        self._pattern_list.append(pattern)
+    def add(self, route, *args, **kwargs):
+        if not isinstance(route, BaseRoute):
+            # for when a basic pattern is passed in
+            route = BaseRoute(route, *args, **kwargs)
+        self._route_list.append(route)
 
-    def match_url(self, url, slashes=S_NORMALIZE):
-        for p in self._pattern_list:
-            bindings = p.match_url(url)
-            if bindings is not None:
-                return p
-        raise NotFound(is_breaking=False)
+    def itermatches(self, url, method=None, slashes=S_NORMALIZE):
+        "i know this looks weird, but parsing is always weird, i guess"
+        _excs = []
+        # TODO: Precedence of MethodNotAllowed vs patterns. Do you
+        # ever really check the POST of one pattern that much sooner
+        # than the GET of the same pattern?
+        #
+        #raise MethodNotAllowed(allowed_methods=self.methods,
+        #                       is_breaking=False)
+
+        for route in self._route_list:
+            bindings = route.match_url(url)
+            if bindings is None:
+                continue
+            method_allowed = route.match_method(method)
+            if not method_allowed:
+                continue
+            yield route, bindings
+        if _excs:
+            raise _excs[0]
+        else:
+            raise NotFound(is_breaking=False)
 
 
 BINDING = re.compile(r'<'
@@ -67,14 +84,14 @@ def collapse_token(text, token=None, sub=None):
         return sub.join([s for s in text.split(token) if s])
 
 
-class RoutePattern(object):
+class BaseRoute(object):
     def __init__(self, pattern, methods=None):
         self.pattern = pattern
         # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
         self.regex, self.converters = self._compile(pattern)
 
-    def match_url(self, url, method=None):
+    def match_url(self, url):
         ret = {}
         match = self.regex.match(url)
         if not match:
@@ -83,14 +100,15 @@ class RoutePattern(object):
         try:
             for conv_name, conv in self.converters.items():
                 ret[conv_name] = conv(groups[conv_name])
-        except KeyError:
-            return None  # TODO: this is a server error
-        except (TypeError, ValueError):
+        except (KeyError, TypeError, ValueError):
             return None
+        return ret
+
+    def match_method(self, method):
         if method and self.methods:
             if method.upper() not in self.methods:
-                raise MethodNotAllowed(allowed_methods=self.methods)
-        return ret
+                return False
+        return True
 
     def _compile(self, pattern):
         processed = []
@@ -132,7 +150,9 @@ class RoutePattern(object):
 
 
 def _main():
-    rp = RoutePattern('/a/b/<t:int>/thing/<das+int>')
+    rm = RouteMap()
+    rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
+    rm.add(rp)
     d = rp.match_url('/a/b/1/thing/1/2/3/4/')
     print d
 
@@ -142,9 +162,11 @@ def _main():
     d = rp.match_url('/a/b/1/thing/')
     print d
 
-    rp = RoutePattern('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
-    d = rp.match_url('/a/b/1/thing/', 'POST')
+    rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
+    rm.add(rp)
+    d = rp.match_url('/a/b/1/thing/')
     print d
+    print list(rm.itermatches('/a/b/1/thing/'))
 
 
 if __name__ == '__main__':
@@ -213,5 +235,10 @@ better ;))
 # TODO: detect invalid URL pattern
 # TODO: ugly corollary? unicode characters. (maybe)
 # TODO: optional segments shouldn't appear anywhere but the tail of the URL
+# TODO: slash redirect stuff (bunch of twiddling necessary to get
+# absolute path for Location header)
+
+# TODO: could methods be specified in the leading bit of the pattern?
+# probably getting too fancy
 
 """
