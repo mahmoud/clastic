@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-from _errors import NotFound
+from _errors import BadRequest, NotFound, MethodNotAllowed
 
 S_REDIRECT = 'redirect'
 S_NORMALIZE = 'normalize'
@@ -68,11 +68,13 @@ def collapse_token(text, token=None, sub=None):
 
 
 class RoutePattern(object):
-    def __init__(self, pattern):
+    def __init__(self, pattern, methods=None):
         self.pattern = pattern
+        # TODO: crosscheck methods with known HTTP methods
+        self.methods = methods and set([m.upper() for m in methods])
         self.regex, self.converters = self._compile(pattern)
 
-    def match_url(self, url):
+    def match_url(self, url, method=None):
         ret = {}
         match = self.regex.match(url)
         if not match:
@@ -82,9 +84,12 @@ class RoutePattern(object):
             for conv_name, conv in self.converters.items():
                 ret[conv_name] = conv(groups[conv_name])
         except KeyError:
-            return None  # TODO
+            return None  # TODO: this is a server error
         except (TypeError, ValueError):
             return None
+        if method and self.methods:
+            if method.upper() not in self.methods:
+                raise MethodNotAllowed(allowed_methods=self.methods)
         return ret
 
     def _compile(self, pattern):
@@ -137,8 +142,8 @@ def _main():
     d = rp.match_url('/a/b/1/thing/')
     print d
 
-    rp = RoutePattern('/a/b/<t:int>/thing/<das*int>')
-    d = rp.match_url('/a/b/1/thing/')
+    rp = RoutePattern('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
+    d = rp.match_url('/a/b/1/thing/', 'POST')
     print d
 
 

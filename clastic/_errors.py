@@ -126,6 +126,13 @@ class MethodNotAllowed(BadRequest):
     message = "Method not allowed"
     detail = "The method used is not allowed for the requested URL."
 
+    def __init__(self, allowed_methods=None, *args, **kwargs):
+        self.allowed_methods = allowed_methods
+        if allowed_methods:
+            self.detail = '%s Allowed methods: %r' % (self.detail,
+                                                      allowed_methods)
+        super(MethodNotAllowed, self).__init__(*args, **kwargs)
+
 
 class NotAcceptable(BadRequest):
     code = 406
@@ -305,4 +312,7 @@ _module_init()
 if __name__ == '__main__':
     gt = GatewayTimeout()
     print repr(gt)
+    mna = MethodNotAllowed(['GET'])
+    print repr(mna)
+    print mna.detail
     print len(ERROR_CODE_MAP)
