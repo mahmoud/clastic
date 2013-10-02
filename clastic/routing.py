@@ -38,9 +38,60 @@ class RouteMap(object):
                 _excs.append(MethodNotAllowed(allowed_methods))
             yield route, bindings
         if _excs:
-            raise _excs[0]
+            raise _excs[-1]  # raising the last
         else:
             raise NotFound(is_breaking=False)
+
+    def dispatch(self, request, slashes=S_NORMALIZE):
+        url = request.url
+        method = request.method
+
+        _excs = []
+        allowed_methods = set()
+        for route in self._route_list:
+            path_params = route.match_url(url)
+            if path_params is None:
+                continue
+            method_allowed = route.match_method(method)
+            if not method_allowed:
+                allowed_methods.update(route.methods)
+                _excs.append(MethodNotAllowed(allowed_methods))
+            injectables = {'_application': self,
+                           'request': request,
+                           '_route': route}
+            injectables.update(path_params)
+            injectables.update(self.resources)
+            try:
+                ep_res = route.execute(**injectables)  # TODO
+            except Exception as e:
+                # error handlers are not very clasticky
+                # and can/should go away
+                if getattr(e, 'is_breaking', True):
+                    raise
+                code = getattr(e, 'code', None)
+                if code in self.error_handlers:
+                    handler = self.error_handlers[code]
+                else:
+                    handler = self.error_handlers.get(None)
+
+                if handler:
+                    err_injectables = {'error': e,
+                                       'request': request,
+                                       '_application': self}
+                    return inject(handler, err_injectables)
+                else:
+                    if code and callable(getattr(e, 'get_response', None)):
+                        return e.get_response(request)
+                    else:
+                        raise
+            return ep_res
+
+        if _excs:
+            raise _excs[-1]  # raising the last
+        else:
+            raise NotFound(is_breaking=False)
+
+
 
 
 BINDING = re.compile(r'<'
