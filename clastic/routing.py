@@ -27,14 +27,15 @@ class RouteMap(object):
         #
         #raise MethodNotAllowed(allowed_methods=self.methods,
         #                       is_breaking=False)
-
+        allowed_methods = set()
         for route in self._route_list:
             bindings = route.match_url(url)
             if bindings is None:
                 continue
             method_allowed = route.match_method(method)
             if not method_allowed:
-                continue
+                allowed_methods.update(route.methods)
+                _excs.append(MethodNotAllowed(allowed_methods))
             yield route, bindings
         if _excs:
             raise _excs[0]
@@ -109,6 +110,7 @@ class BaseRoute(object):
             if method.upper() not in self.methods:
                 return False
         return True
+
 
     def _compile(self, pattern):
         processed = []

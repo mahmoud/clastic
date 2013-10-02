@@ -127,7 +127,7 @@ class MethodNotAllowed(BadRequest):
     detail = "The method used is not allowed for the requested URL."
 
     def __init__(self, allowed_methods=None, *args, **kwargs):
-        self.allowed_methods = allowed_methods
+        self.allowed_methods = set(allowed_methods or [])
         if allowed_methods:
             self.detail = '%s Allowed methods: %r' % (self.detail,
                                                       allowed_methods)
