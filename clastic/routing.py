@@ -64,34 +64,15 @@ class RouteMap(object):
             try:
                 ep_res = route.execute(**injectables)  # TODO
             except Exception as e:
-                # error handlers are not very clasticky
-                # and can/should go away
-                if getattr(e, 'is_breaking', True):
+                is_breaking = getattr(e, 'is_breaking', True)
+                if not is_breaking:
                     raise
-                code = getattr(e, 'code', None)
-                if code in self.error_handlers:
-                    handler = self.error_handlers[code]
-                else:
-                    handler = self.error_handlers.get(None)
-
-                if handler:
-                    err_injectables = {'error': e,
-                                       'request': request,
-                                       '_application': self}
-                    return inject(handler, err_injectables)
-                else:
-                    if code and callable(getattr(e, 'get_response', None)):
-                        return e.get_response(request)
-                    else:
-                        raise
             return ep_res
 
         if _excs:
             raise _excs[-1]  # raising the last
         else:
             raise NotFound(is_breaking=False)
-
-
 
 
 BINDING = re.compile(r'<'
@@ -161,7 +142,6 @@ class BaseRoute(object):
             if method.upper() not in self.methods:
                 return False
         return True
-
 
     def _compile(self, pattern):
         processed = []
@@ -293,5 +273,35 @@ better ;))
 
 # TODO: could methods be specified in the leading bit of the pattern?
 # probably getting too fancy
+
+"""
+
+"""
+Recently chopped "error handler" logic executed on uncaught exceptions
+(within the except block in dispatch())::
+
+                code = getattr(e, 'code', None)
+                if code in self.error_handlers:
+                    handler = self.error_handlers[code]
+                else:
+                    handler = self.error_handlers.get(None)
+
+                if handler:
+                    err_injectables = {'error': e,
+                                       'request': request,
+                                       '_application': self}
+                    return inject(handler, err_injectables)
+                else:
+                    if code and callable(getattr(e, 'get_response', None)):
+                        return e.get_response(request)
+                    else:
+                        raise
+
+The reason this logic was not very clasticky was mostly because it was
+purely Application-oriented, not Route-oriented, and did not translate
+well on re-embeds/SubApplication usage.
+
+Some form of error_render or errback should come into existence at
+some point, but design is pending.
 
 """
