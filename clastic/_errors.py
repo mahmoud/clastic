@@ -30,6 +30,7 @@ TODO: naming scheme?
 TODO: HTTPException could well be a metaclass
 TODO: weird print/repr bug (prints blank)
 TODO: enable detail to be a templatable thing?
+TODO: 500-level errors should support a structured traceback field?
 
 Possible values to support templating:
 

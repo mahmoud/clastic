@@ -62,13 +62,15 @@ class RouteMap(object):
             injectables.update(path_params)
             injectables.update(self.resources)
             try:
-                ep_res = route.execute(**injectables)  # TODO
+                ep_res = route.execute(**injectables)
             except Exception as e:
-                is_breaking = getattr(e, 'is_breaking', True)
-                if not is_breaking:
+                if getattr(e, 'is_breaking', True):
                     raise
+                _excs.append(e)
+                continue
             return ep_res
 
+        # TODO: should these be returns or raises?
         if _excs:
             raise _excs[-1]  # raising the last
         else:
