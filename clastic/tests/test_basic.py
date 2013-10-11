@@ -69,7 +69,8 @@ def test_subapplication_basic():
     dum2 = DummyMiddleware()
     no_name_app = Application([('/', hello_world)],
                               middlewares=[dum1])
-    name_app = Application([('/', hello_world)],
+    name_app = Application([('/', hello_world),
+                            ('/foo', hello_world)],
                            resources={'name': 'Rajkumar'},
                            middlewares=[dum1])
     app = Application([('/', no_name_app),
@@ -77,8 +78,20 @@ def test_subapplication_basic():
                       resources={'name': 'Kurt'},
                       middlewares=[dum2])
 
-    yield eq_, len(app.routes), 2
-    yield eq_, len(set([r.rule for r in app.routes])), 2
+    yield eq_, len(app.routes), 3
+
+    merged_name_app_rules = [r.rule for r in app.routes
+                             if r.rule.startswith('/beta')]
+    name_app_rules = [r.rule for r in name_app.routes]
+
+    def check_rules(app_rules, subapp_rules):
+        assert all(a.endswith(s) for a, s in zip(app_rules, subapp_rules))
+
+    # should be the same order as name_app
+    yield eq_, len(merged_name_app_rules), len(name_app_rules)
+    yield check_rules, merged_name_app_rules, name_app_rules
+
+    yield eq_, len(set([r.rule for r in app.routes])), 3
     yield eq_, len(app.routes[0]._middlewares), 1  # middleware merging
 
     resp = Client(no_name_app, BaseResponse).get('/')
@@ -88,6 +101,8 @@ def test_subapplication_basic():
     resp = Client(app, BaseResponse).get('/')
     yield eq_, resp.data, 'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/beta/')
+    yield eq_, resp.data, 'Hello, Kurt!'
+    resp = Client(app, BaseResponse).get('/beta/foo')
     yield eq_, resp.data, 'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/larp4lyfe/')
     yield eq_, resp.status_code, 404

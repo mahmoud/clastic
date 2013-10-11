@@ -53,6 +53,7 @@ class Application(object):
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
         for route in rf.get_rules(self.wmap):
             self._add_route(route, index, rebind_render)
+            index += 1
 
     def _add_route(self, route, index, rebind_render):
         route.bind(self, rebind_render)
