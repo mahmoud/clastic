@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import re
-from _errors import BadRequest, NotFound, MethodNotAllowed
+from _errors import (BadRequest,
+                     NotFound,
+                     MethodNotAllowed,
+                     InternalServerError)
+from werkzeug.wrappers import BaseResponse
+
 
 S_REDIRECT = 'redirect'
 S_NORMALIZE = 'normalize'
