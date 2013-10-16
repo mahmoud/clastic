@@ -24,29 +24,22 @@ class RouteMap(object):
             route = BaseRoute(route, *args, **kwargs)
         self._route_list.append(route)
 
-    def itermatches(self, url, method=None, slashes=S_NORMALIZE):
+    def dispatch(self, request, slashes=S_NORMALIZE):
         "i know this looks weird, but parsing is always weird, i guess"
-        _excs = []
         # TODO: Precedence of MethodNotAllowed vs patterns. Do you
         # ever really check the POST of one pattern that much sooner
         # than the GET of the same pattern?
-        #
-        #raise MethodNotAllowed(allowed_methods=self.methods,
-        #                       is_breaking=False)
-        allowed_methods = set()
-        for route in self._route_list:
-            bindings = route.match_url(url)
-            if bindings is None:
-                continue
-            method_allowed = route.match_method(method)
-            if not method_allowed:
-                allowed_methods.update(route.methods)
-                _excs.append(MethodNotAllowed(allowed_methods))
-            yield route, bindings
-        if _excs:
-            raise _excs[-1]  # raising the last
-        else:
-            raise NotFound(is_breaking=False)
+
+        try:
+            return self._dispatch_inner(request, slashes=slashes)
+        except Exception as e:
+            if self.debug:
+                raise
+            if isinstance(e, BaseResponse):
+                return e
+            else:
+                #structured traceback, etc.
+                return InternalServerError()
 
     def _dispatch_inner(self, request, slashes=S_NORMALIZE):
         url = request.url
@@ -80,18 +73,6 @@ class RouteMap(object):
             raise _excs[-1]  # raising the last
         else:
             raise NotFound(is_breaking=False)
-
-    def dispatch(self, request, slashes=S_NORMALIZE):
-        try:
-            return _dispatch_inner(request, slashes=slashes)
-        except Exception as e:
-            if self.debug:
-                raise
-            if isinstance(e, BaseResponse):
-                return e
-            else:
-                #structured traceback, etc.
-                return InternalServerError()
 
 
 BINDING = re.compile(r'<'
