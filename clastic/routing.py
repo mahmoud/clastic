@@ -9,8 +9,9 @@ S_STRICT = 'strict'
 
 
 class RouteMap(object):
-    def __init__(self, routes=None):
+    def __init__(self, routes=None, debug=False):
         self._route_list = list(routes or [])
+        self.debug = False
 
     def add(self, route, *args, **kwargs):
         if not isinstance(route, BaseRoute):
@@ -42,7 +43,7 @@ class RouteMap(object):
         else:
             raise NotFound(is_breaking=False)
 
-    def dispatch(self, request, slashes=S_NORMALIZE):
+    def _dispatch_inner(self, request, slashes=S_NORMALIZE):
         url = request.url
         method = request.method
 
@@ -70,11 +71,22 @@ class RouteMap(object):
                 continue
             return ep_res
 
-        # TODO: should these be returns or raises?
         if _excs:
             raise _excs[-1]  # raising the last
         else:
             raise NotFound(is_breaking=False)
+
+    def dispatch(self, request, slashes=S_NORMALIZE):
+        try:
+            return _dispatch_inner(request, slashes=slashes)
+        except Exception as e:
+            if self.debug:
+                raise
+            if isinstance(e, BaseResponse):
+                return e
+            else:
+                #structured traceback, etc.
+                return InternalServerError()
 
 
 BINDING = re.compile(r'<'
