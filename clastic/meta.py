@@ -29,17 +29,18 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 # TODO: nominal SLA vs real/sampled SLA
 
 
-def create_app():
+def create_app(page_title='Clastic'):
     routes = [('/', get_all_meta_info, 'meta_base.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', get_all_meta_info, render_json)]
-    resources = {'_meta_start_time': datetime.datetime.utcnow()}
+    resources = {'_meta_start_time': datetime.datetime.utcnow(),
+                 'page_title': page_title}
     arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, resources, arf)
     return app
 
 
-def get_all_meta_info(_application, _meta_start_time):
+def get_all_meta_info(_application, _meta_start_time, page_title):
     app = _application
     ret = {}
     ret['routes'] = get_route_infos(app)
@@ -53,6 +54,7 @@ def get_all_meta_info(_application, _meta_start_time):
 
     ret['abs_start_time'] = str(_meta_start_time)
     ret['rel_start_time'] = _rel_datetime(_meta_start_time)
+    ret['page_title'] = page_title
     return ret
 
 
