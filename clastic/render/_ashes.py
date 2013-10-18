@@ -13,7 +13,7 @@ PY3 = (sys.version_info[0] == 3)
 if PY3:
     unicode, basestring = str, str
 
-__version__ = '0.5.3'
+__version__ = '0.6.0'
 __author__ = 'Mahmoud Hashemi'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/ashes'
@@ -295,7 +295,7 @@ def get_tag(match, inline=False):
     elif symbol == '>':
         tag_type = PartialTag
     else:
-        raise ParseError('invalid tag')
+        raise ParseError('invalid tag symbol: %r' % symbol)
     if inline and tag_type not in (ReferenceTag, SpecialTag):
         raise ParseError('invalid inline tag')
     return tag_type.from_match(match)
@@ -456,21 +456,24 @@ class ParseTree(object):
                     ss.append(new_s)
             elif type(token) == ClosingTag:
                 if len(ss) <= 1:
-                    msg = 'closing tag before opening tag: %r' % token
+                    msg = 'closing tag before opening tag: %r' % token.text
                     raise ParseError(msg, token=token)
                 if token.name != ss[-1].name:
                     msg = ('improperly nested tags: %r does not close %r' %
-                           (token, ss[-1].start_tag))
+                           (token.text, ss[-1].start_tag.text))
                     raise ParseError(msg, token=token)
                 ss.pop()
             elif type(token) == BlockTag:
                 if len(ss) <= 1:
-                    msg = 'start block outside of a section: %r' % token
+                    msg = 'start block outside of a section: %r' % token.text
                     raise ParseError(msg, token=token)
                 new_b = Block(name=token.refpath)
                 ss[-1].add(new_b)
             else:
                 ss[-1].add(token)
+        if len(ss) > 1:
+            raise ParseError('unclosed tag: %r' % ss[-1].start_tag.text,
+                             token=ss[-1].start_tag)
         return cls(root_sect.blocks[0])
 
     @classmethod
@@ -899,8 +902,10 @@ def _resolve_value(item, chunk, context):
         return item
     try:
         return chunk.tap_render(item, context)
-    except:
-        return None
+    except TypeError:
+        if getattr(context, 'is_strict', None):
+            raise
+        return item
 
 
 _COERCE_MAP = {
@@ -1053,13 +1058,17 @@ class Stub(object):
     def __init__(self, callback):
         self.head = Chunk(self)
         self.callback = callback
-        self.out = ''  # TODO: convert to list, use property and ''.join()
+        self._out = []
+
+    @property
+    def out(self):
+        return ''.join(self._out)
 
     def flush(self):
-        chunk = self.head
+        chunk =  self.head
         while chunk:
             if chunk.flushable:
-                self.out += chunk.data
+                self._out.append(chunk.data)
             elif chunk.error:
                 self.callback(chunk.error, '')
                 self.flush = lambda self: None
@@ -1116,19 +1125,20 @@ class Chunk(object):
         self.root = root
         self.next = next_chunk
         self.taps = taps
-        self.data = ''
+        self._data, self.data = [], ''
         self.flushable = False
         self.error = None
 
     def write(self, data):
         if self.taps:
             data = self.taps.go(data)
-        self.data += data
+        self._data.append(data)
         return self
 
     def end(self, data=None):
         if data:
             self.write(data)
+        self.data = ''.join(self._data)
         self.flushable = True
         self.root.flush()
         return self
@@ -1137,6 +1147,7 @@ class Chunk(object):
         cursor = Chunk(self.root, self.next, self.taps)
         branch = Chunk(self.root, cursor, self.taps)
         self.next = branch
+        self.data = ''.join(self._data)
         self.flushable = True
         callback(branch)
         return cursor
@@ -1163,15 +1174,24 @@ class Chunk(object):
                 output.append(data)
             return ''
         self.tap(tmp_tap)
-        self.render(body, context).untap()
+        try:
+            self.render(body, context)
+        finally:
+            self.untap()
         return ''.join(output)
 
     def reference(self, elem, context, auto, filters=None):
         if callable(elem):
-            # this whole callable thing is a pretty big TODO
-            elem = elem(self, context)
-            if isinstance(elem, Chunk):
-                return elem
+            # this whole callable thing is a quirky thing about dust
+            try:
+                elem = elem(self, context)
+            except TypeError:
+                if getattr(context, 'is_strict', None):
+                    raise
+                elem = repr(elem)
+            else:
+                if isinstance(elem, Chunk):
+                    return elem
         if is_empty(elem):
             return self
         else:
@@ -1180,9 +1200,15 @@ class Chunk(object):
 
     def section(self, elem, context, bodies, params=None):
         if callable(elem):
-            elem = elem(self, context, bodies, params)
-            if isinstance(elem, Chunk):
-                return elem
+            try:
+                elem = elem(self, context, bodies, params)
+            except TypeError:
+                if getattr(context, 'is_strict', None):
+                    raise
+                elem = repr(elem)
+            else:
+                if isinstance(elem, Chunk):
+                    return elem
         body = bodies.get('block')
         else_body = bodies.get('else')
         if params:
@@ -1270,6 +1296,10 @@ class Tap(object):
             value = tap.head(value)  # TODO: type errors?
             tap = tap.tail
         return value
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '%s(%r, %r)' % (cn, self.head, self.tail)
 
 
 DEFAULT_FILTERS = {
@@ -1548,9 +1578,10 @@ class AshesEnv(BaseAshesEnv):
     A slightly more accessible Ashes environment, with more
     user-friendly options exposed.
     """
-    def __init__(self, paths=None, keep_whitespace=False, *a, **kw):
+    def __init__(self, paths=None, keep_whitespace=True, *a, **kw):
         self.paths = list(paths or [])
         self.keep_whitespace = keep_whitespace
+        self.is_strict = kw.pop('is_strict', False)
         exts = list(kw.pop('exts', DEFAULT_EXTENSIONS))
 
         super(AshesEnv, self).__init__(*a, **kw)
@@ -1699,7 +1730,7 @@ def _main():
                 '{/eq}'
                 ', {@size key=hello/} characters')
         ashes.register_source('hi', tmpl)
-        print(ashes.render('hi', {'hello': 'greetings'}))
+        print(ashes.render('hi', {'hello': lambda x: None}))
     except Exception as e:
         import pdb;pdb.post_mortem()
         raise
