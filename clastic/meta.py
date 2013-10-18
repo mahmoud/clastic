@@ -35,7 +35,7 @@ def create_app(page_title='Clastic'):
               ('/json/', get_all_meta_info, render_json)]
     resources = {'_meta_start_time': datetime.datetime.utcnow(),
                  'page_title': page_title}
-    arf = AshesRenderFactory(_CUR_PATH)
+    arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
     app = Application(routes, resources, arf)
     return app
 
