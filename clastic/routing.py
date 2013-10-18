@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import re
+import sys
+from werkzeug.wrappers import BaseResponse
+
 from _errors import (BadRequest,
                      NotFound,
                      MethodNotAllowed,
                      InternalServerError)
-from werkzeug.wrappers import BaseResponse
+from tbutils import TracebackInfo
 
 
 S_REDIRECT = 'redirect'
@@ -34,6 +37,7 @@ class RouteMap(object):
             return self._dispatch_inner(request, slashes=slashes)
         except Exception as e:
             if self.debug:
+                # TODO: special rendering for debug-mode HTTPException objects
                 raise
             if isinstance(e, BaseResponse):
                 return e
@@ -63,6 +67,9 @@ class RouteMap(object):
             try:
                 ep_res = route.execute(**injectables)
             except Exception as e:
+                _, _, exc_traceback = sys.exc_info()
+                tbi = TracebackInfo.from_traceback(exc_traceback)
+                #TODO
                 if getattr(e, 'is_breaking', True):
                     raise
                 _excs.append(e)
