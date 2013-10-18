@@ -1,4 +1,5 @@
 from simple import (JSONRender,
+                    JSONPRender,
                     render_json,
                     render_json_dev,
                     render_basic)
@@ -16,6 +17,7 @@ except ImportError:
 from ashes_templates import AshesRenderFactory
 
 __all__ = ('JSONRender',
+           'JSONPRender',
            'render_json',
            'render_json_dev',
            'render_basic',

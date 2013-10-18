@@ -1,3 +1,5 @@
+
+import itertools
 from json import JSONEncoder
 from collections import Mapping, Sized, Iterable
 
@@ -47,6 +49,22 @@ class JSONRender(object):
     def __call__(self, context):
         json_iter = self.json_encoder.iterencode(context)
         resp = Response(json_iter, mimetype="application/json")
+        resp.mimetype_params['charset'] = self.encoding
+        return resp
+
+
+class JSONPRender(JSONRender):
+    def __init__(self, qp_name='callback', *a, **kw):
+        self.qp_name = qp_name
+        super(JSONPRender, self).__init__(*a, **kw)
+
+    def __call__(self, request, context):
+        cb_name = request.args.get(self.qp_name, None)
+        if not cb_name:
+            return super(JSONPRender, self).__call__(context)
+        json_iter = self.json_encoder.iterencode(context)
+        resp_iter = itertools.chain([cb_name, '('], json_iter, [');'])
+        resp = Response(resp_iter, mimetype="application/javascript")
         resp.mimetype_params['charset'] = self.encoding
         return resp
 
