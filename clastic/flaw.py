@@ -49,7 +49,7 @@ _FLAW_TEMPLATE = u"""\
 <!doctype html>
 <html>
   <head>
-    <title>Oh, Flaw'd: {exc_type} in {err.source_file}</title>
+    <title>Oh, Flaw'd{#parsed_err}: {exc_type} in {source_file}{/parsed_err}</title>
     <link rel="stylesheet" type="text/css" href="/clastic_assets/normalize.css">
     <link rel="stylesheet" type="text/css" href="/clastic_assets/common.css">
   </head>
