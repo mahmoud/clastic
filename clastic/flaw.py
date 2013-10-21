@@ -12,6 +12,8 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 
 def create_app(traceback_string, monitored_files=None):
+    if monitored_files:
+        monitored_files.sort(key=lambda x: len(x))
     non_site_files = _filter_site_files(monitored_files)
     try:
         parsed_tb = _ParsedTB.from_string(traceback_string)
