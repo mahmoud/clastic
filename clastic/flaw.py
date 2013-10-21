@@ -2,6 +2,8 @@
 
 import os
 import re
+import ast
+
 from core import Application
 from static import StaticApplication
 from render import AshesRenderFactory
@@ -34,12 +36,13 @@ def create_app(traceback_string, monitored_files=None):
     return app
 
 
-def get_flaw_info(tb_str, parsed_error, mon_files):
+def get_flaw_info(tb_str, parsed_error, all_mon_files, mon_files):
     try:
         last_line = tb_str.splitlines()[-1]
     except:
         last_line = u'Unknown error'
     return {'mon_files': mon_files,
+            'all_mon_files': all_mon_files,
             'parsed_err': parsed_error,
             'last_line': last_line,
             'tb_str': tb_str}
@@ -66,7 +69,10 @@ _FLAW_TEMPLATE = u"""\
     <h2>Stack trace</h2>
     <pre>{tb_str}</pre>
     <br><hr>
-    <p>Monitoring:<ul>{#mon_files}<li>{.}</li>{/mon_files}</ul></p>
+    <p>Monitoring:
+      <ul>{#mon_files}<li>{.}</li>{/mon_files}</ul>
+      <ul id="all_files" style="display:none;">{#all_mon_files}<li>{.}</li>{/all_mon_files}</ul>
+    </p>
   </body>
 </html>
 """
@@ -136,10 +142,27 @@ class _ParsedTB(object):
 
 
 def _filter_site_files(paths):
+    ret = paths or []
     if not paths:
-        return []
-    site_dir = os.path.dirname(os.__file__)
-    return [fn for fn in paths if not fn.startswith(site_dir)]
+        return ret
+    main_lib_dir = os.path.dirname(ast.__file__)
+    ret = [fn for fn in ret if not fn.startswith(main_lib_dir)]
+    venv_lib_dir = os.path.dirname(os.__file__)
+    ret = [fn for fn in ret if not fn.startswith(venv_lib_dir)]
+    try:
+        import werkzeug
+        venv_site_dir = os.path.dirname(werkzeug.__file__)
+        ret = [fn for fn in ret if not fn.startswith(venv_site_dir)]
+    except:
+        pass
+    try:
+        import clastic
+        clastic_dir = os.path.dirname(clastic.__file__)
+        ret = [fn for fn in ret if not fn.startswith(clastic_dir)]
+    except:
+        pass
+
+    return ret
 
 
 if __name__ == '__main__':
