@@ -33,19 +33,8 @@ class RouteMap(object):
         # ever really check the POST of one pattern that much sooner
         # than the GET of the same pattern?
 
-        try:
-            return self._dispatch_inner(request, slashes=slashes)
-        except Exception as e:
-            if self.debug:
-                # TODO: special rendering for debug-mode HTTPException objects
-                raise
-            if isinstance(e, BaseResponse):
-                return e
-            else:
-                #structured traceback, etc.
-                return InternalServerError()
-
-    def _dispatch_inner(self, request, slashes=S_NORMALIZE):
+        # TODO: should returning an HTTPException and raising one have
+        # basically the same behavior? more at 11pm.
         url = request.url
         method = request.method
 
@@ -66,16 +55,25 @@ class RouteMap(object):
             injectables.update(self.resources)
             try:
                 ep_res = route.execute(**injectables)
+                if not isinstance(ep_res, BaseResponse):
+                    # TODO
+                    msg = 'expected Response, received %r' % type(ep_res)
+                    return InternalServerError(msg)
             except Exception as e:
-                _, _, exc_traceback = sys.exc_info()
-                tbi = TracebackInfo.from_traceback(exc_traceback)
                 #TODO
-                if getattr(e, 'is_breaking', True):
+                if self.debug:
+                    # TODO special rendering for HTTPException objects in debug
                     raise
-                _excs.append(e)
-                continue
-            return ep_res
-
+                if isinstance(e, BaseResponse):
+                    if getattr(e, 'is_breaking', True):
+                        return e
+                    else:
+                        _excs.append(e)
+                        continue
+                else:
+                    _, _, exc_traceback = sys.exc_info()
+                    tbi = TracebackInfo.from_traceback(exc_traceback)
+                    return InternalServerError(tbi)
         if _excs:
             raise _excs[-1]  # raising the last
         else:
