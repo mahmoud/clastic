@@ -204,7 +204,6 @@ def _main():
     rm.add(rp)
     d = rp.match_url('/a/b/1/thing/')
     print d
-    print list(rm.itermatches('/a/b/1/thing/'))
 
 
 if __name__ == '__main__':
