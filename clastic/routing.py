@@ -48,6 +48,7 @@ class RouteMap(object):
             if not method_allowed:
                 allowed_methods.update(route.methods)
                 _excs.append(MethodNotAllowed(allowed_methods))
+                continue
             injectables = {'_application': self,
                            'request': request,
                            '_route': route}
@@ -75,9 +76,9 @@ class RouteMap(object):
                     tbi = TracebackInfo.from_traceback(exc_traceback)
                     return InternalServerError(tbi)
         if _excs:
-            raise _excs[-1]  # raising the last
+            return _excs[-1]
         else:
-            raise NotFound(is_breaking=False)
+            return NotFound(is_breaking=False)
 
 
 BINDING = re.compile(r'<'
