@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from clastic import (Application,
                      default_response,
                      GetParamMiddleware)
-from clastic.session import CookieSessionMiddleware
+from clastic.middleware.session import CookieSessionMiddleware
 from clastic.tests.common import session_hello_world
 from clastic.middleware import SimpleContextProcessor
 

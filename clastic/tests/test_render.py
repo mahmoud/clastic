@@ -8,7 +8,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.render import JSONRender, render_basic
+from clastic.render import JSONRender, JSONPRender, render_basic
 
 from common import (hello_world_str,
                     hello_world_html,
@@ -48,6 +48,25 @@ def test_json_render(render_json=None):
     yield ok_, resp_data['date']
     yield ok_, len(resp_data) > 4
 
+
+def test_jsonp_render(render_json=None):
+    if render_json is None:
+        render_json = JSONPRender(qp_name='callback', dev_mode=True)
+    app = Application([('/', hello_world_ctx, render_json),
+                       ('/<name>/', hello_world_ctx, render_json),
+                       ('/beta/<name>/', complex_context, render_json)])
+
+    c = Client(app, BaseResponse)
+
+    resp = c.get('/?callback=test_callback')
+    yield eq_, resp.status_code, 200
+    yield ok_, resp.data.startswith('test_callback')
+    yield ok_, 'world' in resp.data
+
+    resp = c.get('/?callback=test_callback')
+    yield eq_, resp.status_code, 200
+    yield ok_, resp.data.startswith('test_callback')
+    yield ok_, 'world' in resp.data
 
 #def test_default_json_render():
 #    from clastic.render import render_json

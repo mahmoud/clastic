@@ -7,7 +7,7 @@ import os
 from werkzeug.test import Client
 
 from clastic import Application, render_basic, Response
-from clastic.session import CookieSessionMiddleware
+from clastic.middleware.session import CookieSessionMiddleware
 
 from common import session_hello_world
 
