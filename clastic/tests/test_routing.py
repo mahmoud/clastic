@@ -49,3 +49,24 @@ def test_create_route_order_incr():
         yield eq_, client.get('/api/a/b').data, 'api: a/b'
         yield eq_, app.wmap._rules[-1].rule, r[0]
     return
+
+
+# test new routing
+
+from clastic.routing import BaseRoute
+
+
+def test_new_base_route():
+    rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
+    d = rp.match_url('/a/b/1/thing/1/2/3/4/')
+    yield eq_, d, {u't': 1, u'das': [1, 2, 3, 4]}
+
+    d = rp.match_url('/a/b/1/thing/hi/')
+    yield eq_, d, None
+
+    d = rp.match_url('/a/b/1/thing/')
+    yield eq_, d, None
+
+    rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
+    d = rp.match_url('/a/b/1/thing/')
+    yield eq_, d, {u't': 1, u'das': []}
