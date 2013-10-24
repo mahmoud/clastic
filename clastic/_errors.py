@@ -80,6 +80,9 @@ class HTTPException(BaseResponse, Exception):
                                             mimetype=mimetype,
                                             content_type=content_type)
 
+    def get_wsgi_response(self, environ):
+        return super(HTTPException, self).get_wsgi_response(environ)
+
     def __repr__(self):
         cn = self.__class__.__name__
         return '%s(message=%r)' % (cn, getattr(self, 'message', ''))
