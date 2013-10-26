@@ -9,17 +9,52 @@ from _errors import (BadRequest,
                      MethodNotAllowed,
                      InternalServerError)
 from tbutils import TracebackInfo
+from werkzeug.wrappers import Request, Response
 
+from middleware import (check_middlewares,
+                        merge_middlewares,
+                        make_middleware_chain)
 
 S_REDIRECT = 'redirect'
 S_NORMALIZE = 'normalize'
 S_STRICT = 'strict'
 
+RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
 
-class RouteMap(object):
-    def __init__(self, routes=None, debug=False):
-        self._route_list = list(routes or [])
-        self.debug = False
+
+class BaseApplication(object):
+    request_type = Request
+    response_type = Response  # unused atm
+
+    def __init__(self, routes=None, resources=None, render_factory=None,
+                 middlewares=None, **kwargs):
+        self.debug = kwargs.pop('debug', None)
+        if kwargs:
+            raise TypeError('unexpected keyword args: %r' % kwargs.keys())
+        self.resources = dict(resources or {})
+        resource_conflicts = [r for r in RESERVED_ARGS if r in self.resources]
+        if resource_conflicts:
+            raise NameError('resource names conflict with builtins: %r' %
+                            resource_conflicts)
+        self.middlewares = list(middlewares or [])
+        check_middlewares(self.middlewares)
+        self.render_factory = render_factory
+
+        routes = routes or []
+        self.routes = []
+        self._null_route = NullRoute()
+        self._null_route.bind(self)
+        for entry in routes:
+            self.add(entry)
+
+    def add(self, entry, index=None, rebind_render=True):
+        if index is None:
+            index = len(self.routes)
+        rf = cast_to_rule_factory(entry)
+        rebind_render = getattr(rf, 'rebind_render', rebind_render)
+        for route in rf.get_rules(self.wmap):
+            self._add_route(route, index, rebind_render)
+            index += 1
 
     def add(self, route, *args, **kwargs):
         if not isinstance(route, BaseRoute):
@@ -183,10 +218,18 @@ class BaseRoute(object):
         return regex, var_converter_map
 
 
+class NullRoute(BaseRoute):
+    def __init__(self, *a, **kw):
+        rule_str = '/<path:_ignored>'
+        super(NullRoute, self).__init__(rule_str, endpoint=self.not_found)
+        self.build_only = True
+
+    def not_found(self, request):
+        raise NotFound()
+
+
 def _main():
-    rm = RouteMap()
     rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
-    rm.add(rp)
     d = rp.match_url('/a/b/1/thing/1/2/3/4/')
     print d
 
@@ -197,7 +240,6 @@ def _main():
     print d
 
     rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
-    rm.add(rp)
     d = rp.match_url('/a/b/1/thing/')
     print d
 
