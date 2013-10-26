@@ -2,7 +2,13 @@
 
 import re
 
+from sinter import inject
 from _errors import NotFound
+
+
+class InvalidEndpoint(TypeError):
+    pass
+
 
 BINDING = re.compile(r'<'
                      r'(?P<name>[A-Za-z_]\w*)'
@@ -49,7 +55,7 @@ def collapse_token(text, token=None, sub=None):
 class BaseRoute(object):
     def __init__(self, pattern, endpoint=None, methods=None):
         self.pattern = pattern
-        self._endpoint_func = endpoint
+        self._execute = endpoint
         # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
         self.regex, self.converters = self._compile(pattern)
@@ -72,6 +78,13 @@ class BaseRoute(object):
             if method.upper() not in self.methods:
                 return False
         return True
+
+    def execute(self, request, **kwargs):
+        if not self._execute:
+            raise InvalidEndpoint('no endpoint function set on %r' % self)
+        kwargs['_route'] = self
+        kwargs['request'] = request
+        return inject(self._execute, kwargs)
 
     def iter_routes(self, application):
         yield self

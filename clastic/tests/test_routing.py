@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from nose.tools import raises, eq_, ok_
 
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
+from werkzeug.wrappers import BaseResponse, Request
 
 from clastic import Application, render_basic
 from clastic import GET, POST, PUT, DELETE
@@ -53,7 +53,7 @@ def test_create_route_order_incr():
 
 # test new routing
 
-from clastic.routing import BaseRoute
+from clastic.routing import BaseRoute, InvalidEndpoint
 
 
 def test_new_base_route():
@@ -70,3 +70,14 @@ def test_new_base_route():
     rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
     d = rp.match_url('/a/b/1/thing/')
     yield eq_, d, {u't': 1, u'das': []}
+
+
+def test_base_route_executes():
+    br = BaseRoute('/', lambda request: request['stephen'])
+    res = br.execute({'stephen': 'laporte'})
+    yield eq_, res, 'laporte'
+
+
+@raises(InvalidEndpoint)
+def test_base_route_raises_on_no_ep():
+    BaseRoute('/a/b/<t:int>/thing/<das+int>').execute({})
