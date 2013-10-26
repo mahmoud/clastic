@@ -34,12 +34,11 @@ class Application(object):
         self.resources = dict(resources or {})
         resource_conflicts = [r for r in RESERVED_ARGS if r in self.resources]
         if resource_conflicts:
-            raise NameError('resource names conflict with builtins: %r',
+            raise NameError('resource names conflict with builtins: %r' %
                             resource_conflicts)
         self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
-        self.endpoint_args = {}
 
         self._null_route = NullRoute()
         self._null_route.bind(self)

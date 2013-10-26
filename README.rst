@@ -137,6 +137,17 @@ the most common operations usually have convenience functions, like
 above. Clastic also has no-nonsense drop-ins for cookies, HTTP
 caching, and more.
 
+Testimonials
+------------
+
+While originally built to host `a simple train schedule site
+<https://github.com/mahmoud/etavta>`_ and `a few Wikipedia-related
+projects <https://github.com/hatnote>`_, Clastic is also used
+for both internal and production-grade applications at PayPal.
+
+(If your project or company uses Clastic, feel free to file an issue or
+submit a pull request to get added to this section.)
+
 Motivation
 ----------
 
@@ -799,4 +810,4 @@ And thanks to *you* for making it this far in the docs!
 Misc
 ----
 
-- `Tarball of Clastic 0.2.3 <https://pypi.python.org/packages/source/c/clastic/clastic-0.2.3.tar.gz#md5=1eac35ef9a98fa8815e8209df8203009>`_
+- `Tarball of Clastic 0.3.0 <https://pypi.python.org/packages/source/c/clastic/clastic-0.3.0.tar.gz#md5=3672ea706921353458fce7714140bde2>`_
