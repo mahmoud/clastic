@@ -118,12 +118,16 @@ class BaseRoute(object):
         return regex, var_converter_map
 
 
+class Route(BaseRoute):
+    pass
+
+
 class NullRoute(BaseRoute):
     def __init__(self, *a, **kw):
         super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
 
     def not_found(self, request):
-        raise NotFound()
+        raise NotFound(is_breaking=False)
 
 
 def _main():
