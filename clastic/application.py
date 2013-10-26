@@ -127,6 +127,11 @@ class BaseApplication(object):
             return _excs[-1]
         return NotFound(is_breaking=False)
 
+    def __call__(self, environ, start_response):
+        request = self.request_type(environ)
+        response = self.dispatch(request)
+        return response(environ, start_response)
+
 
 class SubApplication(object):
     def __init__(self, prefix, app, rebind_render=False):
