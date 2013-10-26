@@ -4,11 +4,6 @@ import re
 
 from _errors import NotFound
 
-S_REDIRECT = 'redirect'
-S_NORMALIZE = 'normalize'
-S_STRICT = 'strict'
-
-
 BINDING = re.compile(r'<'
                      r'(?P<name>[A-Za-z_]\w*)'
                      r'(?P<op>[?+:*]*)'
@@ -18,7 +13,7 @@ TYPE_CONV_MAP = {'int': int,
                  'float': float,
                  'unicode': unicode,
                  'str': unicode}
-_path_seg_tmpl = '(?P<%s>(/[\w%%\d])%s)'
+_PATH_SEG_TMPL = '(?P<%s>(/[\w%%\d])%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '?': False,
                  ':': False,
@@ -114,7 +109,7 @@ class BaseRoute(object):
                 raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
             var_converter_map[name] = build_converter(converter, multi=multi)
 
-            path_seg_pattern = _path_seg_tmpl % (name, op)
+            path_seg_pattern = _PATH_SEG_TMPL % (name, op)
             processed[-1] += path_seg_pattern
 
         regex = re.compile('/'.join(processed))
