@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from collections import Sequence
 
 from werkzeug.wrappers import BaseResponse
 from werkzeug.wrappers import Request, Response
 
-from .routing import BaseRoute
+from .routing import BaseRoute, Route, NullRoute
 from .tbutils import TracebackInfo
 from .middleware import (check_middlewares,
                          merge_middlewares,
@@ -17,6 +18,30 @@ from ._errors import (BadRequest,
 
 
 RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
+
+S_REDIRECT = 'redirect'
+S_NORMALIZE = 'normalize'
+S_STRICT = 'strict'
+
+
+def cast_to_rule_factory(in_arg):
+    if isinstance(in_arg, BaseRoute):
+        return in_arg
+    # elif isinstance(in_arg, Rule):  # werkzeug backward compat desirable?
+    #    ret = Route(in_arg.rule, in_arg.endpoint)
+    #    ret.__dict__.update(in_arg.empty().__dict__)
+    #    return ret
+    elif isinstance(in_arg, Sequence):
+        try:
+            if isinstance(in_arg[1], BaseApplication):
+                return SubApplication(*in_arg)
+            if callable(in_arg[1]):
+                return Route(*in_arg)
+        except TypeError:
+            pass
+    # if isinstance(in_arg, RuleFactory):  # again, werkzeug backcompat wanted?
+    #     return in_arg
+    raise TypeError('Could not create routes from %r' % in_arg)
 
 
 class BaseApplication(object):
@@ -53,12 +78,6 @@ class BaseApplication(object):
             self._add_route(route, index, rebind_render)
             index += 1
 
-    def add(self, route, *args, **kwargs):
-        if not isinstance(route, BaseRoute):
-            # for when a basic pattern is passed in
-            route = BaseRoute(route, *args, **kwargs)
-        self._route_list.append(route)
-
     def dispatch(self, request, slashes=S_NORMALIZE):
         "i know this looks weird, but parsing is always weird, i guess"
         # TODO: Precedence of MethodNotAllowed vs patterns. Do you
@@ -72,7 +91,7 @@ class BaseApplication(object):
 
         _excs = []
         allowed_methods = set()
-        for route in self._route_list:
+        for route in self.routes:
             path_params = route.match_url(url)
             if path_params is None:
                 continue
@@ -106,3 +125,20 @@ class BaseApplication(object):
         if _excs:
             return _excs[-1]
         return NotFound(is_breaking=False)
+
+
+class SubApplication(object):
+    def __init__(self, prefix, app, rebind_render=False):
+        self.prefix = prefix.rstrip('/')
+        self.app = app
+        self.rebind_render = rebind_render
+
+    def iter_routes(self, application):
+        # TODO: if `self.app` is `application` don't re-embed?
+        for routes in self.app.iter_routes(application):
+            for rt in routes.iter_routes(application):
+                if isinstance(rt, NullRoute):
+                    continue
+                yld = rt.empty()
+                yld.pattern = self.prefix + rt.pattern
+                yield yld

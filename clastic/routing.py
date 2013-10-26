@@ -78,6 +78,9 @@ class BaseRoute(object):
                 return False
         return True
 
+    def iter_routes(self, application):
+        yield self
+
     def _compile(self, pattern):
         processed = []
         var_converter_map = {}
