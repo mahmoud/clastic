@@ -49,9 +49,9 @@ class RouteMap(object):
                 allowed_methods.update(route.methods)
                 _excs.append(MethodNotAllowed(allowed_methods))
                 continue
-            injectables = {'_application': self,
+            injectables = {'_route': route,
                            'request': request,
-                           '_route': route}
+                           '_application': self}
             injectables.update(path_params)
             injectables.update(self.resources)
             try:
@@ -59,26 +59,21 @@ class RouteMap(object):
                 if not isinstance(ep_res, BaseResponse):
                     # TODO
                     msg = 'expected Response, received %r' % type(ep_res)
-                    return InternalServerError(msg)
+                    raise InternalServerError(msg)
             except Exception as e:
-                #TODO
-                if self.debug:
-                    # TODO special rendering for HTTPException objects in debug
-                    raise
-                if isinstance(e, BaseResponse):
-                    if getattr(e, 'is_breaking', True):
-                        return e
-                    else:
-                        _excs.append(e)
-                        continue
-                else:
+                #if self.debug:
+                # TODO special rendering for HTTPException objects in debug
+                #    raise
+                if not isinstance(e, BaseResponse):
                     _, _, exc_traceback = sys.exc_info()
                     tbi = TracebackInfo.from_traceback(exc_traceback)
-                    return InternalServerError(tbi)
+                    e = InternalServerError(tbi)
+                _excs.append(e)
+                if getattr(e, 'is_breaking', True):
+                    break
         if _excs:
             return _excs[-1]
-        else:
-            return NotFound(is_breaking=False)
+        return NotFound(is_breaking=False)
 
 
 BINDING = re.compile(r'<'
