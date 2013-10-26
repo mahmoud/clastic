@@ -154,8 +154,9 @@ def collapse_token(text, token=None, sub=None):
 
 
 class BaseRoute(object):
-    def __init__(self, pattern, methods=None):
+    def __init__(self, pattern, endpoint=None, methods=None):
         self.pattern = pattern
+        self._endpoint_func = endpoint
         # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
         self.regex, self.converters = self._compile(pattern)
@@ -196,7 +197,8 @@ class BaseRoute(object):
                 if op == ':':
                     op = ''
                 if not type_name:
-                    raise ValueError('%s expected a type specifier' % part)
+                    type_name = 'unicode'
+                    #raise ValueError('%s expected a type specifier' % part)
                 try:
                     converter = TYPE_CONV_MAP[type_name]
                 except KeyError:
@@ -220,9 +222,7 @@ class BaseRoute(object):
 
 class NullRoute(BaseRoute):
     def __init__(self, *a, **kw):
-        rule_str = '/<path:_ignored>'
-        super(NullRoute, self).__init__(rule_str, endpoint=self.not_found)
-        self.build_only = True
+        super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
 
     def not_found(self, request):
         raise NotFound()
@@ -242,6 +242,8 @@ def _main():
     rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
     d = rp.match_url('/a/b/1/thing/')
     print d
+
+    print NullRoute()
 
 
 if __name__ == '__main__':
