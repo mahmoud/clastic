@@ -74,8 +74,9 @@ class BaseApplication(object):
             index = len(self.routes)
         rf = cast_to_rule_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        for route in rf.get_rules(self.wmap):
-            self._add_route(route, index, rebind_render)
+        for route in rf.iter_routes(self):
+            route.bind(self, rebind_render)
+            self.routes.insert(index, route)
             index += 1
 
     def dispatch(self, request, slashes=S_NORMALIZE):
@@ -133,7 +134,7 @@ class SubApplication(object):
         self.app = app
         self.rebind_render = rebind_render
 
-    def iter_routes(self, application):
+    def iter_routes(self, application, *a, *kw):
         # TODO: if `self.app` is `application` don't re-embed?
         for routes in self.app.iter_routes(application):
             for rt in routes.iter_routes(application):
