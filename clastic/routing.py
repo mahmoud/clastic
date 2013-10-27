@@ -58,6 +58,46 @@ def collapse_token(text, token=None, sub=None):
         return sub.join([s for s in text.split(token) if s])
 
 
+def _compile_path_pattern(pattern):
+    processed = []
+    var_converter_map = {}
+
+    for part in pattern.split('/'):
+        match = BINDING.match(part)
+        if not match:
+            processed.append(part)
+            continue
+        parsed = match.groupdict()
+        name, type_name, op = parsed['name'], parsed['type'], parsed['op']
+        if name in var_converter_map:
+            raise ValueError('duplicate path binding %s' % name)
+        if op:
+            if op == ':':
+                op = ''
+            if not type_name:
+                type_name = 'unicode'
+                #raise ValueError('%s expected a type specifier' % part)
+            try:
+                converter = TYPE_CONV_MAP[type_name]
+            except KeyError:
+                raise ValueError('unknown type specifier %s' % type_name)
+        else:
+            converter = unicode
+
+        try:
+            multi = _OP_ARITY_MAP[op]
+        except KeyError:
+            _tmpl = 'unknown arity operator %r, expected one of %r'
+            raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
+        var_converter_map[name] = build_converter(converter, multi=multi)
+
+        path_seg_pattern = _PATH_SEG_TMPL % (name, op)
+        processed[-1] += path_seg_pattern
+
+    regex = re.compile('^' + '/'.join(processed) + '$')
+    return regex, var_converter_map
+
+
 class BaseRoute(object):
     def __init__(self, pattern, endpoint=None, methods=None):
         self.pattern = pattern
@@ -65,7 +105,12 @@ class BaseRoute(object):
         self._execute = endpoint
         # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
-        self.regex, self.converters = self._compile(pattern)
+        self._compile()
+
+    def _compile(self):
+        # maybe: if not getattr(self, 'regex', None) or \
+        #          self.regex.pattern != self.pattern:
+        self.regex, self.converters = _compile_path_pattern(self.pattern)
 
     def match_path(self, path):
         ret = {}
@@ -97,6 +142,7 @@ class BaseRoute(object):
         yield self
 
     def bind(self, application, *a, **kw):
+        "BaseRoutes do not bind, but normal Routes do."
         return
 
     def __repr__(self):
@@ -113,44 +159,6 @@ class BaseRoute(object):
             args += (self.methods,)
         return tmpl % args
 
-    def _compile(self, pattern):
-        processed = []
-        var_converter_map = {}
-
-        for part in pattern.split('/'):
-            match = BINDING.match(part)
-            if not match:
-                processed.append(part)
-                continue
-            parsed = match.groupdict()
-            name, type_name, op = parsed['name'], parsed['type'], parsed['op']
-            if name in var_converter_map:
-                raise ValueError('duplicate path binding %s' % name)
-            if op:
-                if op == ':':
-                    op = ''
-                if not type_name:
-                    type_name = 'unicode'
-                    #raise ValueError('%s expected a type specifier' % part)
-                try:
-                    converter = TYPE_CONV_MAP[type_name]
-                except KeyError:
-                    raise ValueError('unknown type specifier %s' % type_name)
-            else:
-                converter = unicode
-
-            try:
-                multi = _OP_ARITY_MAP[op]
-            except KeyError:
-                _tmpl = 'unknown arity operator %r, expected one of %r'
-                raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
-            var_converter_map[name] = build_converter(converter, multi=multi)
-
-            path_seg_pattern = _PATH_SEG_TMPL % (name, op)
-            processed[-1] += path_seg_pattern
-
-        regex = re.compile('^' + '/'.join(processed) + '$')
-        return regex, var_converter_map
 
 
 class Route(BaseRoute):

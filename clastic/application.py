@@ -89,6 +89,7 @@ class BaseApplication(object):
             params = route.match_path(url_path)
             if params is None:
                 continue
+            #print ' ', url_path, 'MATCHED', route
             method_allowed = route.match_method(method)
             if not method_allowed:
                 allowed_methods.update(route.methods)
@@ -111,6 +112,7 @@ class BaseApplication(object):
                     break
         if _excs:
             return _excs[-1]
+        #print ' ', url_path, 'did not match any routes'
         return NotFound(is_breaking=False)
 
 
@@ -128,6 +130,7 @@ class SubApplication(object):
                     continue
                 yld = rt.empty()
                 yld.pattern = self.prefix + rt.pattern
+                yld._compile()
                 yield yld
 
 
