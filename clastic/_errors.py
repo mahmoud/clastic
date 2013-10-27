@@ -272,6 +272,10 @@ class InternalServerError(HTTPException):
     detail = ("The server encountered an internal error and was unable"
               " to complete your request.")
 
+    def __init__(self, detail=None, **kwargs):
+        self.traceback = kwargs.pop('traceback', None)
+        super(InternalServerError, self).__init__(detail, **kwargs)
+
 
 class NotImplemented(InternalServerError):
     code = 501

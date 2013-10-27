@@ -114,7 +114,7 @@ class BaseApplication(object):
                 if not isinstance(e, BaseResponse):
                     _, _, exc_traceback = sys.exc_info()
                     tbi = TracebackInfo.from_traceback(exc_traceback)
-                    e = InternalServerError(repr(tbi))
+                    e = InternalServerError(traceback=tbi)
                 _excs.append(e)
                 if getattr(e, 'is_breaking', True):
                     break
