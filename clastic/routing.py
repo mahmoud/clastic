@@ -2,8 +2,14 @@
 
 import re
 
-from sinter import inject
-from _errors import NotFound
+from .sinter import inject, get_arg_names
+from ._errors import NotFound
+from .middleware import (check_middlewares,
+                         merge_middlewares,
+                         make_middleware_chain)
+
+
+RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
 
 
 class InvalidEndpoint(TypeError):
@@ -55,6 +61,7 @@ def collapse_token(text, token=None, sub=None):
 class BaseRoute(object):
     def __init__(self, pattern, endpoint=None, methods=None):
         self.pattern = pattern
+        self.endpoint = endpoint
         self._execute = endpoint
         # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
@@ -88,6 +95,9 @@ class BaseRoute(object):
 
     def iter_routes(self, application):
         yield self
+
+    def bind(self, application, *a, **kw):
+        return
 
     def _compile(self, pattern):
         processed = []
@@ -130,39 +140,93 @@ class BaseRoute(object):
 
 
 class Route(BaseRoute):
-    pass
+    def __init__(self, pattern, endpoint, render_arg=None, *a, **kw):
+        super(Route, self).__init__(pattern, endpoint, *a, **kw)
+        self._middlewares = list(kw.pop('middlewares', []))
+        self._resources = dict(kw.pop('resources', []))
+        self._bound_apps = []
+        self.endpoint_args = get_arg_names(endpoint)
+
+        self._execute = None
+        self._render = None
+        self._render_factory = None
+        self.render_arg = render_arg
+        if callable(render_arg):
+            self._render = render_arg
+
+    def execute(self, request, **kwargs):
+        injectables = {'_route': self,
+                       'request': request,
+                       '_application': self._bound_apps[-1]}
+        injectables.update(self._resources)
+        injectables.update(kwargs)
+        return inject(self._execute, injectables)
+
+    def empty(self):
+        # more like a copy
+        self_type = type(self)
+        ret = self_type(self.pattern, self.endpoint, self.render_arg)
+        ret.__dict__.update(self.__dict__)
+        ret._middlewares = list(self._middlewares)
+        ret._resources = dict(self._resources)
+        ret._bound_apps = list(self._bound_apps)
+        return ret
+
+    def bind(self, app, rebind_render=True):
+        resources = app.__dict__.get('resources', {})
+        middlewares = app.__dict__.get('middlewares', [])
+        if rebind_render:
+            render_factory = app.__dict__.get('render_factory')
+        else:
+            render_factory = self._render_factory
+
+        merged_resources = dict(self._resources)
+        merged_resources.update(resources)
+        merged_mw = merge_middlewares(self._middlewares, middlewares)
+        r_copy = self.empty()
+        try:
+            r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
+        except:
+            raise
+        self._bind_args(app,
+                        merged_resources,
+                        merged_mw,
+                        render_factory)
+        self._bound_apps += (app,)
+        return self
+
+    def _bind_args(self, url_map, resources, middlewares, render_factory):
+        url_args = set(self.converters.keys())
+        builtin_args = set(RESERVED_ARGS)
+        resource_args = set(resources.keys())
+
+        tmp_avail_args = {'url': url_args,
+                          'builtins': builtin_args,
+                          'resources': resource_args}
+        check_middlewares(middlewares, tmp_avail_args)
+        provided = resource_args | builtin_args | url_args
+        if callable(render_factory) and self.render_arg is not None \
+                and not callable(self.render_arg):
+            _render = render_factory(self.render_arg)
+        elif callable(self._render):
+            _render = self._render
+        else:
+            _render = lambda context: context
+        _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
+
+        self._resources.update(resources)
+        self._middlewares = middlewares
+        self._render_factory = render_factory
+        self._render = _render
+        self._execute = _execute
 
 
-class NullRoute(BaseRoute):
+class NullRoute(Route):
     def __init__(self, *a, **kw):
         super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
 
     def not_found(self, request):
         raise NotFound(is_breaking=False)
-
-
-def _main():
-    rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
-    d = rp.match_url('/a/b/1/thing/1/2/3/4/')
-    print d
-
-    d = rp.match_url('/a/b/1/thing/hi/')
-    print d
-
-    d = rp.match_url('/a/b/1/thing/')
-    print d
-
-    rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
-    d = rp.match_url('/a/b/1/thing/')
-    print d
-
-    print NullRoute()
-
-
-if __name__ == '__main__':
-    _main()
-
-
 
 
 """
