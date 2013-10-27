@@ -87,13 +87,13 @@ class BaseApplication(object):
 
         # TODO: should returning an HTTPException and raising one have
         # basically the same behavior? more at 11pm.
-        url = request.url
+        url_path = request.path
         method = request.method
 
         _excs = []
         allowed_methods = set()
         for route in self.routes:
-            path_params = route.match_url(url)
+            path_params = route.match_path(url_path)
             if path_params is None:
                 continue
             method_allowed = route.match_method(method)

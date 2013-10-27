@@ -67,9 +67,9 @@ class BaseRoute(object):
         self.methods = methods and set([m.upper() for m in methods])
         self.regex, self.converters = self._compile(pattern)
 
-    def match_url(self, url):
+    def match_path(self, path):
         ret = {}
-        match = self.regex.match(url)
+        match = self.regex.match(path)
         if not match:
             return None
         groups = match.groupdict()
