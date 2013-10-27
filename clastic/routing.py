@@ -99,6 +99,20 @@ class BaseRoute(object):
     def bind(self, application, *a, **kw):
         return
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        ep = self.endpoint
+        try:
+            ep_name = '%s.%s' % (ep.__module__, ep.func_name)
+        except:
+            ep_name = repr(ep)
+        args = (cn, self.pattern, ep_name)
+        tmpl = '<%s pattern=%r endpoint=%s>'
+        if self.methods:
+            tmpl = '<%s pattern=%r endpoint=%s methods=%r>'
+            args += (self.methods,)
+        return tmpl % args
+
     def _compile(self, pattern):
         processed = []
         var_converter_map = {}
