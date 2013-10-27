@@ -105,5 +105,4 @@ def test_subapplication_basic():
     resp = Client(app, BaseResponse).get('/beta/foo')
     yield eq_, resp.data, 'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/larp4lyfe/')
-    import pdb;pdb.set_trace()
     yield eq_, resp.status_code, 404

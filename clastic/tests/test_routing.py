@@ -14,8 +14,11 @@ from clastic.routing import BaseRoute, InvalidEndpoint
 
 
 def test_new_base_route():
+    # note default slashing behavior
     rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
     d = rp.match_path('/a/b/1/thing/1/2/3/4/')
+    yield eq_, d, None
+    d = rp.match_path('/a/b/1/thing/1/2/3/4')
     yield eq_, d, {u't': 1, u'das': [1, 2, 3, 4]}
 
     d = rp.match_path('/a/b/1/thing/hi/')
@@ -26,6 +29,8 @@ def test_new_base_route():
 
     rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
     d = rp.match_path('/a/b/1/thing/')
+    yield eq_, d, None
+    d = rp.match_path('/a/b/1/thing')
     yield eq_, d, {u't': 1, u'das': []}
 
 
