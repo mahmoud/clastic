@@ -25,10 +25,6 @@ S_STRICT = 'strict'
 def cast_to_route_factory(in_arg):
     if isinstance(in_arg, BaseRoute):
         return in_arg
-    # elif isinstance(in_arg, Rule):  # werkzeug backward compat desirable?
-    #    ret = Route(in_arg.rule, in_arg.endpoint)
-    #    ret.__dict__.update(in_arg.empty().__dict__)
-    #    return ret
     elif isinstance(in_arg, Sequence):
         try:
             if isinstance(in_arg[1], BaseApplication):
@@ -37,8 +33,6 @@ def cast_to_route_factory(in_arg):
                 return Route(*in_arg)
         except TypeError:
             pass
-    # if isinstance(in_arg, RuleFactory):  # again, werkzeug backcompat wanted?
-    #     return in_arg
     raise TypeError('Could not create routes from %r' % in_arg)
 
 
@@ -77,14 +71,12 @@ class BaseApplication(object):
             self.routes.insert(index, route)
             index += 1
 
-    def dispatch(self, request, slashes=S_NORMALIZE):
-        "i know this looks weird, but parsing is always weird, i guess"
-        # TODO: Precedence of MethodNotAllowed vs patterns. Do you
-        # ever really check the POST of one pattern that much sooner
-        # than the GET of the same pattern?
+    def __call__(self, environ, start_response):
+        request = self.request_type(environ)
+        response = self.dispatch(request)
+        return response(environ, start_response)
 
-        # TODO: should returning an HTTPException and raising one have
-        # basically the same behavior? more at 11pm.
+    def dispatch(self, request, slashes=S_NORMALIZE):
         url_path = request.path
         method = request.method
 
@@ -103,14 +95,10 @@ class BaseApplication(object):
             try:
                 ep_res = route.execute(request, **params)
                 if not isinstance(ep_res, BaseResponse):
-                    # TODO
                     msg = 'expected Response, received %r' % type(ep_res)
                     raise InternalServerError(msg)
                 return ep_res
             except Exception as e:
-                #if self.debug:
-                # TODO special rendering for HTTPException objects in debug
-                #    raise
                 if not isinstance(e, BaseResponse):
                     _, _, exc_traceback = sys.exc_info()
                     tbi = TracebackInfo.from_traceback(exc_traceback)
@@ -121,11 +109,6 @@ class BaseApplication(object):
         if _excs:
             return _excs[-1]
         return NotFound(is_breaking=False)
-
-    def __call__(self, environ, start_response):
-        request = self.request_type(environ)
-        response = self.dispatch(request)
-        return response(environ, start_response)
 
 
 class SubApplication(object):
@@ -143,3 +126,16 @@ class SubApplication(object):
                 yld = rt.empty()
                 yld.pattern = self.prefix + rt.pattern
                 yield yld
+
+
+"""
+Notes
+=====
+
+TODO: divide up paths by HTTP method (minor optimization for match speed)
+TODO: special handling for HTTPExceptions objects raised in debug mode
+TODO: should TracebackInfo optionally know about exc_type and exc_msg?
+
+Note to self: Raising and returning an exception should look basically the
+same in production mode.
+"""
