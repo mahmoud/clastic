@@ -11,9 +11,7 @@ from .routing import (BaseRoute,
                       NullRoute,
                       RESERVED_ARGS)
 from .tbutils import TracebackInfo
-from .middleware import (check_middlewares,
-                         merge_middlewares,
-                         make_middleware_chain)
+from .middleware import check_middlewares
 from ._errors import (BadRequest,
                       NotFound,
                       MethodNotAllowed,
@@ -93,25 +91,22 @@ class BaseApplication(object):
         _excs = []
         allowed_methods = set()
         for route in self.routes:
-            path_params = route.match_path(url_path)
-            if path_params is None:
+            params = route.match_path(url_path)
+            if params is None:
                 continue
             method_allowed = route.match_method(method)
             if not method_allowed:
                 allowed_methods.update(route.methods)
                 _excs.append(MethodNotAllowed(allowed_methods))
                 continue
-            injectables = {'_route': route,
-                           'request': request,
-                           '_application': self}
-            injectables.update(path_params)
-            injectables.update(self.resources)
+            params.update(self.resources)
             try:
-                ep_res = route.execute(**injectables)
+                ep_res = route.execute(request, **params)
                 if not isinstance(ep_res, BaseResponse):
                     # TODO
                     msg = 'expected Response, received %r' % type(ep_res)
                     raise InternalServerError(msg)
+                return ep_res
             except Exception as e:
                 #if self.debug:
                 # TODO special rendering for HTTPException objects in debug
@@ -119,7 +114,7 @@ class BaseApplication(object):
                 if not isinstance(e, BaseResponse):
                     _, _, exc_traceback = sys.exc_info()
                     tbi = TracebackInfo.from_traceback(exc_traceback)
-                    e = InternalServerError(tbi)
+                    e = InternalServerError(repr(tbi))
                 _excs.append(e)
                 if getattr(e, 'is_breaking', True):
                     break

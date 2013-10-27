@@ -53,6 +53,7 @@ def test_create_route_order_incr():
 
 # test new routing
 
+from clastic.application import BaseApplication
 from clastic.routing import BaseRoute, InvalidEndpoint
 
 
@@ -81,3 +82,11 @@ def test_base_route_executes():
 @raises(InvalidEndpoint)
 def test_base_route_raises_on_no_ep():
     BaseRoute('/a/b/<t:int>/thing/<das+int>').execute({})
+
+
+def test_base_application_basics():
+    br = BaseRoute('/', lambda request: BaseResponse('lolporte'))
+    ba = BaseApplication([br])
+    client = Client(ba, BaseResponse)
+    res = client.get('/')
+    yield eq_, res.data, 'lolporte'
