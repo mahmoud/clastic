@@ -60,6 +60,10 @@ class BaseApplication(object):
         for entry in routes:
             self.add(entry)
 
+    def iter_routes(self, application=None):
+        for rt in self.routes:
+            yield rt
+
     def add(self, entry, index=None, rebind_render=True):
         if index is None:
             index = len(self.routes)

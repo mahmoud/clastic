@@ -7,7 +7,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 #import clastic
-from clastic import Application
+from clastic.application import BaseApplication as Application
 
 from common import hello_world, DummyMiddleware, RequestProvidesName
 
@@ -80,18 +80,18 @@ def test_subapplication_basic():
 
     yield eq_, len(app.routes), 3
 
-    merged_name_app_rules = [r.rule for r in app.routes
-                             if r.rule.startswith('/beta')]
-    name_app_rules = [r.rule for r in name_app.routes]
+    merged_name_app_patts = [r.pattern for r in app.routes
+                             if r.pattern.startswith('/beta')]
+    name_app_patts = [r.pattern for r in name_app.routes]
 
-    def check_rules(app_rules, subapp_rules):
-        assert all(a.endswith(s) for a, s in zip(app_rules, subapp_rules))
+    def check_patts(app_patts, subapp_patts):
+        assert all(a.endswith(s) for a, s in zip(app_patts, subapp_patts))
 
     # should be the same order as name_app
-    yield eq_, len(merged_name_app_rules), len(name_app_rules)
-    yield check_rules, merged_name_app_rules, name_app_rules
+    yield eq_, len(merged_name_app_patts), len(name_app_patts)
+    yield check_patts, merged_name_app_patts, name_app_patts
 
-    yield eq_, len(set([r.rule for r in app.routes])), 3
+    yield eq_, len(set([r.pattern for r in app.routes])), 3
     yield eq_, len(app.routes[0]._middlewares), 1  # middleware merging
 
     resp = Client(no_name_app, BaseResponse).get('/')
@@ -105,4 +105,5 @@ def test_subapplication_basic():
     resp = Client(app, BaseResponse).get('/beta/foo')
     yield eq_, resp.data, 'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/larp4lyfe/')
+    import pdb;pdb.set_trace()
     yield eq_, resp.status_code, 404
