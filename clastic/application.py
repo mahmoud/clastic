@@ -6,7 +6,10 @@ from collections import Sequence
 from werkzeug.wrappers import BaseResponse
 from werkzeug.wrappers import Request, Response
 
-from .routing import BaseRoute, Route, NullRoute
+from .routing import (BaseRoute,
+                      Route,
+                      NullRoute,
+                      RESERVED_ARGS)
 from .tbutils import TracebackInfo
 from .middleware import (check_middlewares,
                          merge_middlewares,
@@ -16,15 +19,12 @@ from ._errors import (BadRequest,
                       MethodNotAllowed,
                       InternalServerError)
 
-
-RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
-
 S_REDIRECT = 'redirect'
 S_NORMALIZE = 'normalize'
 S_STRICT = 'strict'
 
 
-def cast_to_rule_factory(in_arg):
+def cast_to_route_factory(in_arg):
     if isinstance(in_arg, BaseRoute):
         return in_arg
     # elif isinstance(in_arg, Rule):  # werkzeug backward compat desirable?
@@ -72,7 +72,7 @@ class BaseApplication(object):
     def add(self, entry, index=None, rebind_render=True):
         if index is None:
             index = len(self.routes)
-        rf = cast_to_rule_factory(entry)
+        rf = cast_to_route_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
         for route in rf.iter_routes(self):
             route.bind(self, rebind_render)
@@ -139,7 +139,7 @@ class SubApplication(object):
         self.app = app
         self.rebind_render = rebind_render
 
-    def iter_routes(self, application, *a, *kw):
+    def iter_routes(self, application, *a, **kw):
         # TODO: if `self.app` is `application` don't re-embed?
         for routes in self.app.iter_routes(application):
             for rt in routes.iter_routes(application):
