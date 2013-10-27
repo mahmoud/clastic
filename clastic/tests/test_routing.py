@@ -90,3 +90,55 @@ def test_base_application_basics():
     client = Client(ba, BaseResponse)
     res = client.get('/')
     yield eq_, res.data, 'lolporte'
+
+
+def api(api_path):
+    return 'api: %s' % '/'.join(api_path)
+
+
+def two_segments(one, two):
+    return 'two_segments: %s, %s' % (one, two)
+
+
+def three_segments(one, two, three):
+    return 'three_segments: %s, %s, %s' % (one, two, three)
+
+
+def test_create_route_order_list():
+    "tests route order when routes are added as a list"
+    routes = [('/api/<api_path+>', api, render_basic),
+              ('/<one>/<two>', two_segments, render_basic),
+              ('/<one>/<two>/<three>', three_segments, render_basic)]
+    app = BaseApplication(routes)
+    client = Client(app, BaseResponse)
+    yield eq_, client.get('/api/a').data, 'api: a'
+    yield eq_, client.get('/api/a/b').data, 'api: a/b'
+
+    for i, rt in enumerate(app.routes):
+        yield eq_, rt.pattern, routes[i][0]
+    return
+
+
+def test_create_route_order_incr():
+    "tests route order when routes are added incrementally"
+    routes = [('/api/<api_path+>', api, render_basic),
+              ('/<one>/<two>', two_segments, render_basic),
+              ('/<one>/<two>/<three>', three_segments, render_basic)]
+    app = BaseApplication()
+    client = Client(app, BaseResponse)
+    for r in routes:
+        app.add(r)
+        yield eq_, client.get('/api/a/b').data, 'api: a/b'
+        yield eq_, app.routes[-1].pattern, r[0]
+    return
+
+
+"""
+New routing testing strategy notes
+==================================
+
+* Successful endpoint
+* Failing endpoint (i.e., raise a non-HTTPException exception)
+* Raising endpoint (50x, 40x (breaking/nonbreaking))
+* GET/POST/PUT/DELETE/OPTIONS/HEAD, etc.
+"""

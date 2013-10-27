@@ -12,8 +12,7 @@ from .routing import (BaseRoute,
                       RESERVED_ARGS)
 from .tbutils import TracebackInfo
 from .middleware import check_middlewares
-from ._errors import (BadRequest,
-                      NotFound,
+from ._errors import (NotFound,
                       MethodNotAllowed,
                       InternalServerError)
 
@@ -38,7 +37,7 @@ def cast_to_route_factory(in_arg):
 
 class BaseApplication(object):
     request_type = Request
-    response_type = Response  # unused atm
+    response_type = Response
 
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, **kwargs):
