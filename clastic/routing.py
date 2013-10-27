@@ -149,7 +149,7 @@ class BaseRoute(object):
             path_seg_pattern = _PATH_SEG_TMPL % (name, op)
             processed[-1] += path_seg_pattern
 
-        regex = re.compile('/'.join(processed))
+        regex = re.compile('^' + '/'.join(processed) + '$')
         return regex, var_converter_map
 
 
