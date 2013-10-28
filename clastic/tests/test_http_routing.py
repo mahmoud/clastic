@@ -7,7 +7,8 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, render_basic
-from clastic import GET, POST, PUT, DELETE
+from clastic.routing import GET, POST, PUT, DELETE
+from clastic.application import BaseApplication as Application
 
 
 def test_http_method_routes():

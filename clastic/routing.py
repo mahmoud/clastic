@@ -160,7 +160,6 @@ class BaseRoute(object):
         return tmpl % args
 
 
-
 class Route(BaseRoute):
     def __init__(self, pattern, endpoint, render_arg=None, *a, **kw):
         super(Route, self).__init__(pattern, endpoint, *a, **kw)
@@ -241,6 +240,30 @@ class Route(BaseRoute):
         self._render_factory = render_factory
         self._render = _render
         self._execute = _execute
+
+
+class GET(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('GET',)
+        super(GET, self).__init__(*a, **kw)
+
+
+class POST(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('POST',)
+        super(POST, self).__init__(*a, **kw)
+
+
+class PUT(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('PUT',)
+        super(PUT, self).__init__(*a, **kw)
+
+
+class DELETE(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('DELETE',)
+        super(DELETE, self).__init__(*a, **kw)
 
 
 class NullRoute(Route):
