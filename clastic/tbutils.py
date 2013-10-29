@@ -111,6 +111,35 @@ class _DeferredLine(object):
         return len(str(self))
 
 
+class ExceptionInfo(object):
+    def __init__(self, exc_type, exc_msg, tb_info):
+        # TODO: additional fields for SyntaxErrors
+        self.exc_type = exc_type
+        self.exc_msg = exc_msg
+        self.tb_info = tb_info
+
+    @classmethod
+    def from_exc_info(cls, exc_type, exc_value, traceback):
+        type_str = exc_type.__name__
+        type_mod = exc_type.__module__
+        if type_mod not in ("__main__", "__builtin__", "exceptions"):
+            type_str = '%s.%s' % (type_mod, type_str)
+        val_str = _some_str(exc_value)
+        tb_info = TracebackInfo.from_traceback(traceback)
+        return cls(type_str, val_str, tb_info)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        try:
+            len_frames = len(self.tb_info.frames)
+            last_frame = ', last=%r' % (self.tb_info.frames[-1],)
+        except:
+            len_frames = 0
+            last_frame = ''
+        args = (cn, self.exc_type, self.exc_msg, len_frames, last_frame)
+        return '<%s [%s: %s] (%s frames%s)>' % args
+
+
 # TODO: dedup frames, look at __eq__ on _DeferredLine
 # TODO: StackInfo/TracebackInfo split, latter stores exc
 class TracebackInfo(object):
@@ -302,6 +331,7 @@ if __name__ == '__main__':
     except:
         _, _, exc_traceback = sys.exc_info()
         tbi = TracebackInfo.from_traceback(exc_traceback)
+        exc_info = ExceptionInfo.from_exc_info(*sys.exc_info())
         tbi_str = str(tbi)
         print_exception(*sys.exc_info(), file=fake_stderr2)
         new_exc_hook_res = fake_stderr2.getvalue()
@@ -321,3 +351,5 @@ if __name__ == '__main__':
     print(new_exc_hook_res)
 
     assert new_exc_hook_res == builtin_exc_hook_res
+
+    print(repr(exc_info))
