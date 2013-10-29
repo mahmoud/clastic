@@ -2,7 +2,7 @@
 
 import re
 
-from .sinter import inject, get_arg_names
+from .sinter import inject, get_arg_names, getargspec
 from ._errors import NotFound
 from .middleware import (check_middlewares,
                          merge_middlewares,
@@ -111,6 +111,7 @@ class BaseRoute(object):
         # maybe: if not getattr(self, 'regex', None) or \
         #          self.regex.pattern != self.pattern:
         self.regex, self.converters = _compile_path_pattern(self.pattern)
+        self.path_args = self.converters.keys()
 
     def match_path(self, path):
         ret = {}
@@ -240,6 +241,35 @@ class Route(BaseRoute):
         self._render_factory = render_factory
         self._render = _render
         self._execute = _execute
+
+    def get_info(self):
+        ret = {}
+        route = self
+        ep_args, _, _, ep_defaults = getargspec(route.endpoint)
+        ep_defaults = dict(reversed(zip(reversed(ep_args),
+                                        reversed(ep_defaults or []))))
+        ret['url_pattern'] = route.pattern
+        ret['endpoint'] = route.endpoint
+        ret['endpoint_args'] = ep_args
+        ret['endpoint_defaults'] = ep_defaults
+        ret['render_arg'] = route.render_arg
+        srcs = {}
+        for arg in route.endpoint_args:
+            if arg in RESERVED_ARGS:
+                srcs[arg] = 'builtin'
+            elif arg in route.arguments:
+                srcs[arg] = 'url'
+            elif arg in ep_defaults:
+                srcs[arg] = 'default'
+            for mw in route._middlewares:
+                if arg in mw.provides:
+                    srcs[arg] = mw
+            if arg in route._resources:
+                srcs[arg] = 'resources'
+            # TODO: trace to application if middleware/resource
+        ret['sources'] = srcs
+        return ret
+
 
 
 class GET(Route):
