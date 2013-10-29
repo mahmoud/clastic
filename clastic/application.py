@@ -13,7 +13,7 @@ from .routing import (BaseRoute,
                       Route,
                       NullRoute,
                       RESERVED_ARGS)
-from .tbutils import TracebackInfo
+from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
 from ._errors import (NotFound,
                       MethodNotAllowed,
@@ -107,9 +107,9 @@ class BaseApplication(object):
                 return ep_res
             except Exception as e:
                 if not isinstance(e, BaseResponse):
-                    _, _, exc_traceback = sys.exc_info()
-                    tbi = TracebackInfo.from_traceback(exc_traceback)
-                    e = InternalServerError(traceback=tbi)
+                    exc_info = ExceptionInfo.from_exc_info(*sys.exc_info())
+                    tmp_msg = repr(exc_info)
+                    e = InternalServerError(tmp_msg, traceback=exc_info)
                 _excs.append(e)
                 if getattr(e, 'is_breaking', True):
                     break
