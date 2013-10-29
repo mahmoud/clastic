@@ -19,9 +19,9 @@ from ._errors import (NotFound,
                       MethodNotAllowed,
                       InternalServerError)
 
-S_REDIRECT = 'redirect'
-S_NORMALIZE = 'normalize'
-S_STRICT = 'strict'
+S_REDIRECT = 'redirect'  # return a 30x to the right URL
+S_REWRITE = 'rewrite'    # perform a rewrite (like an internal redirect)
+S_STRICT = 'strict'      # return a 404, get it right or go home
 
 
 def cast_to_route_factory(in_arg):
@@ -82,7 +82,7 @@ class BaseApplication(object):
         response = self.dispatch(request)
         return response(environ, start_response)
 
-    def dispatch(self, request, slashes=S_NORMALIZE):
+    def dispatch(self, request, slashes=S_REWRITE):
         url_path = request.path
         method = request.method
 
