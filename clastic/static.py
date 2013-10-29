@@ -8,7 +8,7 @@ from datetime import datetime
 from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
 
-from core import Application
+from application import Application
 from errors import Forbidden, NotFound
 
 # TODO: check isdir and accessible on search_paths
@@ -70,12 +70,12 @@ class StaticApplication(Application):
         self.cache_timeout = cache_timeout
         self.default_text_mime = default_text_mime
         self.default_binary_mime = default_binary_mime
-        routes = [('/<path:path>', self.get_file_response)]
+        routes = [('/<path*>', self.get_file_response)]
         super(StaticApplication, self).__init__(routes)
 
     def get_file_response(self, path, request):
         try:
-            full_path = find_file(self.search_paths, path)
+            full_path = find_file(self.search_paths, '/'.join(path))
             if full_path is None:
                 raise NotFound()
             file_obj = open(full_path, 'rb')
