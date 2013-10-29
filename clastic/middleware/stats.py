@@ -3,7 +3,7 @@
 import time
 from collections import namedtuple
 
-from core import Application
+from application import Application
 from middleware import Middleware
 from render import render_basic
 
