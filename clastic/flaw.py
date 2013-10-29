@@ -4,7 +4,7 @@ import os
 import re
 import ast
 
-from core import Application
+from application import Application
 from static import StaticApplication
 from render import AshesRenderFactory
 
@@ -30,7 +30,7 @@ def create_app(traceback_string, monitored_files=None):
     render_fact.register_source('flaw_tmpl', _FLAW_TEMPLATE)
     routes = [('/', get_flaw_info, 'flaw_tmpl'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-              ('/<path:_ignored>', get_flaw_info, 'flaw_tmpl')]
+              ('/<_ignored*>', get_flaw_info, 'flaw_tmpl')]
 
     app = Application(routes, resources, render_fact)
     return app
