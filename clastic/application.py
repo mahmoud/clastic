@@ -107,7 +107,7 @@ class BaseApplication(object):
                 return ep_res
             except Exception as e:
                 if not isinstance(e, BaseResponse):
-                    exc_info = ExceptionInfo.from_exc_info(*sys.exc_info())
+                    exc_info = ExceptionInfo.from_current()
                     tmp_msg = repr(exc_info)
                     e = InternalServerError(tmp_msg, traceback=exc_info)
                 _excs.append(e)

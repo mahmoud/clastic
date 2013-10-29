@@ -128,6 +128,10 @@ class ExceptionInfo(object):
         tb_info = TracebackInfo.from_traceback(traceback)
         return cls(type_str, val_str, tb_info)
 
+    @classmethod
+    def from_current(cls):
+        return cls.from_exc_info(*sys.exc_info())
+
     def __repr__(self):
         cn = self.__class__.__name__
         try:
@@ -332,6 +336,7 @@ if __name__ == '__main__':
         _, _, exc_traceback = sys.exc_info()
         tbi = TracebackInfo.from_traceback(exc_traceback)
         exc_info = ExceptionInfo.from_exc_info(*sys.exc_info())
+        exc_info2 = ExceptionInfo.from_current()
         tbi_str = str(tbi)
         print_exception(*sys.exc_info(), file=fake_stderr2)
         new_exc_hook_res = fake_stderr2.getvalue()
@@ -352,4 +357,5 @@ if __name__ == '__main__':
 
     assert new_exc_hook_res == builtin_exc_hook_res
 
-    print(repr(exc_info))
+    print('1: ', repr(exc_info))
+    print('2: ', repr(exc_info2))
