@@ -18,7 +18,7 @@ try:
 except ImportError:
     resource = None
 
-from core import Application, NullRoute, RESERVED_ARGS
+from application import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec
 from render import render_json, AshesRenderFactory
 from static import StaticApplication
@@ -65,7 +65,7 @@ def get_route_infos(_application):
         if isinstance(r, NullRoute):
             continue
         r_info = {}
-        r_info['url_rule'] = r.rule
+        r_info['url_pattern'] = r.pattern
         r_info['endpoint'] = get_endpoint_info(r)
         r_info['render'] = get_render_info(r)
         r_info['args'] = get_route_arg_info(r)
@@ -280,7 +280,7 @@ def get_route_arg_info(route):
         source = None
         if arg in RESERVED_ARGS:
             source = 'builtin'
-        elif arg in route.arguments:
+        elif arg in route.path_args:
             source = 'url'
         elif arg in route._resources:
             source = 'resources'
