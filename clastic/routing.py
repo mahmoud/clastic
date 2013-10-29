@@ -139,7 +139,7 @@ class BaseRoute(object):
         kwargs['request'] = request
         return inject(self._execute, kwargs)
 
-    def iter_routes(self, application):
+    def iter_routes(self):
         yield self
 
     def bind(self, application, *a, **kw):

@@ -63,7 +63,7 @@ class BaseApplication(object):
         for entry in routes:
             self.add(entry)
 
-    def iter_routes(self, application=None):
+    def iter_routes(self):
         for rt in self.routes:
             yield rt
 
@@ -72,7 +72,7 @@ class BaseApplication(object):
             index = len(self.routes)
         rf = cast_to_route_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        for route in rf.iter_routes(self):
+        for route in rf.iter_routes():
             route.bind(self, rebind_render)
             self.routes.insert(index, route)
             index += 1
@@ -125,10 +125,10 @@ class SubApplication(object):
         self.app = app
         self.rebind_render = rebind_render
 
-    def iter_routes(self, application, *a, **kw):
+    def iter_routes(self):
         # TODO: if `self.app` is `application` don't re-embed?
-        for routes in self.app.iter_routes(application):
-            for rt in routes.iter_routes(application):
+        for routes in self.app.iter_routes():
+            for rt in routes.iter_routes():
                 if isinstance(rt, NullRoute):
                     continue
                 yld = rt.empty()
