@@ -25,7 +25,7 @@ TYPE_CONV_MAP = {'int': int,
                  'float': float,
                  'unicode': unicode,
                  'str': unicode}
-_PATH_SEG_TMPL = '(?P<%s>(/[\w%%\d])%s)'
+_PATH_SEG_TMPL = '(?P<%s>(/[^/]+)%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '?': False,
                  ':': False,
