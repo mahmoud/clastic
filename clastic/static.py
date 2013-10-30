@@ -9,7 +9,7 @@ from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
 
 from application import Application
-from errors import Forbidden, NotFound
+from _errors import Forbidden, NotFound
 
 # TODO: check isdir and accessible on search_paths
 # TODO: default favicon.ico StaticApplication?

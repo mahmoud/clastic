@@ -58,12 +58,12 @@ def test_direct_no_render():
     yield eq_, resp.data, 'Hello, world!'
 
 
-@raises(RuntimeError)
 def test_render_raises():
     render_raises_mw = RenderRaisesMiddleware()
     app = Application([('/', hello_world_ctx)],
                       middlewares=[render_raises_mw])
-    Client(app, BaseResponse).get('/')
+    resp = Client(app, BaseResponse).get('/')
+    assert resp.status_code, 500
 
 
 @raises(NameError)
