@@ -74,7 +74,7 @@ def create_app(link_list_path=None, local_root=None):
 
     routes = [('/', home, 'home.html'),
               submit_route,
-              ('/<path:alias>', get_entry)]
+              ('/<alias>', get_entry)]
     csm = CookieSessionMiddleware()
     scp = SimpleContextProcessor('local_root')
 
