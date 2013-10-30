@@ -3,7 +3,7 @@
 import re
 
 from .sinter import inject, get_arg_names, getargspec
-from ._errors import NotFound
+from .errors import NotFound
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)

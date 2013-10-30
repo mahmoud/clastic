@@ -15,7 +15,7 @@ from .routing import (BaseRoute,
                       RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
-from ._errors import (NotFound,
+from .errors import (NotFound,
                       MethodNotAllowed,
                       InternalServerError)
 
