@@ -16,21 +16,38 @@ class InvalidEndpoint(TypeError):
     pass
 
 
+S_REDIRECT = 'redirect'  # return a 30x to the right URL
+S_REWRITE = 'rewrite'    # perform a rewrite (like an internal redirect)
+S_STRICT = 'strict'      # return a 404, get it right or go home
+
+
 BINDING = re.compile(r'<'
                      r'(?P<name>[A-Za-z_]\w*)'
                      r'(?P<op>[?+:*]*)'
                      r'(?P<type>\w+)*'
                      r'>')
-TYPE_CONV_MAP = {'int': int,
-                 'float': float,
-                 'unicode': unicode,
-                 'str': unicode}
+
+_FLOAT_PATTERN = r'[+-]?\ *(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
+_INT_PATTERN = r'[+-]?\ *[0-9]+'
+_STR_PATTERN = r'[^/]+'
+
+
+_CONVS = [('int', int, _INT_PATTERN),
+          ('float', float, _FLOAT_PATTERN),
+          ('str', unicode, _STR_PATTERN),
+          ('unicode', unicode, _STR_PATTERN)]
+
+TYPE_CONV_MAP = dict([(name, conv) for name, conv, patt in _CONVS])
+_SEP_PATTERN = '/+'
+_SEG_TMPL = '(?P<{name}>({sep}({pattern}){arity})'
 _PATH_SEG_TMPL = '(?P<%s>(/[^/]+)%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '?': False,
                  ':': False,
                  '+': True,
                  '*': True}
+
+
 
 
 def build_converter(converter, optional=False, multi=False):
@@ -58,7 +75,7 @@ def collapse_token(text, token=None, sub=None):
         return sub.join([s for s in text.split(token) if s])
 
 
-def _compile_path_pattern(pattern):
+def _compile_path_pattern(pattern, mode=S_REWRITE):
     processed = []
     var_converter_map = {}
 

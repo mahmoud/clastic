@@ -12,16 +12,13 @@ from .server import run_simple
 from .routing import (BaseRoute,
                       Route,
                       NullRoute,
+                      S_REWRITE,
                       RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
 from .errors import (NotFound,
-                      MethodNotAllowed,
-                      InternalServerError)
-
-S_REDIRECT = 'redirect'  # return a 30x to the right URL
-S_REWRITE = 'rewrite'    # perform a rewrite (like an internal redirect)
-S_STRICT = 'strict'      # return a 404, get it right or go home
+                     MethodNotAllowed,
+                     InternalServerError)
 
 
 def cast_to_route_factory(in_arg):
