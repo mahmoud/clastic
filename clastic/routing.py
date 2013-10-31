@@ -38,16 +38,15 @@ _CONVS = [('int', int, _INT_PATTERN),
           ('unicode', unicode, _STR_PATTERN)]
 
 TYPE_CONV_MAP = dict([(name, conv) for name, conv, patt in _CONVS])
-_SEP_PATTERN = '/+'
-_SEG_TMPL = '(?P<{name}>({sep}({pattern}){arity})'
+TYPE_PATT_MAP = dict([(name, patt) for name, conv, patt in _CONVS])
+_SEP = '/+'
+_SEG_TMPL = '(?P<{name}>({sep}{pattern}){arity})'
 _PATH_SEG_TMPL = '(?P<%s>(/[^/]+)%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '?': False,
                  ':': False,
                  '+': True,
                  '*': True}
-
-
 
 
 def build_converter(converter, optional=False, multi=False):
@@ -79,6 +78,12 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
     processed = []
     var_converter_map = {}
 
+    if not pattern.startswith('/'):
+        raise ValueError('URL path patterns must start with a forward slash'
+                         ' (got %r)' % pattern)
+    if '//' in pattern:
+        raise ValueError('URL path patterns must not contain multiple'
+                         'contiguous slashes (got %r)' % pattern)
     for part in pattern.split('/'):
         match = BINDING.match(part)
         if not match:
@@ -93,26 +98,41 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
                 op = ''
             if not type_name:
                 type_name = 'unicode'
-                #raise ValueError('%s expected a type specifier' % part)
             try:
-                converter = TYPE_CONV_MAP[type_name]
+                cur_conv = TYPE_CONV_MAP[type_name]
+                cur_patt = TYPE_PATT_MAP[type_name]
             except KeyError:
                 raise ValueError('unknown type specifier %s' % type_name)
         else:
-            converter = unicode
+            cur_conv = unicode
+            cur_patt = TYPE_PATT_MAP['unicode']
 
         try:
             multi = _OP_ARITY_MAP[op]
         except KeyError:
             _tmpl = 'unknown arity operator %r, expected one of %r'
             raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
-        var_converter_map[name] = build_converter(converter, multi=multi)
+        var_converter_map[name] = build_converter(cur_conv, multi=multi)
 
-        path_seg_pattern = _PATH_SEG_TMPL % (name, op)
+        path_seg_pattern = _SEG_TMPL.format(name=name,
+                                            sep=_SEP,
+                                            pattern=cur_patt,
+                                            arity=op)
         processed[-1] += path_seg_pattern
-
-    regex = re.compile('^' + '/'.join(processed) + '$')
+    if mode != S_STRICT and not processed[-1]:
+        full_pattern = '^' + _SEP.join(processed[:-1])
+        full_pattern += '/*'
+    else:
+        full_pattern = '^' + _SEP.join(processed)
+    regex = re.compile(full_pattern + '$')
     return regex, var_converter_map
+
+
+def normalize_path(path, is_branch):
+    ret = [x for x in path.split('/') if x]
+    if is_branch:
+        ret.append('/')
+    return ret
 
 
 class BaseRoute(object):
