@@ -12,7 +12,7 @@ from .server import run_simple
 from .routing import (BaseRoute,
                       Route,
                       NullRoute,
-                      S_REWRITE,
+                      S_REDIRECT,
                       RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
@@ -79,7 +79,7 @@ class BaseApplication(object):
         response = self.dispatch(request)
         return response(environ, start_response)
 
-    def dispatch(self, request, slashes=S_REWRITE):
+    def dispatch(self, request, slashes=S_REDIRECT):
         url_path = request.path
         method = request.method
 
@@ -89,7 +89,6 @@ class BaseApplication(object):
             params = route.match_path(url_path)
             if params is None:
                 continue
-            #print ' ', url_path, 'MATCHED', route
             method_allowed = route.match_method(method)
             if not method_allowed:
                 allowed_methods.update(route.methods)
@@ -112,7 +111,6 @@ class BaseApplication(object):
                     break
         if _excs:
             return _excs[-1]
-        #print ' ', url_path, 'did not match any routes'
         return NotFound(is_breaking=False)
 
 
