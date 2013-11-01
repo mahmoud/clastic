@@ -119,20 +119,21 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
                                             pattern=cur_patt,
                                             arity=op)
         processed[-1] += path_seg_pattern
-    if mode != S_STRICT and not processed[-1]:
-        full_pattern = '^' + _SEP.join(processed[:-1])
+    full_pattern = '^' + _SEP.join(processed)
+    if mode != S_STRICT:
         full_pattern += '/*'
-    else:
-        full_pattern = '^' + _SEP.join(processed)
     regex = re.compile(full_pattern + '$')
     return regex, var_converter_map
 
 
 def normalize_path(path, is_branch):
     ret = [x for x in path.split('/') if x]
+    if not ret:
+        return '/'
+    ret = [''] + ret
     if is_branch:
-        ret.append('/')
-    return ret
+        ret.append('')
+    return '/'.join(ret)
 
 
 class BaseRoute(object):
@@ -306,7 +307,6 @@ class Route(BaseRoute):
             # TODO: trace to application if middleware/resource
         ret['sources'] = srcs
         return ret
-
 
 
 class GET(Route):

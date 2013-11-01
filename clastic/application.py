@@ -5,14 +5,18 @@ import sys
 from collections import Sequence
 from argparse import ArgumentParser
 
-from werkzeug.wrappers import BaseResponse
-from werkzeug.wrappers import Request, Response
-
+from werkzeug.utils import redirect
+from werkzeug.wrappers import (Request,
+                               Response,
+                               BaseResponse)
 from .server import run_simple
 from .routing import (BaseRoute,
                       Route,
                       NullRoute,
+                      normalize_path,
                       S_REDIRECT,
+                      S_REWRITE,
+                      S_STRICT,
                       RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
@@ -94,6 +98,14 @@ class BaseApplication(object):
                 allowed_methods.update(route.methods)
                 _excs.append(MethodNotAllowed(allowed_methods))
                 continue
+            is_branch = route.pattern.endswith('/')
+            normalized_path = normalize_path(url_path, is_branch)
+            print url_path, normalized_path
+            if normalized_path != url_path:
+                if slashes == S_REDIRECT:
+                    return redirect(request.host_url.rstrip('/') + normalized_path)
+                elif slashes == S_STRICT:
+                    return NotFound(is_breaking=False)
             params.update(self.resources)
             try:
                 ep_res = route.execute(request, **params)
