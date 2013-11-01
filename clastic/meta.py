@@ -66,6 +66,7 @@ def get_route_infos(_application):
             continue
         r_info = {}
         r_info['url_pattern'] = r.pattern
+        r_info['url_regex_pattern'] = r.regex.pattern
         r_info['endpoint'] = get_endpoint_info(r)
         r_info['render'] = get_render_info(r)
         r_info['args'] = get_route_arg_info(r)
