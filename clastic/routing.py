@@ -165,6 +165,8 @@ class BaseRoute(object):
             if unknown_methods:
                 raise InvalidRouteMethod('unrecognized HTTP method(s): %r'
                                          % unknown_methods)
+            if 'GET' in self.methods:
+                self.methods.add('HEAD')
 
     def match_path(self, path):
         ret = {}

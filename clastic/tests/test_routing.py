@@ -153,6 +153,11 @@ def test_broken_routes():
                 yield ok_, False, cur_rt
 
 
+def test_known_method():
+    rt = Route('/', NO_OP, methods=['GET'])
+    yield ok_, rt
+    yield ok_, 'HEAD' in rt.methods
+
 @raises(InvalidRouteMethod)
 def test_unknown_method():
     Route('/', NO_OP, methods=['lol'])
