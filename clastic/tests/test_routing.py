@@ -116,7 +116,7 @@ no_arg_routes = ['/',
 arg_routes = ['/<theta>',
               '/iota/<kappa>/<lambda>/mu/',
               '/<nu:int>/<xi:float>/<omicron:unicode>/<pi:str>/',
-              '/<rho+>/'
+              '/<rho+>/',
               '/<sigma*>/',
               '/<tau?>/',
               '/<upsilon:>/']
@@ -125,6 +125,19 @@ broken_routes = ['alf',
                  '/bet//',
                  '/<cat->/',
                  '/<very*doge>/']
+
+
+def test_ok_routes():
+    ok_routes = no_arg_routes + arg_routes
+    no_op = lambda: None
+    for cur_mode in modes:
+        for cur_patt in ok_routes:
+            try:
+                cur_rt = Route(cur_patt, no_op, slash_mode=cur_mode)
+            except:
+                yield ok_, False, cur_patt
+            else:
+                yield ok_, cur_rt
 
 
 def test_broken_routes():
