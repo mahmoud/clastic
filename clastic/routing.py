@@ -16,6 +16,10 @@ class InvalidEndpoint(TypeError):
     pass
 
 
+class InvalidURLPattern(ValueError):
+    pass
+
+
 S_REDIRECT = 'redirect'  # return a 30x to the right URL
 S_REWRITE = 'rewrite'    # perform a rewrite (like an internal redirect)
 S_STRICT = 'strict'      # return a 404, get it right or go home
@@ -79,11 +83,11 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
     var_converter_map = {}
 
     if not pattern.startswith('/'):
-        raise ValueError('URL path patterns must start with a forward slash'
-                         ' (got %r)' % pattern)
+        raise InvalidURLPattern('URL path patterns must start with a forward'
+                                ' slash (got %r)' % pattern)
     if '//' in pattern:
-        raise ValueError('URL path patterns must not contain multiple'
-                         'contiguous slashes (got %r)' % pattern)
+        raise InvalidURLPattern('URL path patterns must not contain multiple'
+                                'contiguous slashes (got %r)' % pattern)
     for part in pattern.split('/'):
         match = BINDING.match(part)
         if not match:
@@ -92,7 +96,7 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
         parsed = match.groupdict()
         name, type_name, op = parsed['name'], parsed['type'], parsed['op']
         if name in var_converter_map:
-            raise ValueError('duplicate path binding %s' % name)
+            raise InvalidURLPattern('duplicate path binding %s' % name)
         if op:
             if op == ':':
                 op = ''
@@ -102,7 +106,8 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
                 cur_conv = TYPE_CONV_MAP[type_name]
                 cur_patt = TYPE_PATT_MAP[type_name]
             except KeyError:
-                raise ValueError('unknown type specifier %s' % type_name)
+                raise InvalidURLPattern('unknown type specifier %s'
+                                        % type_name)
         else:
             cur_conv = unicode
             cur_patt = TYPE_PATT_MAP['unicode']
@@ -111,7 +116,7 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
             multi = _OP_ARITY_MAP[op]
         except KeyError:
             _tmpl = 'unknown arity operator %r, expected one of %r'
-            raise ValueError(_tmpl % (op, _OP_ARITY_MAP.keys()))
+            raise InvalidURLPattern(_tmpl % (op, _OP_ARITY_MAP.keys()))
         var_converter_map[name] = build_converter(cur_conv, multi=multi)
 
         path_seg_pattern = _SEG_TMPL.format(name=name,
@@ -140,7 +145,8 @@ def normalize_path(path, is_branch):
 
 
 class BaseRoute(object):
-    def __init__(self, pattern, endpoint=None, methods=None):
+    def __init__(self, pattern, endpoint=None, methods=None,
+                 slash_mode=S_REDIRECT):
         self.pattern = pattern
         self.endpoint = endpoint
         self._execute = endpoint
