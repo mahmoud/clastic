@@ -10,13 +10,16 @@ from clastic import Application, render_basic
 from clastic import GET, POST, PUT, DELETE
 
 from clastic.application import BaseApplication
+
 from clastic.routing import BaseRoute, Route
-from clastic.routing import InvalidEndpoint, InvalidURLPattern
+from clastic.routing import (InvalidEndpoint,
+                             InvalidURLPattern,
+                             InvalidRouteMethod)
 from clastic.routing import S_STRICT, S_REWRITE, S_REDIRECT
 
 
-modes = (S_STRICT, S_REWRITE, S_REDIRECT)
-
+MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
+NO_OP = lambda: None
 
 def test_new_base_route():
     # note default slashing behavior
@@ -129,11 +132,10 @@ broken_routes = ['alf',
 
 def test_ok_routes():
     ok_routes = no_arg_routes + arg_routes
-    no_op = lambda: None
-    for cur_mode in modes:
+    for cur_mode in MODES:
         for cur_patt in ok_routes:
             try:
-                cur_rt = Route(cur_patt, no_op, slash_mode=cur_mode)
+                cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
             except:
                 yield ok_, False, cur_patt
             else:
@@ -141,12 +143,16 @@ def test_ok_routes():
 
 
 def test_broken_routes():
-    no_op = lambda: None
-    for cur_mode in modes:
+    for cur_mode in MODES:
         for cur_patt in broken_routes:
             try:
-                cur_rt = Route(cur_patt, no_op, slash_mode=cur_mode)
+                cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
             except InvalidURLPattern:
                 yield ok_, True
             else:
                 yield ok_, False, cur_rt
+
+
+@raises(InvalidRouteMethod)
+def test_unknown_method():
+    Route('/', NO_OP, methods=['lol'])

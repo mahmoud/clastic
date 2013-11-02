@@ -20,6 +20,14 @@ class InvalidURLPattern(ValueError):
     pass
 
 
+class InvalidRouteMethod(ValueError):
+    pass
+
+
+HTTP_METHODS = set(['GET', 'HEAD', 'POST', 'PUT', 'DELETE',
+                    'OPTIONS', 'TRACE', 'CONNECT'])
+
+
 S_REDIRECT = 'redirect'  # return a 30x to the right URL
 S_REWRITE = 'rewrite'    # perform a rewrite (like an internal redirect)
 S_STRICT = 'strict'      # return a 404, get it right or go home
@@ -34,7 +42,6 @@ BINDING = re.compile(r'<'
 _FLOAT_PATTERN = r'[+-]?\ *(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _INT_PATTERN = r'[+-]?\ *[0-9]+'
 _STR_PATTERN = r'[^/]+'
-
 
 _CONVS = [('int', int, _INT_PATTERN),
           ('float', float, _FLOAT_PATTERN),
@@ -145,7 +152,6 @@ class BaseRoute(object):
         self.pattern = pattern
         self.endpoint = endpoint
         self._execute = endpoint
-        # TODO: crosscheck methods with known HTTP methods
         self.methods = methods and set([m.upper() for m in methods])
         self._compile()
 
@@ -154,6 +160,11 @@ class BaseRoute(object):
         #          self.regex.pattern != self.pattern:
         self.regex, self.converters = _compile_path_pattern(self.pattern)
         self.path_args = self.converters.keys()
+        if self.methods:
+            unknown_methods = list(self.methods - HTTP_METHODS)
+            if unknown_methods:
+                raise InvalidRouteMethod('unrecognized HTTP method(s): %r'
+                                         % unknown_methods)
 
     def match_path(self, path):
         ret = {}
