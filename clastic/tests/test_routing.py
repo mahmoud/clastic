@@ -130,6 +130,10 @@ broken_routes = ['alf',
                  '/<very*doge>/']
 
 
+app_int_tests = [('/', [('/', (200, 200, 200)),
+                        ('/derp', (404, 404, 404))])]
+
+
 def test_ok_routes():
     ok_routes = no_arg_routes + arg_routes
     for cur_mode in MODES:
