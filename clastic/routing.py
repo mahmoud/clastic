@@ -16,11 +16,11 @@ class InvalidEndpoint(TypeError):
     pass
 
 
-class InvalidURLPattern(ValueError):
+class InvalidPattern(ValueError):
     pass
 
 
-class InvalidRouteMethod(ValueError):
+class InvalidMethod(ValueError):
     pass
 
 
@@ -90,11 +90,11 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
     var_converter_map = {}
 
     if not pattern.startswith('/'):
-        raise InvalidURLPattern('URL path patterns must start with a forward'
-                                ' slash (got %r)' % pattern)
+        raise InvalidPattern('URL path patterns must start with a forward'
+                             ' slash (got %r)' % pattern)
     if '//' in pattern:
-        raise InvalidURLPattern('URL path patterns must not contain multiple'
-                                'contiguous slashes (got %r)' % pattern)
+        raise InvalidPattern('URL path patterns must not contain multiple'
+                             'contiguous slashes (got %r)' % pattern)
     for part in pattern.split('/'):
         match = BINDING.match(part)
         if not match:
@@ -103,7 +103,7 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
         parsed = match.groupdict()
         name, type_name, op = parsed['name'], parsed['type'], parsed['op']
         if name in var_converter_map:
-            raise InvalidURLPattern('duplicate path binding %s' % name)
+            raise InvalidPattern('duplicate path binding %s' % name)
         if op == ':':
             op = ''
         if not type_name:
@@ -112,13 +112,13 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
             cur_conv = TYPE_CONV_MAP[type_name]
             cur_patt = TYPE_PATT_MAP[type_name]
         except KeyError:
-            raise InvalidURLPattern('unknown type specifier %s'
-                                    % type_name)
+            raise InvalidPattern('unknown type specifier %s'
+                                 % type_name)
         try:
             multi = _OP_ARITY_MAP[op]
         except KeyError:
             _tmpl = 'unknown arity operator %r, expected one of %r'
-            raise InvalidURLPattern(_tmpl % (op, _OP_ARITY_MAP.keys()))
+            raise InvalidPattern(_tmpl % (op, _OP_ARITY_MAP.keys()))
         var_converter_map[name] = build_converter(cur_conv, multi=multi)
 
         path_seg_pattern = _SEG_TMPL.format(name=name,
@@ -163,8 +163,8 @@ class BaseRoute(object):
         if self.methods:
             unknown_methods = list(self.methods - HTTP_METHODS)
             if unknown_methods:
-                raise InvalidRouteMethod('unrecognized HTTP method(s): %r'
-                                         % unknown_methods)
+                raise InvalidMethod('unrecognized HTTP method(s): %r'
+                                    % unknown_methods)
             if 'GET' in self.methods:
                 self.methods.add('HEAD')
 

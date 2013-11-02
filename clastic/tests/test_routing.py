@@ -13,8 +13,8 @@ from clastic.application import BaseApplication
 
 from clastic.routing import BaseRoute, Route
 from clastic.routing import (InvalidEndpoint,
-                             InvalidURLPattern,
-                             InvalidRouteMethod)
+                             InvalidPattern,
+                             InvalidMethod)
 from clastic.routing import S_STRICT, S_REWRITE, S_REDIRECT
 
 
@@ -147,7 +147,7 @@ def test_broken_routes():
         for cur_patt in broken_routes:
             try:
                 cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
-            except InvalidURLPattern:
+            except InvalidPattern:
                 yield ok_, True
             else:
                 yield ok_, False, cur_rt
@@ -158,6 +158,7 @@ def test_known_method():
     yield ok_, rt
     yield ok_, 'HEAD' in rt.methods
 
-@raises(InvalidRouteMethod)
+
+@raises(InvalidMethod)
 def test_unknown_method():
     Route('/', NO_OP, methods=['lol'])
