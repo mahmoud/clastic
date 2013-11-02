@@ -27,7 +27,7 @@ S_STRICT = 'strict'      # return a 404, get it right or go home
 
 BINDING = re.compile(r'<'
                      r'(?P<name>[A-Za-z_]\w*)'
-                     r'(?P<op>[?+:*]*)'
+                     r'(?P<op>\W*)'
                      r'(?P<type>\w+)*'
                      r'>')
 
@@ -97,21 +97,16 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
         name, type_name, op = parsed['name'], parsed['type'], parsed['op']
         if name in var_converter_map:
             raise InvalidURLPattern('duplicate path binding %s' % name)
-        if op:
-            if op == ':':
-                op = ''
-            if not type_name:
-                type_name = 'unicode'
-            try:
-                cur_conv = TYPE_CONV_MAP[type_name]
-                cur_patt = TYPE_PATT_MAP[type_name]
-            except KeyError:
-                raise InvalidURLPattern('unknown type specifier %s'
-                                        % type_name)
-        else:
-            cur_conv = unicode
-            cur_patt = TYPE_PATT_MAP['unicode']
-
+        if op == ':':
+            op = ''
+        if not type_name:
+            type_name = 'unicode'
+        try:
+            cur_conv = TYPE_CONV_MAP[type_name]
+            cur_patt = TYPE_PATT_MAP[type_name]
+        except KeyError:
+            raise InvalidURLPattern('unknown type specifier %s'
+                                    % type_name)
         try:
             multi = _OP_ARITY_MAP[op]
         except KeyError:
