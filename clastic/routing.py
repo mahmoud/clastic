@@ -12,7 +12,7 @@ from .middleware import (check_middlewares,
 RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
 
 
-class InvalidEndpoint(TypeError):
+class InvalidEndpoint(ValueError):
     pass
 
 
