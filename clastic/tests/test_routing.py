@@ -21,6 +21,7 @@ from clastic.routing import S_STRICT, S_REWRITE, S_REDIRECT
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
 NO_OP = lambda: None
 
+
 def test_new_base_route():
     # note default slashing behavior
     rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
@@ -131,7 +132,8 @@ broken_routes = ['alf',
 
 
 app_int_tests = [('/', [('/', (200, 200, 200)),
-                        ('/derp', (404, 404, 404))])]
+                        ('/derp', (404, 404, 404))])
+                 ]
 
 
 def test_ok_routes():
@@ -166,3 +168,19 @@ def test_known_method():
 @raises(InvalidMethod)
 def test_unknown_method():
     Route('/', NO_OP, methods=['lol'])
+
+
+def test_debug_raises():
+    app_nodebug = Application([('/', lambda: 1/0)], debug=False)
+    client = Client(app_nodebug, BaseResponse)
+    yield eq_, client.get('/').status_code, 500
+
+    app_debug = Application([('/', lambda: 1/0)], debug=True)
+    client = Client(app_debug, BaseResponse)
+    try:
+        resp = client.get('/')
+    except ZeroDivisionError:
+        yield ok_, True
+    else:
+        yield ok_, False, ('%r did not raise ZeroDivisionError (got %r)'
+                           % (app_debug, resp))

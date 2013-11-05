@@ -114,6 +114,8 @@ class BaseApplication(object):
                 return ep_res
             except Exception as e:
                 if not isinstance(e, BaseResponse):
+                    if self.debug:
+                        raise
                     exc_info = ExceptionInfo.from_current()
                     tmp_msg = repr(exc_info)
                     e = InternalServerError(tmp_msg, traceback=exc_info)
@@ -161,6 +163,8 @@ class Application(BaseApplication):
         port = args.port if args.port is not None else port
         kw['use_reloader'] = args.use_reloader and use_reloader
         kw['use_debugger'] = args.use_debugger and use_debugger
+        if kw['use_debugger']:
+            self.debug = True
         # kw['processes'] = args.processes or processes
         use_meta = args.use_meta and use_meta
         use_lint = args.use_lint and use_lint
