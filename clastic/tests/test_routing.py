@@ -19,7 +19,7 @@ from clastic.routing import S_STRICT, S_REWRITE, S_REDIRECT
 
 
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
-NO_OP = lambda: None
+NO_OP = lambda: BaseResponse()
 
 
 def test_new_base_route():
@@ -131,11 +131,6 @@ broken_routes = ['alf',
                  '/<very*doge>/']
 
 
-app_int_tests = [('/', [('/', (200, 200, 200)),
-                        ('/derp', (404, 404, 404))])
-                 ]
-
-
 def test_ok_routes():
     ok_routes = no_arg_routes + arg_routes
     for cur_mode in MODES:
@@ -184,3 +179,24 @@ def test_debug_raises():
     else:
         yield ok_, False, ('%r did not raise ZeroDivisionError (got %r)'
                            % (app_debug, resp))
+
+
+def test_slashing_behaviors():
+    routes = [('/', NO_OP),
+              ('/goof/spoof/', NO_OP)]
+    app_strict = Application(routes, slash_mode=S_STRICT)
+    app_redirect = Application(routes, slash_mode=S_REDIRECT)
+    app_rewrite = Application(routes, slash_mode=S_REWRITE)
+
+    cl_strict = Client(app_strict, BaseResponse)
+    cl_redirect = Client(app_redirect, BaseResponse)
+    cl_rewrite = Client(app_rewrite, BaseResponse)
+
+    yield eq_, cl_strict.get('/').status_code, 200
+    yield eq_, cl_rewrite.get('/').status_code, 200
+    yield eq_, cl_redirect.get('/').status_code, 200
+
+    yield eq_, cl_strict.get('/goof//spoof//').status_code, 404
+    yield eq_, cl_rewrite.get('/goof//spoof//').status_code, 200
+    yield eq_, cl_redirect.get('/goof//spoof//').status_code, 302
+    yield eq_, cl_redirect.get('/goof//spoof//', follow_redirects=True).status_code, 200

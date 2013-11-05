@@ -46,6 +46,7 @@ class BaseApplication(object):
     def __init__(self, routes=None, resources=None, render_factory=None,
                  middlewares=None, **kwargs):
         self.debug = kwargs.pop('debug', None)
+        self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
         if kwargs:
             raise TypeError('unexpected keyword args: %r' % kwargs.keys())
         self.resources = dict(resources or {})
@@ -83,7 +84,7 @@ class BaseApplication(object):
         response = self.dispatch(request)
         return response(environ, start_response)
 
-    def dispatch(self, request, slashes=S_REDIRECT):
+    def dispatch(self, request):
         url_path = request.path
         method = request.method
 
@@ -101,9 +102,9 @@ class BaseApplication(object):
             is_branch = route.pattern.endswith('/')
             normalized_path = normalize_path(url_path, is_branch)
             if normalized_path != url_path:
-                if slashes == S_REDIRECT:
+                if self.slash_mode == S_REDIRECT:
                     return redirect(request.host_url.rstrip('/') + normalized_path)
-                elif slashes == S_STRICT:
+                elif self.slash_mode == S_STRICT:
                     return NotFound(is_breaking=False)
             params.update(self.resources)
             try:
@@ -220,4 +221,10 @@ TODO: should TracebackInfo optionally know about exc_type and exc_msg?
 
 Note to self: Raising and returning an exception should look basically the
 same in production mode.
+
+Potentially conflicting rebindables:
+
+* render (green-path and red)
+* slash behavior
+* debug flag
 """
