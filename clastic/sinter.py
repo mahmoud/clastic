@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import re
 import types
 import inspect
 from inspect import ArgSpec
 
 _VERBOSE = False
+_INDENT = '    '
 
 
 def getargspec(f):
@@ -68,19 +70,46 @@ def chain_argspec(func_list, provides):
     return required_sofar, optional_sofar
 
 
+def get_func_name(obj, with_module=False):
+    if not callable(obj):
+        raise TypeError('expected a callable object')
+    ret = []
+    if with_module and obj.__module__:
+        ret.append(obj.__module__)
+    if isinstance(obj, types.MethodType):
+        ret.append(obj.im_class.__name__)
+        obj = obj.im_func
+    func_name = getattr(obj, 'func_name', None)
+    if not func_name:
+        func_name = repr(obj)
+    ret.append(func_name)
+    return '.'.join(ret)
+
+
 #funcs[0] = function to call
 #params[0] = parameters to take
-def build_chain_str(funcs, params, params_sofar=None, level=0):
+def build_chain_str(funcs, params, params_sofar=None, level=0,
+                    func_aliaser=None, func_names=None):
     if not funcs:
         return ''  # stopping case
     if params_sofar is None:
         params_sofar = set(['next'])
+    #if func_names is None:
+    #    func_names = set()
     params_sofar.update(params[0])
-    next_args = getargspec(funcs[0])[0]
-    next_args = ','.join([a+'='+a for a in next_args if a in params_sofar])
-    return '   '*level +'def next('+','.join(params[0])+'):\n'+\
-        build_chain_str(funcs[1:], params[1:], params_sofar, level+1)+\
-        '   '*(level+1)+'return funcs['+str(level)+']('+next_args+')\n'
+    next_args = getargspec(funcs[0]).args
+    next_arg_dict = dict([(a, a) for a in next_args])
+    next_args = ', '.join(['%s=%s' % kv for kv in next_arg_dict.items()
+                           if kv[0] in params_sofar])
+    outer_indent = _INDENT * level
+    inner_indent = outer_indent + _INDENT
+    outer_arg_str = ', '.join(params[0])
+    def_str = '%sdef next(%s):\n' % (outer_indent, outer_arg_str)
+    body_str = build_chain_str(funcs[1:], params[1:], params_sofar, level + 1)
+    #func_name = get_func_name(funcs[0])
+    #func_alias = get_next_func_alias(funcs[0])
+    return_str = '%sreturn funcs[%s](%s)\n' % (inner_indent, level, next_args)
+    return ''.join([def_str, body_str, return_str])
 
 
 def compile_chain(funcs, params, verbose=_VERBOSE):
@@ -105,3 +134,26 @@ def make_chain(funcs, provides, final_func, preprovided):
     chain = compile_chain(funcs + [final_func],
                           [args] + provides)
     return chain, set(args), set(unresolved)
+
+
+_camel2under_re = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+
+
+def camel2under(camel_string):
+    return _camel2under_re.sub(r'_\1', camel_string).lower()
+
+
+def get_next_func_alias(func, func_names=None):
+    if func_names is None:
+        func_names = set()
+    func_name = get_func_name(func)
+    func_alias = camel2under(func_name.replace('.', '__'))
+    func_alias = func_alias.replace('middleware', 'mw')
+    while func_alias in func_names:
+        try:
+            head, _, tail = func_alias.rpartition('_')
+            cur_count = int(tail)
+            func_alias = '%s_%s' % (head, cur_count + 1)
+        except:
+            func_alias = func_alias + '_2'
+    return 'next_' + func_alias
