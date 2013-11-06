@@ -4,18 +4,16 @@ from __future__ import unicode_literals
 from nose.tools import raises, eq_, ok_
 
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse, Request
+from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, render_basic
-from clastic import GET, POST, PUT, DELETE
-
 from clastic.application import BaseApplication
 
-from clastic.routing import BaseRoute, Route
-from clastic.routing import (InvalidEndpoint,
-                             InvalidPattern,
-                             InvalidMethod)
-from clastic.routing import S_STRICT, S_REWRITE, S_REDIRECT
+from clastic.route import BaseRoute, Route
+from clastic.route import (InvalidEndpoint,
+                           InvalidPattern,
+                           InvalidMethod)
+from clastic.route import S_STRICT, S_REWRITE, S_REDIRECT
 
 
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)

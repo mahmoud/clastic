@@ -10,14 +10,14 @@ from werkzeug.wrappers import (Request,
                                Response,
                                BaseResponse)
 from .server import run_simple
-from .routing import (BaseRoute,
-                      Route,
-                      NullRoute,
-                      normalize_path,
-                      S_REDIRECT,
-                      S_REWRITE,
-                      S_STRICT,
-                      RESERVED_ARGS)
+from .route import (BaseRoute,
+                    Route,
+                    NullRoute,
+                    normalize_path,
+                    S_REDIRECT,
+                    S_REWRITE,
+                    S_STRICT,
+                    RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
 from .errors import (NotFound,
