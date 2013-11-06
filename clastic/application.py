@@ -103,7 +103,8 @@ class BaseApplication(object):
             normalized_path = normalize_path(url_path, is_branch)
             if normalized_path != url_path:
                 if self.slash_mode == S_REDIRECT:
-                    return redirect(request.host_url.rstrip('/') + normalized_path)
+                    dest_url = request.host_url.rstrip('/') + normalized_path
+                    return redirect(dest_url)
                 elif self.slash_mode == S_STRICT:
                     return NotFound(is_breaking=False)
             params.update(self.resources)
