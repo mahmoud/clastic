@@ -200,3 +200,7 @@ def test_slashing_behaviors():
     yield eq_, cl_rewrite.get('/goof//spoof//').status_code, 200
     yield eq_, cl_redirect.get('/goof//spoof//').status_code, 302
     yield eq_, cl_redirect.get('/goof//spoof//', follow_redirects=True).status_code, 200
+
+    yield eq_, cl_strict.get('/dne/dne//').status_code, 404
+    yield eq_, cl_rewrite.get('/dne/dne//').status_code, 404
+    yield eq_, cl_redirect.get('/dne/dne//').status_code, 404
