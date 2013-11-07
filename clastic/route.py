@@ -337,6 +337,18 @@ class Route(BaseRoute):
         return ret
 
 
+class NullRoute(Route):
+    def __init__(self, *a, **kw):
+        super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
+
+    def not_found(self, request):
+        raise NotFound(is_breaking=False)
+
+
+#
+#  Convenience classes for common HTTP methods
+#
+
 class GET(Route):
     def __init__(self, *a, **kw):
         kw['methods'] = ('GET',)
@@ -361,12 +373,32 @@ class DELETE(Route):
         super(DELETE, self).__init__(*a, **kw)
 
 
-class NullRoute(Route):
-    def __init__(self, *a, **kw):
-        super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
+#
+#  Boutique HTTP methods (for consistency)
+#
 
-    def not_found(self, request):
-        raise NotFound(is_breaking=False)
+class HEAD(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('HEAD',)
+        super(HEAD, self).__init__(*a, **kw)
+
+
+class OPTIONS(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('OPTIONS',)
+        super(OPTIONS, self).__init__(*a, **kw)
+
+
+class TRACE(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('TRACE',)
+        super(TRACE, self).__init__(*a, **kw)
+
+
+class CONNECT(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('CONNECT',)
+        super(CONNECT, self).__init__(*a, **kw)
 
 
 """
