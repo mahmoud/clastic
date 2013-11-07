@@ -14,7 +14,7 @@
 import server
 
 from application import Application, SubApplication
-from routing import Route, GET, POST, PUT, DELETE, RESERVED_ARGS
+from route import Route, GET, POST, PUT, DELETE, RESERVED_ARGS
 
 from middleware import Middleware, GetParamMiddleware
 from render import render_json, render_json_dev, render_basic
