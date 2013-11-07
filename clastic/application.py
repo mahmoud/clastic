@@ -69,13 +69,13 @@ class BaseApplication(object):
         for rt in self.routes:
             yield rt
 
-    def add(self, entry, index=None, rebind_render=True):
+    def add(self, entry, index=None, rebind_render=True, inherit_slashes=True):
         if index is None:
             index = len(self.routes)
         rf = cast_to_route_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
         for route in rf.iter_routes():
-            route.bind(self, rebind_render)
+            route.bind(self, rebind_render, inherit_slashes=inherit_slashes)
             self.routes.insert(index, route)
             index += 1
 
@@ -130,10 +130,11 @@ class BaseApplication(object):
 
 
 class SubApplication(object):
-    def __init__(self, prefix, app, rebind_render=False):
+    def __init__(self, prefix, app, rebind_render=False, inherit_slashes=True):
         self.prefix = prefix.rstrip('/')
         self.app = app
         self.rebind_render = rebind_render
+        self.inherit_slashes = inherit_slashes
 
     def iter_routes(self):
         # TODO: if `self.app` is `application` don't re-embed?
@@ -143,6 +144,8 @@ class SubApplication(object):
                     continue
                 yld = rt.empty()
                 yld.pattern = self.prefix + rt.pattern
+                if self.inherit_slashes:
+                    yld.slash_mode = self.app.slash_mode
                 yld._compile()
                 yield yld
 

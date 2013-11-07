@@ -50,7 +50,6 @@ _CONVS = [('int', int, _INT_PATTERN),
 
 TYPE_CONV_MAP = dict([(name, conv) for name, conv, patt in _CONVS])
 TYPE_PATT_MAP = dict([(name, patt) for name, conv, patt in _CONVS])
-_SEP = '/+'
 _SEG_TMPL = '(?P<{name}>({sep}{pattern}){arity})'
 _PATH_SEG_TMPL = '(?P<%s>(/[^/]+)%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
@@ -95,6 +94,9 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
     if '//' in pattern:
         raise InvalidPattern('URL path patterns must not contain multiple'
                              'contiguous slashes (got %r)' % pattern)
+    sep = '/+'
+    if mode == S_STRICT:
+        sep = '/'
     for part in pattern.split('/'):
         match = BINDING.match(part)
         if not match:
@@ -122,14 +124,14 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
         var_converter_map[name] = build_converter(cur_conv, multi=multi)
 
         path_seg_pattern = _SEG_TMPL.format(name=name,
-                                            sep=_SEP,
+                                            sep=sep,
                                             pattern=cur_patt,
                                             arity=op)
         processed[-1] += path_seg_pattern
     full_pattern = '^'
     if mode != S_STRICT and not processed[-1]:
         processed = processed[:-1]
-    full_pattern += _SEP.join(processed)
+    full_pattern += sep.join(processed)
     if mode != S_STRICT:
         full_pattern += '/*'
     regex = re.compile(full_pattern + '$')
@@ -147,8 +149,10 @@ def normalize_path(path, is_branch):
 
 
 class BaseRoute(object):
-    def __init__(self, pattern, endpoint=None, methods=None,
-                 slash_mode=S_REDIRECT):
+    def __init__(self, pattern, endpoint=None, methods=None, **kwargs):
+        self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
+        if kwargs:
+            raise TypeError('unexpected keyword args: %r' % kwargs.keys())
         self.pattern = pattern
         self.endpoint = endpoint
         self._execute = endpoint
@@ -158,7 +162,8 @@ class BaseRoute(object):
     def _compile(self):
         # maybe: if not getattr(self, 'regex', None) or \
         #          self.regex.pattern != self.pattern:
-        self.regex, self.converters = _compile_path_pattern(self.pattern)
+        self.regex, self.converters = _compile_path_pattern(self.pattern,
+                                                            self.slash_mode)
         self.path_args = self.converters.keys()
         if self.methods:
             unknown_methods = list(self.methods - HTTP_METHODS)
@@ -217,8 +222,8 @@ class BaseRoute(object):
 
 
 class Route(BaseRoute):
-    def __init__(self, pattern, endpoint, render_arg=None, *a, **kw):
-        super(Route, self).__init__(pattern, endpoint, *a, **kw)
+    def __init__(self, pattern, endpoint, render_arg=None, **kw):
+        super(Route, self).__init__(pattern, endpoint, **kw)
         self._middlewares = list(kw.pop('middlewares', []))
         self._resources = dict(kw.pop('resources', []))
         self._bound_apps = []
@@ -249,7 +254,7 @@ class Route(BaseRoute):
         ret._bound_apps = list(self._bound_apps)
         return ret
 
-    def bind(self, app, rebind_render=True):
+    def bind(self, app, rebind_render=True, inherit_slashes=True):
         resources = app.__dict__.get('resources', {})
         middlewares = app.__dict__.get('middlewares', [])
         if rebind_render:
@@ -261,14 +266,20 @@ class Route(BaseRoute):
         merged_resources.update(resources)
         merged_mw = merge_middlewares(self._middlewares, middlewares)
         r_copy = self.empty()
+        if inherit_slashes:
+            r_copy.slash_mode = app.slash_mode
         try:
             r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
+            r_copy._compile()
         except:
             raise
+        if inherit_slashes:
+            self.slash_mode = app.slash_mode
         self._bind_args(app,
                         merged_resources,
                         merged_mw,
                         render_factory)
+        self._compile()
         self._bound_apps += (app,)
         return self
 
@@ -454,4 +465,12 @@ well on re-embeds/SubApplication usage.
 Some form of error_render or errback should come into existence at
 some point, but design is pending.
 
+##############
+
+RouteList -> Like a SubApplication but holds unbound routes, along
+with certain directions for when they are bound. I.e.,
+
+* rebind renders
+* rebind error renders
+* inherit slash mode behavior
 """
