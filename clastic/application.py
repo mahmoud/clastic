@@ -74,8 +74,10 @@ class BaseApplication(object):
             index = len(self.routes)
         rf = cast_to_route_factory(entry)
         rebind_render = getattr(rf, 'rebind_render', rebind_render)
+        kwargs = {'rebind_render': rebind_render,
+                  'inherit_slashes': inherit_slashes}
         for route in rf.iter_routes():
-            route.bind(self, rebind_render, inherit_slashes=inherit_slashes)
+            route.bind(self, **kwargs)
             self.routes.insert(index, route)
             index += 1
 
@@ -126,7 +128,7 @@ class BaseApplication(object):
                     break
         if _excs:
             return _excs[-1][-1]
-        return NotFound(is_breaking=False)
+        return self._null_route.execute(request, **self.resources)
 
 
 class SubApplication(object):

@@ -222,10 +222,11 @@ class BaseRoute(object):
 
 
 class Route(BaseRoute):
-    def __init__(self, pattern, endpoint, render_arg=None, **kw):
-        super(Route, self).__init__(pattern, endpoint, **kw)
-        self._middlewares = list(kw.pop('middlewares', []))
-        self._resources = dict(kw.pop('resources', []))
+    def __init__(self, pattern, endpoint, render_arg=None,
+                 error_render=None, **kwargs):
+        super(Route, self).__init__(pattern, endpoint, **kwargs)
+        self._middlewares = list(kwargs.pop('middlewares', []))
+        self._resources = dict(kwargs.pop('resources', []))
         self._bound_apps = []
         self.endpoint_args = get_arg_names(endpoint)
 
@@ -254,7 +255,12 @@ class Route(BaseRoute):
         ret._bound_apps = list(self._bound_apps)
         return ret
 
-    def bind(self, app, rebind_render=True, inherit_slashes=True):
+    def bind(self, app, **kwargs):
+        rebind_render = kwargs.pop('rebind_render', True)
+        inherit_slashes = kwargs.pop('inherit_slashes', True)
+        if kwargs:
+            raise TypeError('unexpected keyword args: %r' % kwargs.keys())
+
         resources = app.__dict__.get('resources', {})
         middlewares = app.__dict__.get('middlewares', [])
         if rebind_render:
@@ -339,10 +345,15 @@ class Route(BaseRoute):
 
 class NullRoute(Route):
     def __init__(self, *a, **kw):
-        super(NullRoute, self).__init__('/<_ignored*>', self.not_found)
+        super(NullRoute, self).__init__('/<_ignored*>',
+                                        self.not_found,
+                                        slash_mode=S_REWRITE)
 
     def not_found(self, request):
-        raise NotFound(is_breaking=False)
+        return NotFound(is_breaking=False)
+
+    def bind(self, *a, **kw):
+        super(NullRoute, self).bind(*a, **kw)
 
 
 #
