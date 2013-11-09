@@ -142,6 +142,10 @@ class DispatchState(object):
         if methods:
             self.allowed_methods.update(methods)
 
+    def __repr__(self):
+        args = (self.__class__.__name__, self.exceptions, self.allowed_methods)
+        return '<%s exceptions=%r allowed_methods=%r>' % args
+
 
 class SubApplication(object):
     def __init__(self, prefix, app, rebind_render=False, inherit_slashes=True):
