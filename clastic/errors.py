@@ -40,6 +40,7 @@ Possible values to support templating:
 * Allowed methods
 
 """
+import json
 
 from werkzeug.wrappers import BaseResponse
 
@@ -80,8 +81,25 @@ class HTTPException(BaseResponse, Exception):
                                             mimetype=mimetype,
                                             content_type=content_type)
 
-    def get_wsgi_response(self, environ):
-        return super(HTTPException, self).get_wsgi_response(environ)
+    def adapt(self, request):
+        # in-place rewriting of content and headers to adapt to Accept
+        # headers
+        pass
+
+    def transcribe(self, request):
+        # create a new Response object with content and headers
+        # adapted to Accept headers
+        pass
+
+    def to_dict(self):
+        return {'detail': self.detail,
+                'message': self.message,
+                'code': self.code,
+                'error_type': self.error_type}
+
+    def to_json(self, indent=2, sort_keys=True, skipkeys=True):
+        return json.dumps(self.to_dict(), indent=indent, sort_keys=sort_keys,
+                          ensure_ascii=False, skipkeys=skipkeys)
 
     def __repr__(self):
         cn = self.__class__.__name__
