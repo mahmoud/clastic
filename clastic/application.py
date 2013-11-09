@@ -90,25 +90,25 @@ class BaseApplication(object):
         url_path = request.path
         method = request.method
 
-        _excs = []
-        allowed_methods = set()
-        for route in self.routes:
+        dispatch_state = DispatchState()
+
+        for route in self.routes + [self._null_route]:
             params = route.match_path(url_path)
             if params is None:
                 continue
             method_allowed = route.match_method(method)
             if not method_allowed:
-                allowed_methods.update(route.methods)
-                _excs.append((route, MethodNotAllowed(allowed_methods)))
+                dispatch_state.update_methods(route.methods)
                 continue
             is_branch = route.pattern.endswith('/')
             normalized_path = normalize_path(url_path, is_branch)
             if normalized_path != url_path:
-                if self.slash_mode == S_REDIRECT:
+                if route.slash_mode == S_REDIRECT:
                     dest_url = request.host_url.rstrip('/') + normalized_path
                     return redirect(dest_url)
-                elif self.slash_mode == S_STRICT:
+                elif route.slash_mode == S_STRICT:
                     return NotFound(is_breaking=False)
+            params['_dispatch_state'] = dispatch_state
             params.update(self.resources)
             try:
                 ep_res = route.execute(request, **params)
@@ -123,12 +123,24 @@ class BaseApplication(object):
                     exc_info = ExceptionInfo.from_current()
                     tmp_msg = repr(exc_info)
                     e = InternalServerError(tmp_msg, traceback=exc_info)
-                _excs.append((route, e))
+                dispatch_state.add_exception(route, e)
                 if getattr(e, 'is_breaking', True):
-                    break
-        if _excs:
-            return _excs[-1][-1]
-        return self._null_route.execute(request, **self.resources)
+                    return e
+                else:
+                    dispatch_state.add_exception(route, e)
+
+
+class DispatchState(object):
+    def __init__(self):
+        self.exceptions = []
+        self.allowed_methods = set()
+
+    def add_exception(self, route, exception):
+        self.exceptions.append((route, exception))
+
+    def update_methods(self, methods):
+        if methods:
+            self.allowed_methods.update(methods)
 
 
 class SubApplication(object):

@@ -3,13 +3,13 @@
 import re
 
 from .sinter import inject, get_arg_names, getargspec
-from .errors import NotFound
+from .errors import NotFound, MethodNotAllowed
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
 
 
-RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route')
+RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route', '_dispatch_state')
 
 
 class InvalidEndpoint(ValueError):
@@ -346,13 +346,19 @@ class Route(BaseRoute):
 class NullRoute(Route):
     def __init__(self, *a, **kw):
         super(NullRoute, self).__init__('/<_ignored*>',
-                                        self.not_found,
+                                        self.handle_sentinel_condition,
                                         slash_mode=S_REWRITE)
 
-    def not_found(self, request):
-        return NotFound(is_breaking=False)
+    def handle_sentinel_condition(self, _route, _dispatch_state):
+        if _dispatch_state.exceptions:
+            return _dispatch_state.exceptions[-1][-1]
+        elif _dispatch_state.allowed_methods:
+            return MethodNotAllowed(_dispatch_state.allowed_methods)
+        else:
+            return NotFound(is_breaking=False)
 
     def bind(self, *a, **kw):
+        kw['inherit_slashes'] = False
         super(NullRoute, self).bind(*a, **kw)
 
 
