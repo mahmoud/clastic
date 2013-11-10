@@ -20,8 +20,8 @@ from .route import (BaseRoute,
                     RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
-from .errors import (NotFound,
-                     MethodNotAllowed,
+from .errors import (HTTPException,
+                     NotFound,
                      InternalServerError)
 
 
@@ -37,6 +37,10 @@ def cast_to_route_factory(in_arg):
         except TypeError:
             pass
     raise TypeError('Could not create routes from %r' % in_arg)
+
+
+def default_render_error(_error, **kwargs):
+    return _error
 
 
 class BaseApplication(object):
@@ -90,6 +94,7 @@ class BaseApplication(object):
         url_path = request.path
         method = request.method
 
+        ret = None
         dispatch_state = DispatchState()
 
         for route in self.routes + [self._null_route]:
@@ -107,27 +112,42 @@ class BaseApplication(object):
                     dest_url = request.host_url.rstrip('/') + normalized_path
                     return redirect(dest_url)
                 elif route.slash_mode == S_STRICT:
-                    return NotFound(is_breaking=False)
+                    dispatch_state.add_exception(NotFound(source_route=route))
+                    continue
             params['_dispatch_state'] = dispatch_state
             params.update(self.resources)
             try:
                 ep_res = route.execute(request, **params)
                 if not isinstance(ep_res, BaseResponse):
                     msg = 'expected Response, received %r' % type(ep_res)
-                    raise InternalServerError(msg)
-                return ep_res
+                    raise InternalServerError(msg, source_route=route)
+                ret = ep_res
+                break
             except Exception as e:
-                if not isinstance(e, BaseResponse):
+                if not isinstance(e, HTTPException):
                     if self.debug:
                         raise
                     exc_info = ExceptionInfo.from_current()
                     tmp_msg = repr(exc_info)
-                    e = InternalServerError(tmp_msg, traceback=exc_info)
-                dispatch_state.add_exception(route, e)
+                    e = InternalServerError(tmp_msg,
+                                            traceback=exc_info,
+                                            source_route=route)
+                elif not getattr(e, 'source_route', None):
+                    e.source_route = route
                 if getattr(e, 'is_breaking', True):
-                    return e
+                    ret = e
+                    break
                 else:
                     dispatch_state.add_exception(route, e)
+        if isinstance(ret, HTTPException):
+            params = dict(self.resources,
+                          _dispatch_state=dispatch_state,
+                          _error=ret)
+            try:
+                return ret.source_route.render_error(**params)
+            except:
+                return default_render_error(**params)
+        return ret
 
 
 class DispatchState(object):
@@ -135,8 +155,8 @@ class DispatchState(object):
         self.exceptions = []
         self.allowed_methods = set()
 
-    def add_exception(self, route, exception):
-        self.exceptions.append((route, exception))
+    def add_exception(self, exception):
+        self.exceptions.append(exception)
 
     def update_methods(self, methods):
         if methods:

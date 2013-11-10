@@ -351,11 +351,11 @@ class NullRoute(Route):
 
     def handle_sentinel_condition(self, _route, _dispatch_state):
         if _dispatch_state.exceptions:
-            return _dispatch_state.exceptions[-1][-1]
+            return _dispatch_state.exceptions[-1]
         elif _dispatch_state.allowed_methods:
             return MethodNotAllowed(_dispatch_state.allowed_methods)
         else:
-            return NotFound(is_breaking=False)
+            return NotFound()
 
     def bind(self, *a, **kw):
         kw['inherit_slashes'] = False
