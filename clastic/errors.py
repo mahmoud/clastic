@@ -71,20 +71,22 @@ class HTTPException(BaseResponse, Exception):
         self.code = kwargs.pop('code', self.code)
         self.error_type = kwargs.pop('error_type', None)
         self.is_breaking = kwargs.pop('is_breaking', True)
+        self.source_route = kwargs.pop('source_route', None)
 
         headers = kwargs.pop('headers', None)
         mimetype = kwargs.pop('mimetype', None)
         content_type = kwargs.pop('content_type', None)
-        super(HTTPException, self).__init__(response=self.detail,
+        super(HTTPException, self).__init__(response=self.to_text(),
                                             status=self.code,
                                             headers=headers,
                                             mimetype=mimetype,
                                             content_type=content_type)
 
-    def adapt(self, request):
+    def adapt(self, format_str):
         # in-place rewriting of content and headers to adapt to Accept
         # headers
-        pass
+        if format_str == 'json':
+            self.response = self.to_json()
 
     def transcribe(self, request):
         # create a new Response object with content and headers
@@ -100,6 +102,14 @@ class HTTPException(BaseResponse, Exception):
     def to_json(self, indent=2, sort_keys=True, skipkeys=True):
         return json.dumps(self.to_dict(), indent=indent, sort_keys=sort_keys,
                           ensure_ascii=False, skipkeys=skipkeys)
+
+    def to_text(self):
+        lines = ['%s: %s' % (self.code, self.message)]
+        if self.detail:
+            lines.extend(['', self.detail])
+        if self.error_type:
+            lines.extend(['', 'Error type: %s' % self.error_type])
+        return '\n'.join(lines)
 
     def __repr__(self):
         cn = self.__class__.__name__
