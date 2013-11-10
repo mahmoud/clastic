@@ -96,11 +96,13 @@ class BaseApplication(object):
 
         ret = None
         dispatch_state = DispatchState()
+        base_params = dict(self.resources, _dispatch_state=dispatch_state)
 
         for route in self.routes + [self._null_route]:
-            params = route.match_path(url_path)
-            if params is None:
+            url_params = route.match_path(url_path)
+            if url_params is None:
                 continue
+            params = dict(base_params, **url_params)
             method_allowed = route.match_method(method)
             if not method_allowed:
                 dispatch_state.update_methods(route.methods)
@@ -114,8 +116,6 @@ class BaseApplication(object):
                 elif route.slash_mode == S_STRICT:
                     dispatch_state.add_exception(NotFound(source_route=route))
                     continue
-            params['_dispatch_state'] = dispatch_state
-            params.update(self.resources)
             try:
                 ep_res = route.execute(request, **params)
                 if not isinstance(ep_res, BaseResponse):
@@ -138,7 +138,7 @@ class BaseApplication(object):
                     ret = e
                     break
                 else:
-                    dispatch_state.add_exception(route, e)
+                    dispatch_state.add_exception(e)
         if isinstance(ret, HTTPException):
             params = dict(self.resources,
                           _dispatch_state=dispatch_state,
