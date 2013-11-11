@@ -43,13 +43,6 @@ _FLOAT_PATTERN = r'[+-]?\ *(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _INT_PATTERN = r'[+-]?\ *[0-9]+'
 _STR_PATTERN = r'[^/]+'
 
-_CONVS = [('int', int, _INT_PATTERN),
-          ('float', float, _FLOAT_PATTERN),
-          ('str', unicode, _STR_PATTERN),
-          ('unicode', unicode, _STR_PATTERN)]
-
-TYPE_CONV_MAP = dict([(name, conv) for name, conv, patt in _CONVS])
-TYPE_PATT_MAP = dict([(name, patt) for name, conv, patt in _CONVS])
 _SEG_TMPL = '(?P<{name}>({sep}{pattern}){arity})'
 _PATH_SEG_TMPL = '(?P<%s>(/[^/]+)%s)'
 _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
@@ -57,6 +50,28 @@ _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  ':': False,
                  '+': True,
                  '*': True}
+
+TYPE_CONV_MAP = {}
+TYPE_PATT_MAP = {}
+DEFAULT_CONVS = [('int', int, _INT_PATTERN),
+                 ('float', float, _FLOAT_PATTERN),
+                 ('str', unicode, _STR_PATTERN),
+                 ('unicode', unicode, _STR_PATTERN)]
+
+
+def _register_converter(name, func, pattern):
+    """
+    This is here for completeness, but usage is discouraged. Anything
+    more complex than a basic/builtin type should be converted in a
+    Middleware or in the endpoint function.
+    """
+    global TYPE_CONV_MAP, TYPE_PATT_MAP
+    TYPE_CONV_MAP[name] = func
+    TYPE_PATT_MAP[name] = pattern
+
+
+for name, func, pattern in DEFAULT_CONVS:
+    _register_converter(name, func, pattern)
 
 
 def build_converter(converter, optional=False, multi=False):
