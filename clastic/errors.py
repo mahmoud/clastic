@@ -136,6 +136,16 @@ class HTTPException(BaseResponse, Exception):
                 lines.append('<p>Error type: {error_type}</p>')
         return '\n'.join(lines).format(**params)
 
+    def to_xml(self):
+        params = self.to_dict()
+        ret = ('<http_error>'
+               '<code>{code}</code>'
+               '<message>{message}</message>'
+               '<detail>{detail}</detail>'
+               '<error_type>{error_type}</error_type>'
+               '</http_error>').format(**params)
+        return ret
+
     def __repr__(self):
         cn = self.__class__.__name__
         return '%s(message=%r)' % (cn, getattr(self, 'message', ''))
