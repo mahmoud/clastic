@@ -42,6 +42,7 @@ Possible values to support templating:
 """
 import json
 
+from werkzeug.utils import get_content_type
 from werkzeug.wrappers import BaseResponse
 
 
@@ -63,7 +64,6 @@ MIME_SUPPORT_MAP = {'text/html': 'html',
                     'application/json': 'json',
                     'text/plain': 'text',
                     'application/xml': 'xml'}
-
 DEFAULT_MIME = 'text/plain'
 
 
@@ -92,12 +92,12 @@ class HTTPException(BaseResponse, Exception):
 
     def adapt(self, mimetype=None):
         try:
-            fmt_name = MIME_SUPPORT_MAP['text']
+            fmt_name = MIME_SUPPORT_MAP[mimetype]
         except KeyError:
             fmt_name, mimetype = 'text', 'text/plain'
         _method = getattr(self, 'to_' + fmt_name)
         self.data = _method()
-        self.mimetype = mimetype
+        self.headers['Content-Type'] = get_content_type(mimetype, self.charset)
 
     def transcribe(self, request):
         # create a new Response object with content and headers
@@ -121,6 +121,20 @@ class HTTPException(BaseResponse, Exception):
         if self.error_type:
             lines.extend(['', 'Error type: %s' % self.error_type])
         return '\n'.join(lines)
+
+    def to_html(self):
+        params = self.to_dict()
+        lines = ['<!doctype html><head><title>{code} {message}</title></head>',
+                 '<body><h1>{code} {message}</h1>']
+        if params['detail']:
+            lines.append('<p>{detail}</p>')
+        if params['error_type']:
+            if params['error_type'].startswith('http'):
+                lines.append('<p>Error type: '
+                             '<a href="{error_type}">{error_type}</a></p>')
+            else:
+                lines.append('<p>Error type: {error_type}</p>')
+        return '\n'.join(lines).format(**params)
 
     def __repr__(self):
         cn = self.__class__.__name__

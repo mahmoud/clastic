@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 from collections import Sequence
 from argparse import ArgumentParser
 
@@ -10,14 +9,13 @@ from werkzeug.wrappers import (Request,
                                Response,
                                BaseResponse)
 from .server import run_simple
-from .route import (BaseRoute,
-                    Route,
+from .route import (Route,
+                    BaseRoute,
                     NullRoute,
-                    normalize_path,
-                    S_REDIRECT,
-                    S_REWRITE,
                     S_STRICT,
-                    RESERVED_ARGS)
+                    S_REDIRECT,
+                    RESERVED_ARGS,
+                    normalize_path)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
 from .errors import (NotFound,
