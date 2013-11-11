@@ -20,8 +20,9 @@ from .route import (BaseRoute,
                     RESERVED_ARGS)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
-from .errors import (HTTPException,
-                     NotFound,
+from .errors import (NotFound,
+                     HTTPException,
+                     MIME_SUPPORT_MAP,
                      InternalServerError)
 
 
@@ -39,7 +40,9 @@ def cast_to_route_factory(in_arg):
     raise TypeError('Could not create routes from %r' % in_arg)
 
 
-def default_render_error(_error, **kwargs):
+def default_render_error(request, _error, **kwargs):
+    best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
+    _error.adapt(best_match)
     return _error
 
 
@@ -96,7 +99,9 @@ class BaseApplication(object):
 
         ret = None
         dispatch_state = DispatchState()
-        base_params = dict(self.resources, _dispatch_state=dispatch_state)
+        base_params = dict(self.resources,
+                           request=request,
+                           _dispatch_state=dispatch_state)
 
         for route in self.routes + [self._null_route]:
             url_params = route.match_path(url_path)
@@ -117,11 +122,10 @@ class BaseApplication(object):
                     dispatch_state.add_exception(NotFound(source_route=route))
                     continue
             try:
-                ep_res = route.execute(request, **params)
-                if not isinstance(ep_res, BaseResponse):
-                    msg = 'expected Response, received %r' % type(ep_res)
+                ret = route.execute(**params)
+                if not isinstance(ret, BaseResponse):
+                    msg = 'expected Response, received %r' % type(ret)
                     raise InternalServerError(msg, source_route=route)
-                ret = ep_res
                 break
             except Exception as e:
                 if not isinstance(e, HTTPException):
@@ -140,13 +144,11 @@ class BaseApplication(object):
                 else:
                     dispatch_state.add_exception(e)
         if isinstance(ret, HTTPException):
-            params = dict(self.resources,
-                          _dispatch_state=dispatch_state,
-                          _error=ret)
+            error_params = dict(params, _error=ret)
             try:
-                return ret.source_route.render_error(**params)
+                ret = ret.source_route.render_error(**error_params)
             except:
-                return default_render_error(**params)
+                ret = default_render_error(**error_params)
         return ret
 
 

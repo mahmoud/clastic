@@ -70,3 +70,6 @@ MetaApplication
 * 'strict' mode with more immutability enforcement (immutable dicts
   for resources, etc.) and certain types of linting (detect unset
   global variables)
+
+
+* handle Flaw issue in '''Application([('/one/two', lambda one, two: int(one) + int(two), default_response)]).serve()'''

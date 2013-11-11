@@ -59,6 +59,14 @@ def _module_init():
             pass
 
 
+MIME_SUPPORT_MAP = {'text/html': 'html',
+                    'application/json': 'json',
+                    'text/plain': 'text',
+                    'application/xml': 'xml'}
+
+DEFAULT_MIME = 'text/plain'
+
+
 class HTTPException(BaseResponse, Exception):
     code = None
     message = 'Error'
@@ -74,7 +82,7 @@ class HTTPException(BaseResponse, Exception):
         self.source_route = kwargs.pop('source_route', None)
 
         headers = kwargs.pop('headers', None)
-        mimetype = kwargs.pop('mimetype', None)
+        mimetype = kwargs.pop('mimetype', DEFAULT_MIME)
         content_type = kwargs.pop('content_type', None)
         super(HTTPException, self).__init__(response=self.to_text(),
                                             status=self.code,
@@ -82,11 +90,14 @@ class HTTPException(BaseResponse, Exception):
                                             mimetype=mimetype,
                                             content_type=content_type)
 
-    def adapt(self, format_str):
-        # in-place rewriting of content and headers to adapt to Accept
-        # headers
-        if format_str == 'json':
-            self.response = self.to_json()
+    def adapt(self, mimetype=None):
+        try:
+            fmt_name = MIME_SUPPORT_MAP['text']
+        except KeyError:
+            fmt_name, mimetype = 'text', 'text/plain'
+        _method = getattr(self, 'to_' + fmt_name)
+        self.data = _method()
+        self.mimetype = mimetype
 
     def transcribe(self, request):
         # create a new Response object with content and headers
