@@ -115,7 +115,7 @@ class HTTPException(BaseResponse, Exception):
                           ensure_ascii=False, skipkeys=skipkeys)
 
     def to_text(self):
-        lines = ['%s: %s' % (self.code, self.message)]
+        lines = ['%s - %s' % (self.code, self.message)]
         if self.detail:
             lines.extend(['', self.detail])
         if self.error_type:
@@ -124,8 +124,9 @@ class HTTPException(BaseResponse, Exception):
 
     def to_html(self):
         params = self.to_dict()
-        lines = ['<!doctype html><head><title>{code} {message}</title></head>',
-                 '<body><h1>{code} {message}</h1>']
+        lines = ['<!doctype html><html>',
+                 '<head><title>{code} - {message}</title></head>',
+                 '<body><h1>{message}</h1>']
         if params['detail']:
             lines.append('<p>{detail}</p>')
         if params['error_type']:
@@ -134,6 +135,7 @@ class HTTPException(BaseResponse, Exception):
                              '<a href="{error_type}">{error_type}</a></p>')
             else:
                 lines.append('<p>Error type: {error_type}</p>')
+        lines.append('</body></html>')
         return '\n'.join(lines).format(**params)
 
     def to_xml(self):
@@ -184,7 +186,7 @@ class Forbidden(BadRequest):
 
 class NotFound(BadRequest):
     code = 404
-    message = "Resource not found"
+    message = "Not found"
     detail = "The requested URL was not found on this server."
 
 
@@ -206,7 +208,7 @@ class NotAcceptable(BadRequest):
     message = "Available content not acceptable"
     detail = ("The endpoint cannot generate a response acceptable"
               " by your client (as specified by your client's"
-              " Accept header values.")
+              " Accept header values.)")
 
 
 class ProxyAuthenticationRequired(BadRequest):
