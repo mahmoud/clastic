@@ -127,23 +127,24 @@ class BaseApplication(object):
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
                     raise InternalServerError(msg, source_route=route)
-                break
-            except Exception as e:
-                if not isinstance(e, HTTPException):
+            except Exception as ret:
+                if not isinstance(ret, HTTPException):
                     if self.debug:
                         raise
                     exc_info = ExceptionInfo.from_current()
                     tmp_msg = repr(exc_info)
-                    e = InternalServerError(tmp_msg,
-                                            traceback=exc_info,
-                                            source_route=route)
-                elif not getattr(e, 'source_route', None):
-                    e.source_route = route
-                if getattr(e, 'is_breaking', True):
-                    ret = e
-                    break
-                else:
-                    dispatch_state.add_exception(e)
+                    ret = InternalServerError(tmp_msg,
+                                              traceback=exc_info,
+                                              source_route=route)
+            if not isinstance(ret, HTTPException):
+                break
+            if not getattr(ret, 'source_route', None):
+                ret.source_route = route
+            if getattr(ret, 'is_breaking', True):
+                break
+            else:
+                dispatch_state.add_exception(ret)
+
         if isinstance(ret, HTTPException):
             error_params = dict(params, _error=ret)
             try:
