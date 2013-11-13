@@ -169,12 +169,18 @@
     <tr><th>64-bit Python</th><td>{is_64bit}</td></tr>
     <tr><th>Thread count</th><td>{active_thread_count}</td></tr>
     {#gc}
-    <tr><th>Object count</th><td>{obj_count}</td></tr>
+      {#obj_count}
+      <tr><th>Object count</th><td>{obj_count}</td></tr>
+      {:else}
+      <tr><th>Object count</th><td>(unavailable)</td></tr>
+      {/obj_count}
     <tr><th><abbr title="Garbage collection">GC</abbr> enabled</th><td>{is_enabled}</td></tr>
     <tr><th><abbr title="Garbage collection">GC</abbr> thresholds</th><td>{thresholds}</td></tr>
     <tr><th><abbr title="Garbage collection">GC</abbr> generations</th><td>{counts}</td></tr>
-    <tr><th>Recursion limit</th><td>{recursion_limit}</td></tr>
+    {:else}
+    <tr><th>Object count</th><td>(failed to load <abbr title="Garbage collection">GC</abbr> info)</td></tr>
     {/gc}
+    <tr><th>Recursion limit</th><td>{recursion_limit}</td></tr>
   </table>
   {/env.pyvm}
 </div>

@@ -206,7 +206,6 @@ def get_rusage_dict(children=False):
 
 
 def get_pyvm_info():
-
     ret = {}
     ret['executable'] = sys.executable
     ret['is_64bit'] = IS_64BIT
@@ -215,7 +214,10 @@ def get_pyvm_info():
     except:
         ret['active_thread_count'] = None
     ret['recursion_limit'] = sys.getrecursionlimit()  # TODO: max_stack_depth?
-    ret['gc'] = get_gc_info()
+    try:
+        ret['gc'] = get_gc_info()
+    except:
+        pass
     return ret
 
 
@@ -224,8 +226,14 @@ def get_gc_info():
     ret = {}
     ret['is_enabled'] = gc.isenabled()
     ret['thresholds'] = gc.get_threshold()
-    ret['counts'] = gc.get_count()
-    ret['obj_count'] = len(gc.get_objects())
+    try:
+        ret['counts'] = gc.get_count()
+    except:
+        pass
+    try:
+        ret['obj_count'] = len(gc.get_objects())
+    except:
+        pass
     return ret
 
 
