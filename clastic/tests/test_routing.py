@@ -14,6 +14,7 @@ from clastic.route import (InvalidEndpoint,
                            InvalidPattern,
                            InvalidMethod)
 from clastic.route import S_STRICT, S_REWRITE, S_REDIRECT
+from clastic.errors import NotFound
 
 
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
@@ -54,6 +55,15 @@ def test_base_application_basics():
     client = Client(ba, BaseResponse)
     res = client.get('/')
     yield eq_, res.data, 'lolporte'
+
+
+def test_nonbreaking_exc():
+    app = Application([('/', lambda: NotFound(is_breaking=False)),
+                       ('/', lambda: 'so hot in here', render_basic)])
+    client = Client(app, BaseResponse)
+    resp = client.get('/')
+    yield eq_, resp.status_code, 200
+    yield eq_, resp.data, 'so hot in here'
 
 
 def api(api_path):
