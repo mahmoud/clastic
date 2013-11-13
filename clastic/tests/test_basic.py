@@ -6,8 +6,7 @@ from nose.tools import raises, eq_, ok_
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-#import clastic
-from clastic.application import BaseApplication as Application
+from clastic.application import Application
 
 from common import hello_world, DummyMiddleware, RequestProvidesName
 
