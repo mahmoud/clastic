@@ -15,7 +15,8 @@ from .route import (Route,
                     S_STRICT,
                     S_REDIRECT,
                     RESERVED_ARGS,
-                    normalize_path)
+                    normalize_path,
+                    check_render_error)
 from .tbutils import ExceptionInfo
 from .middleware import check_middlewares
 from .errors import (NotFound,
@@ -49,7 +50,7 @@ class BaseApplication(object):
     response_type = Response
 
     def __init__(self, routes=None, resources=None, render_factory=None,
-                 middlewares=None, **kwargs):
+                 middlewares=None, render_error=None, **kwargs):
         self.debug = kwargs.pop('debug', None)
         self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
         if kwargs:
@@ -62,6 +63,8 @@ class BaseApplication(object):
         self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
+        self.render_error = render_error or default_render_error
+        check_render_error(self.render_error, self.resources)
 
         routes = routes or []
         self.routes = []

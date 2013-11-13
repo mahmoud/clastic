@@ -242,6 +242,18 @@ def _noop_render(context):
     return context
 
 
+def check_render_error(render_error, resources):
+    re_avail_args = set(_REQUEST_BUILTINS) | set(resources)
+    re_avail_args.add('_error')
+
+    re_args = set(get_arg_names(render_error))
+    missing_args = sorted(re_args - re_avail_args)
+    if missing_args:
+        raise NameError('unresolved render_error() arguments: %r'
+                        % missing_args)
+    return True
+
+
 class Route(BaseRoute):
     def __init__(self, pattern, endpoint, render_arg=None,
                  render_error=None, **kwargs):
@@ -350,17 +362,13 @@ class Route(BaseRoute):
         _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
 
         if callable(render_error):
-            re_avail_args = set(REQUEST_BUILTINS + ('_error')) + resource_args
-            re_args = set(get_arg_names(render_error))
-            missing_args = sorted(re_avail_args - re_args)
-            if missing_args:
-                raise NameError('unresolved render_error() arguments: %r'
-                                % missing_args)
+            check_render_error(render_error, resources)
 
         self._resources.update(resources)
         self._middlewares = middlewares
         self._render_factory = render_factory
         self._render = _render
+        self._render_error = render_error
         self._execute = _execute
 
     def get_info(self):
