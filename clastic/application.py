@@ -115,7 +115,7 @@ class BaseApplication(object):
                 continue
             is_branch = route.pattern.endswith('/')
             normalized_path = normalize_path(url_path, is_branch)
-            if normalized_path != url_path:
+            if is_branch and normalized_path != url_path:
                 if route.slash_mode == S_REDIRECT:
                     dest_url = request.host_url.rstrip('/') + normalized_path
                     return redirect(dest_url)
