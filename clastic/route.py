@@ -350,7 +350,12 @@ class Route(BaseRoute):
         _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
 
         if callable(render_error):
-            pass
+            re_avail_args = set(REQUEST_BUILTINS + ('_error')) + resource_args
+            re_args = set(get_arg_names(render_error))
+            missing_args = sorted(re_avail_args - re_args)
+            if missing_args:
+                raise NameError('unresolved render_error() arguments: %r'
+                                % missing_args)
 
         self._resources.update(resources)
         self._middlewares = middlewares
