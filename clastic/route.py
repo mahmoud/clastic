@@ -190,6 +190,10 @@ class BaseRoute(object):
             if 'GET' in self.methods:
                 self.methods.add('HEAD')
 
+    @property
+    def is_branch(self):
+        return self.pattern.endswith('/')
+
     def match_path(self, path):
         ret = {}
         match = self.regex.match(path)

@@ -95,10 +95,8 @@ class BaseApplication(object):
         return response(environ, start_response)
 
     def dispatch(self, request):
-        url_path = request.path
-        method = request.method
-
         ret = None
+        url_path, method = request.path, request.method
         dispatch_state = DispatchState()
         base_params = dict(self.resources,
                            request=request,
@@ -113,15 +111,16 @@ class BaseApplication(object):
             if not method_allowed:
                 dispatch_state.update_methods(route.methods)
                 continue
-            is_branch = route.pattern.endswith('/')
-            normalized_path = normalize_path(url_path, is_branch)
-            if is_branch and normalized_path != url_path:
-                if route.slash_mode == S_REDIRECT:
-                    dest_url = request.host_url.rstrip('/') + normalized_path
-                    return redirect(dest_url)
-                elif route.slash_mode == S_STRICT:
-                    dispatch_state.add_exception(NotFound(source_route=route))
-                    continue
+            if route.is_branch:
+                norm_path = normalize_path(url_path, route.is_branch)
+                if norm_path != url_path:
+                    if route.slash_mode == S_REDIRECT:
+                        dest_url = request.host_url.rstrip('/') + norm_path
+                        return redirect(dest_url)
+                    elif route.slash_mode == S_STRICT:
+                        nf_exc = NotFound(source_route=route)
+                        dispatch_state.add_exception(nf_exc)
+                        continue
             try:
                 ret = route.execute(**params)
                 if not isinstance(ret, BaseResponse):
