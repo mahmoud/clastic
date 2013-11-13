@@ -49,12 +49,12 @@ def get_entry(link_map, alias, request, local_static_app=None):
     try:
         entry = link_map.get_entry(alias)
     except KeyError:
-        return Forbidden()  # 404? 402?
+        return Forbidden(is_breaking=False)  # 404? 402?
     target_location = entry.target
     if target_location.startswith('/'):
         if local_static_app:
             return local_static_app.get_file_response(target, request)
-        return Forbidden()
+        return Forbidden(is_breaking=False)
     else:
         return redirect('http://' + target_location, code=301)
 
