@@ -41,7 +41,7 @@
           {?.type}
           {.type}('{.arg}')
           {:else}
-          {.arg}
+            {#.arg}{.}{:else}None{/arg}
           {/type}
           {/render}
         </td>

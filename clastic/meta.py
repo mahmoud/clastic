@@ -268,14 +268,17 @@ def get_endpoint_info(route):
 
 def get_render_info(route):
     ret = {'type': None}
-    if route._render_factory and not callable(route.render_arg):
+    render_arg = route.render_arg
+    if route._render_factory and not callable(render_arg):
         ret['type'] = route._render_factory.__class__.__name__
-        ret['arg'] = route.render_arg
+        ret['arg'] = render_arg
+    elif render_arg is None:
+        ret['arg'] = None
     else:
         try:
-            ret['arg'] = route.render_arg.func_name
+            ret['arg'] = render_arg.func_name
         except AttributeError:
-            ret['arg'] = route.render_arg.__class__.__name__
+            ret['arg'] = render_arg.__class__.__name__
     return ret
 
 
