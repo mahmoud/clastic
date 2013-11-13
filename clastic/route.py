@@ -9,7 +9,9 @@ from .middleware import (check_middlewares,
                          make_middleware_chain)
 
 
-RESERVED_ARGS = ('request', 'next', 'context', '_application', '_route', '_dispatch_state')
+_REQUEST_BUILTINS = ('request', '_application', '_route', '_dispatch_state')
+_RENDER_BUILTINS = _REQUEST_BUILTINS + ('context',)
+RESERVED_ARGS = _RENDER_BUILTINS + ('next',)
 
 
 class InvalidEndpoint(ValueError):
@@ -236,9 +238,13 @@ class BaseRoute(object):
         return tmpl % args
 
 
+def _noop_render(context):
+    return context
+
+
 class Route(BaseRoute):
     def __init__(self, pattern, endpoint, render_arg=None,
-                 error_render=None, **kwargs):
+                 render_error=None, **kwargs):
         super(Route, self).__init__(pattern, endpoint, **kwargs)
         self._middlewares = list(kwargs.pop('middlewares', []))
         self._resources = dict(kwargs.pop('resources', []))
@@ -251,6 +257,7 @@ class Route(BaseRoute):
         self.render_arg = render_arg
         if callable(render_arg):
             self._render = render_arg
+        self._render_error = render_error
 
     def execute(self, request, **kwargs):
         injectables = {'_route': self,
@@ -259,6 +266,17 @@ class Route(BaseRoute):
         injectables.update(self._resources)
         injectables.update(kwargs)
         return inject(self._execute, injectables)
+
+    def render_error(self, request, _error, **kwargs):
+        if not callable(self._render_error):
+            raise TypeError('render_error not set or not callable')
+        injectables = {'_route': self,
+                       '_error': _error,
+                       'request': request,
+                       '_application': self._bound_apps[-1]}
+        injectables.update(self._resources)
+        injectables.update(kwargs)
+        return inject(self._render_error, injectables)
 
     def empty(self):
         # more like a copy
@@ -273,38 +291,46 @@ class Route(BaseRoute):
     def bind(self, app, **kwargs):
         rebind_render = kwargs.pop('rebind_render', True)
         inherit_slashes = kwargs.pop('inherit_slashes', True)
+        rebind_render_error = kwargs.pop('rebind_render_error', True)
         if kwargs:
             raise TypeError('unexpected keyword args: %r' % kwargs.keys())
 
-        resources = app.__dict__.get('resources', {})
-        middlewares = app.__dict__.get('middlewares', [])
+        resources = getattr(app, 'resources', {})
+        middlewares = getattr(app, 'middlewares', [])
         if rebind_render:
-            render_factory = app.__dict__.get('render_factory')
+            render_factory = getattr(app, 'render_factory', None)
         else:
             render_factory = self._render_factory
+        if rebind_render_error:
+            render_error = getattr(app, 'render_error', None)
+        else:
+            render_error = self._render_error
 
-        merged_resources = dict(self._resources)
-        merged_resources.update(resources)
         merged_mw = merge_middlewares(self._middlewares, middlewares)
+
+        params = {'app': app,
+                  'resources': dict(self._resources, **resources),
+                  'middlewares': merged_mw,
+                  'render_factory': render_factory,
+                  'render_error': render_error}
+
+        # test a copy of the route before making any changes, for extra safety
         r_copy = self.empty()
         if inherit_slashes:
             r_copy.slash_mode = app.slash_mode
-        try:
-            r_copy._bind_args(app, merged_resources, merged_mw, render_factory)
-            r_copy._compile()
-        except:
-            raise
+        r_copy._bind_args(**params)
+        r_copy._compile()
+        # if none of the above raised an exception, we're golden
+
         if inherit_slashes:
             self.slash_mode = app.slash_mode
-        self._bind_args(app,
-                        merged_resources,
-                        merged_mw,
-                        render_factory)
+        self._bind_args(**params)
         self._compile()
         self._bound_apps += (app,)
         return self
 
-    def _bind_args(self, url_map, resources, middlewares, render_factory):
+    def _bind_args(self, app, resources, middlewares,
+                   render_factory, render_error):
         url_args = set(self.converters.keys())
         builtin_args = set(RESERVED_ARGS)
         resource_args = set(resources.keys())
@@ -320,8 +346,11 @@ class Route(BaseRoute):
         elif callable(self._render):
             _render = self._render
         else:
-            _render = lambda context: context
+            _render = _noop_render
         _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
+
+        if callable(render_error):
+            pass
 
         self._resources.update(resources)
         self._middlewares = middlewares
