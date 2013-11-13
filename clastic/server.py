@@ -122,6 +122,7 @@ def restart_with_reloader():
             from clastic import flaw
             tb_str = ''.join(stderr_buff)
             err_app = flaw.create_app(tb_str, to_mon)
+            # TODO: these values should be passed through
             err_server = make_server('localhost', 5000, err_app)
             thread.start_new_thread(err_server.serve_forever, ())
             try:
@@ -162,14 +163,16 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
 
 def run_simple(hostname, port, application, use_reloader=False,
                use_debugger=False, use_evalex=True, extra_files=None,
-               reloader_interval=1, passthrough_errors=False,
+               reloader_interval=1, passthrough_errors=False, processes=None,
                ssl_context=None):
     if use_debugger:
         from werkzeug.debug import DebuggedApplication
         application = DebuggedApplication(application, use_evalex)
 
+    processes = max(processes, 1)
+
     def serve_forever():
-        make_server(hostname, port, application,
+        make_server(hostname, port, application, processes=processes,
                     passthrough_errors=passthrough_errors,
                     ssl_context=ssl_context).serve_forever()
 

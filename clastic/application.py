@@ -201,7 +201,9 @@ class Application(BaseApplication):
               use_debugger=True,
               use_static=True,
               static_prefix='static',
-              static_path=None, **kw):
+              static_path=None,
+              processes=None,
+              **kw):
         parser = create_dev_server_parser()
         args, _ = parser.parse_known_args()
 
@@ -211,7 +213,7 @@ class Application(BaseApplication):
         kw['use_debugger'] = args.use_debugger and use_debugger
         if kw['use_debugger']:
             self.debug = True
-        # kw['processes'] = args.processes or processes
+        kw['processes'] = args.processes or processes
         use_meta = args.use_meta and use_meta
         use_lint = args.use_lint and use_lint
         use_static = args.use_static and use_static
