@@ -75,7 +75,9 @@ class StaticApplication(Application):
 
     def get_file_response(self, path, request):
         try:
-            full_path = find_file(self.search_paths, '/'.join(path))
+            if not isinstance(path, basestring):
+                path = '/'.join(path)
+            full_path = find_file(self.search_paths, path)
             if full_path is None:
                 raise NotFound()
             file_obj = open(full_path, 'rb')
