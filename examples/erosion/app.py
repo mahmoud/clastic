@@ -15,6 +15,7 @@ except ImportError:
 
 from clastic import Application, POST, redirect
 from clastic.errors import Forbidden
+from clastic.static import StaticApplication
 from clastic.render import AshesRenderFactory
 from clastic.middleware import SimpleContextProcessor
 from clastic.middleware.form import PostDataMiddleware
@@ -32,16 +33,18 @@ def home():
 
 def add_entry(link_map, target_url, target_file, alias,
               expiry_time, max_count):
-    target = target_url or target_file
-    if not target:
+    if target_file:
+        target = '/' + target_file.strip('/')
+    elif target_url:
+        target = target_url
+    else:
         raise ValueError('expected one of target url or file')
     entry = link_map.add_entry(target, alias, expiry_time, max_count)
+    link_map.save()
     return {'entry': entry}
 
 
 def add_entry_render(context, link_map):
-    print 'yay', context
-    link_map.save()
     return redirect('/', code=303)
 
 
@@ -50,19 +53,25 @@ def get_entry(link_map, alias, request, local_static_app=None):
         entry = link_map.get_entry(alias)
     except KeyError:
         return Forbidden(is_breaking=False)  # 404? 402?
-    target_location = entry.target
-    if target_location.startswith('/'):
+    target = entry.target
+    if target.startswith('/'):
         if local_static_app:
-            return local_static_app.get_file_response(target, request)
+            rel_path = target[1:]
+            return local_static_app.get_file_response(rel_path, request)
         return Forbidden(is_breaking=False)
     else:
-        return redirect('http://' + target_location, code=301)
+        return redirect('http://' + target, code=301)
 
 
 def create_app(link_list_path=None, local_root=None):
     link_list_path = link_list_path or _DEFAULT_LINKS_FILE_PATH
     link_map = LinkMap(link_list_path)
-    resources = {'link_map': link_map, 'local_root': local_root}
+    local_static_app = None
+    if local_root:
+        local_static_app = StaticApplication(local_root)
+    resources = {'link_map': link_map,
+                 'local_root': local_root,
+                 'local_static_app': local_static_app}
 
     pdm = PostDataMiddleware({'target_url': unicode,
                               'target_file': unicode,
@@ -85,7 +94,7 @@ def create_app(link_list_path=None, local_root=None):
 
 def main():
     app = create_app(local_root='/tmp/')
-    app.serve()
+    app.serve(processes=12)
 
 
 if __name__ == '__main__':
