@@ -30,10 +30,10 @@ def hello_world_ctx(name=None):
             'greeting': greeting}
 
 
-def session_hello_world(session, name=None):
+def cookie_hello_world(cookie, name=None):
     if name is None:
-        name = session.get('name') or 'world'
-    session['name'] = name
+        name = cookie.get('name') or 'world'
+    cookie['name'] = name
     return 'Hello, %s!' % name
 
 

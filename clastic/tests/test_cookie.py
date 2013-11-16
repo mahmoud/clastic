@@ -7,17 +7,17 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, render_basic
-from clastic.middleware.session import CookieSessionMiddleware
+from clastic.middleware.cookie import SignedCookieMiddleware
 
-from common import session_hello_world
+from common import cookie_hello_world
 
 
-def test_cookie_session():
-    cookie_session = CookieSessionMiddleware()
-    _ = repr(cookie_session)  # coverage, lol
-    app = Application([('/', session_hello_world, render_basic),
-                       ('/<name>/', session_hello_world, render_basic)],
-                      middlewares=[cookie_session])
+def test_cookie_mw():
+    cookie_mw = SignedCookieMiddleware()
+    _ = repr(cookie_mw)  # coverage, lol
+    app = Application([('/', cookie_hello_world, render_basic),
+                       ('/<name>/', cookie_hello_world, render_basic)],
+                      middlewares=[cookie_mw])
     ic = Client(app, BaseResponse)
     resp = ic.get('/')
     yield eq_, resp.status_code, 200
@@ -32,11 +32,11 @@ def test_cookie_session():
     yield eq_, resp.data, 'Hello, world!'
 
 
-def test_session_expire():
-    cookie_session = CookieSessionMiddleware(expiry=0)
-    app = Application([('/', session_hello_world, render_basic),
-                       ('/<name>/', session_hello_world, render_basic)],
-                      middlewares=[cookie_session])
+def test_cookie_expire():
+    cookie_mw = SignedCookieMiddleware(expiry=0)
+    app = Application([('/', cookie_hello_world, render_basic),
+                       ('/<name>/', cookie_hello_world, render_basic)],
+                      middlewares=[cookie_mw])
     ic = Client(app, BaseResponse)
     resp = ic.get('/')
     yield eq_, resp.status_code, 200

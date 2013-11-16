@@ -57,7 +57,8 @@ def check_middleware(mw):
         if not func:
             continue
         if not callable(func):
-            raise TypeError('expected %s.%s to be a function' % (mw.name, f_name))
+            raise TypeError('expected %s.%s to be a function'
+                            % (mw.name, f_name))
         if not get_arg_names(func)[0] == 'next':
             raise TypeError("middleware functions must take argument"
                             " 'next' as the first parameter (%s.%s)"
