@@ -19,7 +19,7 @@ from clastic.static import StaticApplication
 from clastic.render import AshesRenderFactory
 from clastic.middleware import SimpleContextProcessor
 from clastic.middleware.form import PostDataMiddleware
-from clastic.middleware.session import CookieSessionMiddleware
+from clastic.middleware.cookie import SignedCookieMiddleware
 
 # TODO: yell if static hosting is the same location as the application assets
 
@@ -36,6 +36,8 @@ def add_entry(link_map, target_url, target_file, alias,
     if target_file:
         target = '/' + target_file.strip('/')
     elif target_url:
+        if '://' not in target_url[:10]:
+            target_url = 'http://' + target_url
         target = target_url
     else:
         raise ValueError('expected one of target url or file')
@@ -60,7 +62,7 @@ def get_entry(link_map, alias, request, local_static_app=None):
             return local_static_app.get_file_response(rel_path, request)
         return Forbidden(is_breaking=False)
     else:
-        return redirect('http://' + target, code=301)
+        return redirect(target, code=301)
 
 
 def create_app(link_list_path=None, local_root=None):
@@ -84,11 +86,11 @@ def create_app(link_list_path=None, local_root=None):
     routes = [('/', home, 'home.html'),
               submit_route,
               ('/<alias>', get_entry)]
-    csm = CookieSessionMiddleware()
+    scm = SignedCookieMiddleware()
     scp = SimpleContextProcessor('local_root')
 
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    app = Application(routes, resources, arf, [csm, scp])
+    app = Application(routes, resources, arf, [scm, scp])
     return app
 
 
