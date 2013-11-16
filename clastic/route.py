@@ -261,9 +261,10 @@ def check_render_error(render_error, resources):
 class Route(BaseRoute):
     def __init__(self, pattern, endpoint, render_arg=None,
                  render_error=None, **kwargs):
-        super(Route, self).__init__(pattern, endpoint, **kwargs)
         self._middlewares = list(kwargs.pop('middlewares', []))
         self._resources = dict(kwargs.pop('resources', []))
+        super(Route, self).__init__(pattern, endpoint, **kwargs)
+
         self._bound_apps = []
         self.endpoint_args = get_arg_names(endpoint)
 
