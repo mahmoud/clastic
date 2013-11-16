@@ -1,13 +1,13 @@
 body {
-  background: #FDFDFD; 
-  margin: 1em 0; 
-  padding: 0; 
+  background: #FDFDFD;
+  margin: 1em 0;
+  padding: 0;
 }
 
 body {
-  font-family: 'Helvetica Neue', Arial, sans-serif; 
-  font-weight: 300; 
-  font-size: 1em; 
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 300;
+  font-size: 1em;
   line-height: 1.5em;
 }
 
@@ -21,8 +21,8 @@ label, .date-expiry-l {
   float: left;
 }
 
-a { 
-  color: #d62728; 
+a {
+  color: #d62728;
   text-decoration: none;
 }
 
@@ -30,40 +30,40 @@ a:hover {
   text-decoration: underline;
 }
 
-h1, h2 { 
-  color: #1f77b4; 
+h1, h2 {
+  color: #1f77b4;
   margin: 0;
   padding: 0.5em 0;
 }
 
 h2 {
-  font-weight: normal; 
-  font-size: 1.5em; 
+  font-weight: normal;
+  font-size: 1.5em;
   padding: 0.5em;
 }
 
 .content {
   width: 40em;
-  margin: 2em auto; 
+  margin: 2em auto;
 }
 
-.box { 
-  background: white; 
+.box {
+  background: white;
   padding: 0;
   border-radius: 5px;
   box-shadow: 1px 2px 1px #ccc;
   border: 1px solid #9E9E9E;
 }
 
-.box h2 { 
+.box h2 {
   background: #eee;
   border-bottom: 3px solid #2ca02c;
 }
 
-.tagline { 
+.tagline {
   color: #7f7f7f;
   font-style: italic;
-  margin: 0 0 2em 1em; 
+  margin: 0 0 2em 1em;
 }
 
 .or {
@@ -78,12 +78,17 @@ h2 {
 
 .new {
   margin-left: 1em;
-  padding-top: 1em;
+  padding: 1em 0;
   width: 100%;
+
 }
 
 .date-expiry {
   float: none !important;
+}
+
+#max-count {
+  text-align: right;
 }
 
 .note {
@@ -98,11 +103,11 @@ h2 {
   margin: 0;
 }
 
-.link div { 
+.link div {
   overflow: auto;
   font-size: 0.8em;
   white-space: pre;
-  padding: 4px 10px; 
-  margin: 5px 0; 
-  background: #d62728; 
+  padding: 4px 10px;
+  margin: 5px 0;
+  background: #d62728;
 }

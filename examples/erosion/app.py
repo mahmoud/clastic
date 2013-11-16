@@ -27,8 +27,12 @@ from link_map import LinkMap
 _DEFAULT_LINKS_FILE_PATH = os.path.join(_CUR_PATH, 'links.txt')
 
 
-def home():
-    return {}
+def home(cookie):
+    new_entry_target = cookie.get('new_entry_target')
+    new_entry_alias = cookie.get('new_entry_alias')
+    print new_entry_target, new_entry_alias
+    return {'new_entry_alias': new_entry_alias,
+            'new_entry_target': new_entry_target}
 
 
 def add_entry(link_map, target_url, target_file, alias,
@@ -43,10 +47,14 @@ def add_entry(link_map, target_url, target_file, alias,
         raise ValueError('expected one of target url or file')
     entry = link_map.add_entry(target, alias, expiry_time, max_count)
     link_map.save()
-    return {'entry': entry}
+    return {'new_entry': entry}
 
 
-def add_entry_render(context, link_map):
+def add_entry_render(context, cookie, link_map):
+    new_entry = context.get('new_entry')
+    if new_entry:
+        cookie['new_entry_target'] = new_entry.target
+        cookie['new_entry_alias'] = new_entry.alias
     return redirect('/', code=303)
 
 
@@ -65,29 +73,35 @@ def get_entry(link_map, alias, request, local_static_app=None):
         return redirect(target, code=301)
 
 
-def create_app(link_list_path=None, local_root=None):
+def create_app(link_list_path=None, local_root=None, host_url=None,
+               secret_key=None):
     link_list_path = link_list_path or _DEFAULT_LINKS_FILE_PATH
     link_map = LinkMap(link_list_path)
     local_static_app = None
     if local_root:
         local_static_app = StaticApplication(local_root)
+    host_url = (host_url or 'localhost:5000').rstrip('/') + '/'
+    full_host_url = 'http://' + host_url
     resources = {'link_map': link_map,
                  'local_root': local_root,
-                 'local_static_app': local_static_app}
+                 'local_static_app': local_static_app,
+                 'host_url': host_url,
+                 'full_host_url': full_host_url}
 
     pdm = PostDataMiddleware({'target_url': unicode,
                               'target_file': unicode,
                               'alias': unicode,
                               'max_count': int,
                               'expiry_time': unicode})
-    submit_route = POST('/submit', add_entry, add_entry_render)
-    submit_route._middlewares.append(pdm)
+    submit_route = POST('/submit', add_entry, add_entry_render,
+                        middlewares=[pdm])
 
     routes = [('/', home, 'home.html'),
               submit_route,
               ('/<alias>', get_entry)]
-    scm = SignedCookieMiddleware()
-    scp = SimpleContextProcessor('local_root')
+    scm = SignedCookieMiddleware(secret_key=secret_key
+                                 )
+    scp = SimpleContextProcessor('local_root', 'full_host_url')
 
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
     app = Application(routes, resources, arf, [scm, scp])
@@ -95,8 +109,11 @@ def create_app(link_list_path=None, local_root=None):
 
 
 def main():
-    app = create_app(local_root='/tmp/')
-    app.serve(processes=12)
+    secret_key = 'configurationmanagementisimportant'
+    secret_key += os.getenv('EROSION_KEY') or 'really'
+    app = create_app(local_root='/tmp/', secret_key=secret_key)
+    app.serve()
+    #app.serve(processes=12)
 
 
 if __name__ == '__main__':

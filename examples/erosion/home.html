@@ -64,8 +64,8 @@
 
           <p>
             <label for='alias'>Shortened as:</label>
-            <span class='input-prefix'>http://localhost:5000/</span>
-            <input type='text' name='alias'>
+            <span class='input-prefix'>{full_host_url}</span>
+            <input type='text' id='alias' name='alias'>
             <span class='note'>(optional)</span>
           </p>
 
@@ -96,6 +96,12 @@
     <div class='content'>
 
       <h2>Manage URLs</h2>
+
+      {#new_entry_alias}
+      <div>
+        Successfully created <a href="{full_host_url}{.}">{full_host_url}{.}</a>.
+      </div>
+      {/new_entry_alias}
 
       <ul>
         <li>
