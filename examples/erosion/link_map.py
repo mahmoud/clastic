@@ -99,8 +99,20 @@ class LinkMap(object):
             last_id = 41660
         return last_id + 1
 
-    def get_entry(self, alias):
-        return self.link_map[alias]
+    def get_entry(self, alias, enforce=True):
+        ret = self.link_map[alias]
+        if enforce:
+            if ret.max_count <= ret.count or ret.expiry_time < time.time():
+                raise ValueError()
+        return ret
+
+    def use_entry(self, alias):
+        try:
+            ret = self.get_entry(alias)
+        except:
+            return None
+        ret.count += 1
+        return ret
 
     def save(self):
         # TODO: high-water mark appending

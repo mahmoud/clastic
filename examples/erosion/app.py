@@ -21,18 +21,23 @@ from clastic.middleware import SimpleContextProcessor
 from clastic.middleware.form import PostDataMiddleware
 from clastic.middleware.cookie import SignedCookieMiddleware
 
-# TODO: yell if static hosting is the same location as the application assets
 
 from link_map import LinkMap
 _DEFAULT_LINKS_FILE_PATH = os.path.join(_CUR_PATH, 'links.txt')
 
 
-def home(cookie):
-    new_entry_target = cookie.get('new_entry_target')
-    new_entry_alias = cookie.get('new_entry_alias')
-    print new_entry_target, new_entry_alias
+def home(link_map, cookie):
+    new_entry_alias = cookie.pop('new_entry_alias', None)
+    aliases = cookie.get('aliases', [])
+    entries, expired = [], []
+    for a in aliases:
+        try:
+            entries.append(link_map.get_entry(a).to_dict())
+        except:
+            expired.append(a)
     return {'new_entry_alias': new_entry_alias,
-            'new_entry_target': new_entry_target}
+            'entries': entries,
+            'expired': expired}
 
 
 def add_entry(link_map, target_url, target_file, alias,
@@ -53,23 +58,26 @@ def add_entry(link_map, target_url, target_file, alias,
 def add_entry_render(context, cookie, link_map):
     new_entry = context.get('new_entry')
     if new_entry:
-        cookie['new_entry_target'] = new_entry.target
         cookie['new_entry_alias'] = new_entry.alias
+        cookie.setdefault('aliases', []).insert(0, new_entry.alias)
     return redirect('/', code=303)
 
 
-def get_entry(link_map, alias, request, local_static_app=None):
-    try:
-        entry = link_map.get_entry(alias)
-    except KeyError:
+def use_entry(link_map, alias, request, local_static_app=None):
+    entry = link_map.use_entry(alias)
+    if not entry:
         return Forbidden(is_breaking=False)  # 404? 402?
     target = entry.target
     if target.startswith('/'):
         if local_static_app:
             rel_path = target[1:]
+            link_map.save()
             return local_static_app.get_file_response(rel_path, request)
-        return Forbidden(is_breaking=False)
+        else:
+            m = 'This Erosion instance is not configured to host local files.'
+            return Forbidden(m, is_breaking=False)
     else:
+        link_map.save()
         return redirect(target, code=301)
 
 
@@ -98,9 +106,8 @@ def create_app(link_list_path=None, local_root=None, host_url=None,
 
     routes = [('/', home, 'home.html'),
               submit_route,
-              ('/<alias>', get_entry)]
-    scm = SignedCookieMiddleware(secret_key=secret_key
-                                 )
+              ('/<alias>', use_entry)]
+    scm = SignedCookieMiddleware(secret_key=secret_key)
     scp = SimpleContextProcessor('local_root', 'full_host_url')
 
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
@@ -112,8 +119,7 @@ def main():
     secret_key = 'configurationmanagementisimportant'
     secret_key += os.getenv('EROSION_KEY') or 'really'
     app = create_app(local_root='/tmp/', secret_key=secret_key)
-    app.serve()
-    #app.serve(processes=12)
+    app.serve(processes=12)
 
 
 if __name__ == '__main__':

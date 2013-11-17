@@ -42,8 +42,14 @@
 
     <h1>Erosion</h1>
     <p class='tagline'>Exogenic linkrot for limited sharing.</p>
-    <div class='box'>
 
+    {#new_entry_alias}
+    <div>
+      Successfully created <a href="{full_host_url}{.}">{full_host_url}{.}</a>.
+    </div>
+    {/new_entry_alias}
+
+    <div class='box'>
       <h2>Create a URL</h2>
       <div class='new'>
         <form method="POST" action="/submit">
@@ -96,21 +102,25 @@
     <div class='content'>
 
       <h2>Manage URLs</h2>
-
-      {#new_entry_alias}
-      <div>
-        Successfully created <a href="{full_host_url}{.}">{full_host_url}{.}</a>.
-      </div>
-      {/new_entry_alias}
-
+      {?entries}
       <ul>
+        {#entries}
         <li>
-          <a href='#'>http://localhost:5000/flcl</a> &gt;&gt; <a href='#' class='note'>http://flcl.info</a> : Used 0 of 1 times : <a href='#'>Expire</a>
+          <a href="{full_host_url}{.alias}">{full_host_url}{.alias}</a> &raquo; {.target} -
+          <span class="click-count"> ({.count} / {.max_count} clicks)</span>
         </li>
-        <li>
-          <span class='dead'>http://localhost:5000/linkrot</span> Expired
-        </li>
+        {/entries}
       </ul>
+      {/entries}
+      {?expired}
+      <ul>
+        {#expired}
+        <li>
+          <a class="dead" href="{full_host_url}{.alias}">{full_host_url}{.alias}</a>
+        </li>
+        {/expired}
+      </ul>
+      {/expired}
       <footer class='content note'>An example application for <a href='https://github.com/mahmoud/clastic'>clastic</a>.</footer>
     </div>
   </div>
