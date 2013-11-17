@@ -164,7 +164,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
 def run_simple(hostname, port, application, use_reloader=False,
                use_debugger=False, use_evalex=True, extra_files=None,
                reloader_interval=1, passthrough_errors=False, processes=None,
-               ssl_context=None):
+               threaded=False, ssl_context=None):
     if use_debugger:
         from werkzeug.debug import DebuggedApplication
         application = DebuggedApplication(application, use_evalex)
@@ -173,7 +173,7 @@ def run_simple(hostname, port, application, use_reloader=False,
 
     def serve_forever():
         make_server(hostname, port, application, processes=processes,
-                    passthrough_errors=passthrough_errors,
+                    threaded=threaded, passthrough_errors=passthrough_errors,
                     ssl_context=ssl_context).serve_forever()
 
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':

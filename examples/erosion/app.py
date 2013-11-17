@@ -119,7 +119,7 @@ def main():
     secret_key = 'configurationmanagementisimportant'
     secret_key += os.getenv('EROSION_KEY') or 'really'
     app = create_app(local_root='/tmp/', secret_key=secret_key)
-    app.serve(processes=12)
+    app.serve(threaded=True)
 
 
 if __name__ == '__main__':
