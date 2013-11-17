@@ -778,7 +778,7 @@ Easier WSGI integration
 
 For as many claims as its docs make to being standard Python, Django
 makes `WSGI slightly choreful`_, which is a shame, because `WSGI`_ has
-blessed Python has so many neat servers that work with any WSGI
+blessed Python with so many neat servers that work with any WSGI
 application.
 
 Clastic applications are themselves WSGI applications. There's no need
