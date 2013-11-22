@@ -33,7 +33,7 @@ def test_cookie_mw():
 
 
 def test_cookie_expire():
-    cookie_mw = SignedCookieMiddleware(expiry=0)
+    cookie_mw = SignedCookieMiddleware(data_expiry=0)
     app = Application([('/', cookie_hello_world, render_basic),
                        ('/<name>/', cookie_hello_world, render_basic)],
                       middlewares=[cookie_mw])
