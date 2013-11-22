@@ -46,7 +46,7 @@ setup(name='clastic',
                 'clastic.tests'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=['Werkzeug==0.8.3', 'argparse>=1.2.1'],
+      install_requires=['Werkzeug==0.9.4', 'argparse>=1.2.1'],
       license=__license__,
       platforms='any',
       classifiers=[
