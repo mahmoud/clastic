@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import os
+import json
 import time
+
 from werkzeug.contrib.securecookie import SecureCookie
 
 from .core import Middleware
-import json
 
 
 DEFAULT_EXPIRY = 3600  # 1 hour, but it's refreshed on every request
@@ -25,7 +26,8 @@ class SignedCookieMiddleware(Middleware):
                  path='/',
                  secure=False,
                  http_only=False,
-                 expiry=DEFAULT_EXPIRY):
+                 data_expiry=DEFAULT_EXPIRY,
+                 cookie_expiry=None):
         self.arg_name = arg_name
         self.provides = (arg_name,)
         if cookie_name is None:
@@ -36,17 +38,19 @@ class SignedCookieMiddleware(Middleware):
         self.path = path  # limit cookie to given path
         self.secure = secure  # only transmit on HTTPS
         self.http_only = http_only  # disallow client-side (js) access
-        self.expiry = expiry
+        self.data_expiry = data_expiry
+        self.cookie_expiry = cookie_expiry
 
     def request(self, next, request):
         cookie = JSONCookie.load_cookie(request,
                                         key=self.cookie_name,
                                         secret_key=self.secret_key)
         response = next(**{self.arg_name: cookie})
-        if self.expiry is not NEVER:
+        if self.data_expiry is not NEVER:
             # this sort of reaches into the guts of contrib.securecookie
             # so as not to involve datetime.datetime.
-            cookie['_expires'] = time.time() + self.expiry
+            cookie['_expires'] = time.time() + self.data_expiry
+        # TODO: how to incorporate data vs cookie expiry
         cookie.save_cookie(response,
                            key=self.cookie_name,
                            domain=self.domain,
