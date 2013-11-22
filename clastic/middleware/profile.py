@@ -40,5 +40,6 @@ class SimpleProfileMiddleware(Middleware):
                 raise
         buff = StringIO()
         stats = Stats(profiler, stream=buff).sort_stats(sort_param).print_stats()
-        ret.response = [_prof_tmpl % buff.getvalue()]
+        body = _prof_tmpl % buff.getvalue()
+        ret.set_data(body)
         return ret
