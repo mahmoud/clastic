@@ -40,14 +40,18 @@ class ClasticJSONEncoder(JSONEncoder):
 
 
 class JSONRender(object):
-    def __init__(self, dev_mode=False, encoding='utf-8'):
+    def __init__(self, streaming=False, dev_mode=False, encoding='utf-8'):
+        self.streaming = streaming
         self.dev_mode = dev_mode
         self.encoding = encoding
         self.json_encoder = ClasticJSONEncoder(encoding=encoding,
                                                dev_mode=self.dev_mode)
 
     def __call__(self, context):
-        json_iter = self.json_encoder.iterencode(context)
+        if self.streaming:
+            json_iter = self.json_encoder.iterencode(context)
+        else:
+            json_iter = [self.json_encoder.encode(context)]
         resp = Response(json_iter, mimetype="application/json")
         resp.mimetype_params['charset'] = self.encoding
         return resp
