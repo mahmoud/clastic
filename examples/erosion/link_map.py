@@ -6,6 +6,7 @@ import time
 import codecs
 import string
 from collections import OrderedDict
+from threading import RLock
 
 
 _CHAR_LIST = string.ascii_lowercase + string.digits
@@ -21,6 +22,27 @@ _EXPIRY_MAP = {'mins': 5 * 60,
                'month': 30 * 24 * 60 * 60,
                'never': _NEVER}
 _DEFAULT_EXPIRY = 'hour'
+
+
+class _synchronized(object):
+
+    def __init__(self, lock, func):
+        self.lock = lock
+        self.func = func
+
+    def __call__(self, *args, **kwargs):
+        with self.lock:
+            return self.func(*args, **kwargs)
+
+    def __get__(self, obj, type_=None):
+        if obj is None:
+            return self
+        return self.__class__(self.lock,
+                              self.func.__get__(obj, type))
+
+
+def synchronized(lock):
+    return lambda func: _synchronized(lock, func)
 
 
 def id_decode(text):
@@ -62,6 +84,7 @@ class LinkEntry(object):
         return ('{cn}({link_id}, {target!r}, {alias!r}, '
                 '{expiry_time}, {max_count}, {count})'.format(cn=cn, **kwargs))
 
+LOCK = RLock()
 
 class LinkMap(object):
     def __init__(self, path):
@@ -69,6 +92,7 @@ class LinkMap(object):
         entries = _load_entries_from_file(path)
         self.link_map = OrderedDict([(e.alias, e) for e in entries])
 
+    @synchronized(LOCK)
     def add_entry(self, target, alias=None, expiry=None, max_count=None):
         next_id = self._get_next_id()
         if not alias:
@@ -99,6 +123,7 @@ class LinkMap(object):
             last_id = 41660
         return last_id + 1
 
+    @synchronized(LOCK)
     def get_entry(self, alias, enforce=True):
         ret = self.link_map[alias]
         if enforce:
@@ -106,6 +131,7 @@ class LinkMap(object):
                 raise ValueError()
         return ret
 
+    @synchronized(LOCK)
     def use_entry(self, alias):
         try:
             ret = self.get_entry(alias)
@@ -114,6 +140,7 @@ class LinkMap(object):
         ret.count += 1
         return ret
 
+    @synchronized(LOCK)
     def save(self):
         # TODO: high-water mark appending
         with open(self.path, 'w') as f:
@@ -124,6 +151,7 @@ class LinkMap(object):
         # sync
 
 
+@synchronized(LOCK)
 def _load_entries_from_file(path):
     ret = []
     if not os.path.exists(path):
