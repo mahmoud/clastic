@@ -25,7 +25,7 @@
       <tbody>
       {#routes}
       <tr>
-        <td><span title="{url_regex_pattern}">{url_pattern}</span></td>
+        <td><span title="{url_regex_pattern}"><a href="{url_pattern}">{url_pattern}</a></span></td>
         <td>
           {#endpoint}
           <span title="{.module_name}">{.name}</span>
