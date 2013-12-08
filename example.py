@@ -5,9 +5,10 @@ from __future__ import unicode_literals
 from clastic import (Application,
                      default_response,
                      GetParamMiddleware)
-from clastic.middleware.session import CookieSessionMiddleware
-from clastic.tests.common import session_hello_world
+
 from clastic.middleware import SimpleContextProcessor
+from clastic.middleware.cookie import SignedCookieMiddleware
+from clastic.tests.common import cookie_hello_world
 
 from pprint import pformat
 import time
@@ -25,9 +26,9 @@ def create_decked_out_app():
     resources = {'start_time': time.time(),
                  'module_list': sys.modules.keys()}
     middlewares = [GetParamMiddleware(['name', 'date', 'session_id']),
-                   CookieSessionMiddleware(),
+                   SignedCookieMiddleware(),
                    SimpleContextProcessor('name')]
-    routes = [('/', session_hello_world, default_response),
+    routes = [('/', cookie_hello_world, default_response),
               ('/modules/', see_modules, default_response)]
     return Application(routes, resources, None, middlewares)
 
