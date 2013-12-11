@@ -209,6 +209,8 @@ def get_pyvm_info():
     ret = {}
     ret['executable'] = sys.executable
     ret['is_64bit'] = IS_64BIT
+    ret['version'] = sys.version
+    ret['version_info'] = list(sys.version_info)
     try:
         ret['active_thread_count'] = len(sys._current_frames())
     except:

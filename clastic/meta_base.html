@@ -105,7 +105,7 @@
     <tr><th><abbr title="Central Processing Unit">CPU</abbr> count</th><td>{cpu_count}</td></tr>
     {/cpu_count}
     <tr><th>Load averages</th><td>{load_avgs}</td></tr>
-    <tr><th><code>uname</code></th><td>{uname}</td></tr>
+    <tr><th><code>uname</code></th><td>{#uname}{.}<br/>{/uname}</td></tr>
     <tr><th>Platform</th><td>{platform}</td></tr>
   </table>
   {/env.host}
@@ -166,7 +166,7 @@
   <h3>Python runtime</h3>
   <table>
     <tr><th>Executable</th><td>{executable}</td></tr>
-    <tr><th>64-bit Python</th><td>{is_64bit}</td></tr>
+    <tr><th>Version</th><td>{version} {?is_64bit}(64-bit){/is_64bit}</td></tr>
     <tr><th>Thread count</th><td>{active_thread_count}</td></tr>
     {#gc}
       {#obj_count}
