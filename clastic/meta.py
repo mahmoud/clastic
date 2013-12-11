@@ -13,6 +13,12 @@ try:
 except:
     CPU_COUNT = None
 
+HAVE_READLINE = True
+try:
+    import readline
+except:
+    HAVE_READLINE = False
+
 try:
     import resource
 except ImportError:
@@ -211,6 +217,8 @@ def get_pyvm_info():
     ret['is_64bit'] = IS_64BIT
     ret['version'] = sys.version
     ret['version_info'] = list(sys.version_info)
+    ret['have_ucs4'] = getattr(sys, 'maxunicode', 0) > 65536
+    ret['have_readline'] = HAVE_READLINE
     try:
         ret['active_thread_count'] = len(sys._current_frames())
     except:
@@ -220,6 +228,7 @@ def get_pyvm_info():
         ret['gc'] = get_gc_info()
     except:
         pass
+    ret['check_interval'] = sys.getcheckinterval()
     return ret
 
 
