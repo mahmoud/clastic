@@ -40,6 +40,7 @@ Possible values to support templating:
 * Allowed methods
 
 """
+import cgi
 import json
 
 from werkzeug.utils import get_content_type
@@ -105,10 +106,15 @@ class HTTPException(BaseResponse, Exception):
         pass
 
     def to_dict(self):
-        return {'detail': self.detail,
-                'message': self.message,
-                'code': self.code,
-                'error_type': self.error_type}
+        ret = {'detail': self.detail,
+               'message': self.message,
+               'code': self.code,
+               'error_type': self.error_type}
+        return ret
+
+    def to_escaped_dict(self):
+        return dict([(k, cgi.escape(v, True))
+                     for k, v in self.to_dict().items()])
 
     def to_json(self, indent=2, sort_keys=True, skipkeys=True):
         return json.dumps(self.to_dict(), indent=indent, sort_keys=sort_keys,
@@ -123,7 +129,7 @@ class HTTPException(BaseResponse, Exception):
         return '\n'.join(lines)
 
     def to_html(self):
-        params = self.to_dict()
+        params = self.to_escaped_dict()
         lines = ['<!doctype html><html>',
                  '<head><title>{code} - {message}</title></head>',
                  '<body><h1>{message}</h1>']
@@ -139,7 +145,7 @@ class HTTPException(BaseResponse, Exception):
         return '\n'.join(lines).format(**params)
 
     def to_xml(self):
-        params = self.to_dict()
+        params = self.to_escaped_dict()
         ret = ('<http_error>'
                '<code>{code}</code>'
                '<message>{message}</message>'
@@ -330,6 +336,10 @@ class RequestHeaderFieldsTooLarge(BadRequest):
     detail = ("One or more HTTP header fields exceeded the maximum"
               " allowed size.")
 
+#
+# 500s below
+#
+
 
 class InternalServerError(HTTPException):
     code = 500
@@ -340,6 +350,11 @@ class InternalServerError(HTTPException):
     def __init__(self, detail=None, **kwargs):
         self.traceback = kwargs.pop('traceback', None)
         super(InternalServerError, self).__init__(detail, **kwargs)
+
+    def to_dict(self):
+        ret = super(InternalServerError, self).to_dict()
+        ret['traceback'] = self.traceback
+        return ret
 
 
 class NotImplemented(InternalServerError):
