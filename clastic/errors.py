@@ -42,12 +42,14 @@ Possible values to support templating:
 """
 import cgi
 import json
+import exceptions
 
 from werkzeug.utils import get_content_type
 from werkzeug.wrappers import BaseResponse
 
 
 ERROR_CODE_MAP = None
+STDLIB_EXC_URL = 'http://docs.python.org/2/library/exceptions.html#exceptions.'
 
 
 def _module_init():
@@ -113,8 +115,13 @@ class HTTPException(BaseResponse, Exception):
         return ret
 
     def to_escaped_dict(self):
-        return dict([(k, cgi.escape(v, True))
-                     for k, v in self.to_dict().items()])
+        ret = {}
+        for k, v in self.to_dict().items():
+            try:
+                ret[k] = cgi.escape(v, True)
+            except Exception as e:
+                ret[k] = cgi.escape(repr(v), True)
+        return ret
 
     def to_json(self, indent=2, sort_keys=True, skipkeys=True):
         return json.dumps(self.to_dict(), indent=indent, sort_keys=sort_keys,
@@ -350,6 +357,13 @@ class InternalServerError(HTTPException):
     def __init__(self, detail=None, **kwargs):
         self.traceback = kwargs.pop('traceback', None)
         super(InternalServerError, self).__init__(detail, **kwargs)
+        if self.error_type is None:
+            try:
+                exc_type_name = self.traceback.exc_type
+                exc_type = getattr(exceptions, exc_type_name)
+                self.error_type = STDLIB_EXC_URL + exc_type.__class__.__name__
+            except:
+                pass
 
     def to_dict(self):
         ret = super(InternalServerError, self).to_dict()
