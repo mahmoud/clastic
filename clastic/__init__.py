@@ -20,6 +20,7 @@ from middleware import Middleware, GetParamMiddleware
 from render import render_json, render_json_dev, render_basic
 from meta import MetaApplication
 from static import StaticApplication
+from errors import HTTPException
 
 from werkzeug.wrappers import Request, Response
 from werkzeug.utils import redirect, append_slash_redirect
