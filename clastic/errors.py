@@ -145,7 +145,8 @@ class HTTPException(BaseResponse, Exception):
         if params['error_type']:
             if params['error_type'].startswith('http'):
                 lines.append('<p>Error type: '
-                             '<a href="{error_type}">{error_type}</a></p>')
+                             '<a target="_blank" href="{error_type}">'
+                             '{error_type}</a></p>')
             else:
                 lines.append('<p>Error type: {error_type}</p>')
         lines.append('</body></html>')
@@ -361,7 +362,7 @@ class InternalServerError(HTTPException):
             try:
                 exc_type_name = self.traceback.exc_type
                 exc_type = getattr(exceptions, exc_type_name)
-                self.error_type = STDLIB_EXC_URL + exc_type.__class__.__name__
+                self.error_type = STDLIB_EXC_URL + exc_type.__name__
             except:
                 pass
 
