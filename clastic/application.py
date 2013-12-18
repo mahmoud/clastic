@@ -103,10 +103,11 @@ class BaseApplication(object):
                            _dispatch_state=dispatch_state)
 
         for route in self.routes + [self._null_route]:
-            url_params = route.match_path(url_path)
-            if url_params is None:
+            path_params = route.match_path(url_path)
+            if path_params is None:
                 continue
-            params = dict(base_params, **url_params)
+            request.path_params = path_params
+            params = dict(base_params, **path_params)
             method_allowed = route.match_method(method)
             if not method_allowed:
                 dispatch_state.update_methods(route.methods)
