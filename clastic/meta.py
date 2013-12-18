@@ -28,6 +28,7 @@ from application import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec
 from render import render_json, AshesRenderFactory
 from static import StaticApplication
+from utils import bytes2human
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
@@ -192,9 +193,12 @@ def get_rusage_dict(children=False):
     if children:
         who = resource.RUSAGE_CHILDREN
     rr = resource.getrusage(who)
+    max_rss_human = bytes2human(rr.ru_maxrss * 1024, ndigits=1)
+
     ret = {'cpu_times': {'user_time': rr.ru_utime,
                          'sys_time': rr.ru_stime},
-           'memory': {'max_rss': rr.ru_maxrss,
+           'memory': {'max_rss_human': max_rss_human,
+                      'max_rss': rr.ru_maxrss,
                       'shared_rss': rr.ru_ixrss,    # *
                       'unshared_rss': rr.ru_idrss,  # *
                       'stack_rss': rr.ru_isrss},    # *
