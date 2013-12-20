@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+sys.path.append('..')  # to work out of the box in the source tree
+
 import time
 from pprint import pformat
 
