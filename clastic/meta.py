@@ -30,6 +30,10 @@ from render import render_json, AshesRenderFactory
 from static import StaticApplication
 from utils import bytes2human
 
+from middleware.url import ScriptRootMiddleware
+from middleware.context import SimpleContextProcessor
+
+
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
@@ -43,7 +47,9 @@ def create_app(page_title='Clastic'):
     resources = {'_meta_start_time': datetime.datetime.utcnow(),
                  'page_title': page_title}
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    app = Application(routes, resources, arf)
+    middlewares = [ScriptRootMiddleware(),
+                   SimpleContextProcessor('script_root')]
+    app = Application(routes, resources, arf, middlewares)
     return app
 
 

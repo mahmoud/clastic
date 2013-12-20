@@ -5,6 +5,15 @@ from collections import Mapping, Iterable
 from .core import Middleware
 
 
+class ScriptRootMiddleware(Middleware):
+    def __init__(self, provided_name='script_root'):
+        self.provided_name = provided_name
+        self.provides = (provided_name,)
+
+    def request(self, next, request):
+        return next(**{self.provided_name: request.script_root})
+
+
 class GetParamMiddleware(Middleware):
     def __init__(self, params=None):
         # TODO: defaults?
