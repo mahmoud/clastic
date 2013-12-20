@@ -22,6 +22,11 @@ def see_modules(start_time, module_list, name=None):
             % (name, start_time, pformat(sorted(module_list))))
 
 
+def debug(request, _application, _route):
+    import pdb;pdb.set_trace()
+    return {}
+
+
 def create_decked_out_app():
     resources = {'start_time': time.time(),
                  'module_list': sys.modules.keys()}
@@ -29,6 +34,7 @@ def create_decked_out_app():
                    SignedCookieMiddleware(),
                    SimpleContextProcessor('name')]
     routes = [('/', cookie_hello_world, default_response),
+              ('/debug', debug, default_response),
               ('/modules/', see_modules, default_response)]
     return Application(routes, resources, None, middlewares)
 
