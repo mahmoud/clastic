@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from clastic import (Application,
-                     default_response,
-                     GetParamMiddleware)
-
-from clastic.middleware import SimpleContextProcessor
-from clastic.middleware.cookie import SignedCookieMiddleware
-from clastic.tests.common import cookie_hello_world
-
-from pprint import pformat
-import time
 import sys
+import time
+from pprint import pformat
+
+from clastic import Application, render_basic
+from clastic.middleware import GetParamMiddleware, SimpleContextProcessor
+from clastic.middleware.cookie import SignedCookieMiddleware
+
+
+def cookie_hello_world(cookie, name=None):
+    if name is None:
+        name = cookie.get('name') or 'world'
+    cookie['name'] = name
+    return 'Hello, %s!' % name
 
 
 def see_modules(start_time, module_list, name=None):
@@ -33,10 +34,10 @@ def create_decked_out_app():
     middlewares = [GetParamMiddleware(['name', 'date', 'session_id']),
                    SignedCookieMiddleware(),
                    SimpleContextProcessor('name')]
-    routes = [('/', cookie_hello_world, default_response),
-              ('/debug', debug, default_response),
-              ('/modules/', see_modules, default_response)]
-    return Application(routes, resources, None, middlewares)
+    routes = [('/', cookie_hello_world, render_basic),
+              ('/debug', debug, render_basic),
+              ('/modules/', see_modules, render_basic)]
+    return Application(routes, resources, middlewares=middlewares)
 
 
 if __name__ == '__main__':
