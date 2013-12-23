@@ -10,7 +10,7 @@ class ClasticJSONEncoder(JSONEncoder):
     def __init__(self, **kw):
         self.dev_mode = kw.pop('dev_mode', False)
         kw.setdefault('skipkeys', True)
-        kw.setdefault('ensure_ascii', False)
+        kw.setdefault('ensure_ascii', True)
         kw.setdefault('indent', 2)
         kw.setdefault('sort_keys', True)
         super(ClasticJSONEncoder, self).__init__(**kw)
