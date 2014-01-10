@@ -11,6 +11,12 @@
     :license: BSD, see LICENSE for more details.
 
 """
+try:
+    import werkzeug
+except ImportError:
+    missing_dep_msg = 'clastic depends on werkzeug. check that you have the right virtualenv activated or run `easy_install werkzeug` or `pip install werkzeug`.'
+    raise ImportError(missing_dep_msg)
+
 import server
 
 from application import Application, SubApplication
