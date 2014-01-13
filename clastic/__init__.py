@@ -28,7 +28,7 @@ from meta import MetaApplication
 from static import StaticApplication
 from errors import HTTPException
 
-from werkzeug.wrappers import Request, Response
+from werkzeug.wrappers import BaseRequest, Request, BaseResponse, Response
 from werkzeug.utils import redirect, append_slash_redirect
 
 
