@@ -27,7 +27,7 @@ class InvalidMethod(ValueError):
 
 
 HTTP_METHODS = set(['GET', 'HEAD', 'POST', 'PUT', 'DELETE',
-                    'OPTIONS', 'TRACE', 'CONNECT'])
+                    'OPTIONS', 'TRACE', 'CONNECT', 'PATCH'])
 
 
 S_REDIRECT = 'redirect'  # return a 30x to the right URL
@@ -479,6 +479,11 @@ class CONNECT(Route):
         kw['methods'] = ('CONNECT',)
         super(CONNECT, self).__init__(*a, **kw)
 
+
+class PATCH(Route):
+    def __init__(self, *a, **kw):
+        kw['methods'] = ('PATCH',)
+        super(PATCH, self).__init__(*a, **kw)
 
 """
 Routing notes
