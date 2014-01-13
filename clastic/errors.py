@@ -354,6 +354,15 @@ class RequestHeaderFieldsTooLarge(BadRequest):
     detail = ("One or more HTTP header fields exceeded the maximum"
               " allowed size.")
 
+
+class UnavailableForLegalReasons(BadRequest):
+    "Sit back and enjoy the Bradbury"
+    code = 451
+    message = "Unavailable for legal reasons"
+    detail = ("The resource requested is unavailable for legal reasons."
+              " For instance, this could be due to intellectual property"
+              " claims related to copyright or trademark, or government"
+              "-mandated censorship.")
 #
 # 500s below
 #
