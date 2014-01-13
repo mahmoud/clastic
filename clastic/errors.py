@@ -211,9 +211,10 @@ class MethodNotAllowed(BadRequest):
 
     def __init__(self, allowed_methods=None, *args, **kwargs):
         self.allowed_methods = set(allowed_methods or [])
-        if allowed_methods:
+        if self.allowed_methods:
+            method_list = sorted(self.allowed_methods)
             self.detail = '%s Allowed methods: %r' % (self.detail,
-                                                      allowed_methods)
+                                                      method_list)
         super(MethodNotAllowed, self).__init__(*args, **kwargs)
 
 
@@ -321,6 +322,15 @@ class UnprocessableEntity(BadRequest):
     message = "Unprocessable entity"
     detail = ("The client sent a well-formed request, but the endpoint"
               " encountered other semantic errors within the data.")
+
+
+class UpgradeRequired(BadRequest):
+    "Used to upgrade connections (to TLS, etc., RFC2817). Also WebSockets."
+    code = 426
+    message = "Upgrade required"
+    detail = ("The server requires an upgraded connection to continue."
+              " This is expected behavior when establishing certain"
+              " secure connections or WebSockets.")
 
 
 class PreconditionRequired(BadRequest):
