@@ -126,7 +126,7 @@ class BaseApplication(object):
                 ret = route.execute(**params)
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
-                    raise InternalServerError(msg, source_route=route)
+                    raise TypeError(msg)
             except Exception as ret:
                 if not isinstance(ret, HTTPException):
                     if self.debug:
