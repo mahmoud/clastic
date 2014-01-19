@@ -90,6 +90,13 @@ class BasicRender(object):
                 pass
         return Response(unicode(context), mimetype="text/plain")
 
+    @classmethod
+    def factory(cls, *a, **kw):
+        def basic_render_factory(render_arg):
+            # behavior doesn't change depending on render_arg
+            return cls(*a, **kw)
+        return basic_render_factory
+
 
 render_json = JSONRender()
 render_json_dev = JSONRender(dev_mode=True)
