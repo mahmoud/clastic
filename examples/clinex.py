@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from clastic.cline import Cline, run
+import sys
+sys.path.append('..')
 
-app = Cline()
+from clastic.cline import route, run
 
 
-@app.route('/hi')
+@route('/hi')
 def hello():
     return 'Hello World!'
 
 
 if __name__ == '__main__':
-    run(app, host='0.0.0.0', port=8080)
+    run()  # alt: run(address='0.0.0.0', port=5000)
+
+    # run the script with `python this_script.py`
+    # now visit http://localhost:5000/_meta in your browser to see a site map
+    # resources like images/css can be served out of a directory called static
+    # run the script with --help for more info

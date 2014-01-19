@@ -11,38 +11,59 @@ spawned bottle, which spawned klein (Twisted's bottle-alike), from
 which Cline partially derives its name.
 """
 
-from route import HTTP_METHODS
+from route import Route
 from application import Application
+from render import render_basic
 
 
-def run(app=None,
-        server='wsgiref',
-        host='0.0.0.0',
-        port=5000,
-        interval=1,
-        reloader=False,
-        quiet=False,
-        plugins=None,
-        debug=None,
-        **kwargs):
-    "TODO: prioritize clastic or bottle API similarity?"
+def run(app=None, address='0.0.0.0', port=5000, **kwargs):
     if app is None:
         app = DEFAULT_APP
-    # TODO
+    app.serve(address=address, port=port, **kwargs)
 
 
 class Cline(Application):
-    def __init__(self, catchall=True, autojson=True):
-        pass
+    def __init__(self, **kw):
+        self.autorender = kw.pop('autorender', True)
+        super(Cline, self).__init__(**kw)
 
-    def route(self, path, method='GET', callback=None, **kwargs):
-        pass
+    def route(self, path, methods=None, endpoint_func=None, **kwargs):
+        def create_and_add_route(endpoint_func):
+            _route = Route(path, endpoint_func, **kwargs)
+            self.add(_route)
+            return endpoint_func
 
-    for http_method in HTTP_METHODS:
-        pass
+        if self.autorender and not kwargs.get('render'):
+            kwargs['render_arg'] = render_basic
+        kwargs['methods'] = methods
+
+        if endpoint_func is None:
+            return create_and_add_route
+        elif not callable(endpoint_func):
+            fn = self.__class__.__name__ + '.route()'
+            raise TypeError('%s expects a callable endpoint function' % fn)
+        else:
+            return create_and_add_route(endpoint_func)
+
+    def get(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('GET',), endpoint, **kwargs)
+
+    def post(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('POST',), endpoint, **kwargs)
+
+    def put(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('PUT',), endpoint, **kwargs)
+
+    def delete(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('DELETE',), endpoint, **kwargs)
+
+    def patch(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('PATCH',), endpoint, **kwargs)
+
+    def head(self, path, endpoint=None, **kwargs):
+        return self.route(path, ('HEAD',), endpoint, **kwargs)
 
 
 DEFAULT_APP = Cline()
-route = DEFAULT_APP.route
-for http_method in HTTP_METHODS:
-    pass  # TODO: convenience decorators
+for attr in ('route', 'get', 'post', 'put', 'delete', 'patch', 'head'):
+    globals()[attr] = getattr(DEFAULT_APP, attr)
