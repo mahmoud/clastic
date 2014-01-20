@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 
 from clastic.cline import route, run
 
 
-@route('/hi')
-def hello():
-    return 'Hello World!'
+@route('/')
+@route('/<name>')
+def hello_world(name='world'):
+    return '<html><body><h1>Hello %s!</h1></body></html>' % name
 
 
 if __name__ == '__main__':
