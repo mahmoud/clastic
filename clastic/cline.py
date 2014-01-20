@@ -16,16 +16,13 @@ from application import Application
 from render import render_basic
 
 
-def run(app=None, address='0.0.0.0', port=5000, **kwargs):
-    if app is None:
-        app = DEFAULT_APP
-    app.serve(address=address, port=port, **kwargs)
-
-
 class Cline(Application):
     def __init__(self, **kw):
         self.autorender = kw.pop('autorender', True)
         super(Cline, self).__init__(**kw)
+
+    def run(self, address='0.0.0.0', port=5000,  **kw):
+        return self.serve(address=address, port=port, **kw)
 
     def route(self, path, methods=None, endpoint_func=None, **kwargs):
         def create_and_add_route(endpoint_func):
@@ -65,5 +62,5 @@ class Cline(Application):
 
 
 DEFAULT_APP = Cline()
-for attr in ('route', 'get', 'post', 'put', 'delete', 'patch', 'head'):
+for attr in ('run', 'route', 'get', 'post', 'put', 'delete', 'patch', 'head'):
     globals()[attr] = getattr(DEFAULT_APP, attr)
