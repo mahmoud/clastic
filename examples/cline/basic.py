@@ -3,13 +3,27 @@
 import sys
 sys.path.append('../..')
 
-from clastic.cline import route, run
+from clastic.cline import route, run, get
 
 
 @route('/')
-@route('/<name>')
+@route('/hello/<name>')
 def hello_world(name='world'):
     return '<html><body><h1>Hello %s!</h1></body></html>' % name
+
+
+@route('/query_params')
+def show_query_params(request):
+    """to access the request, just add it to your parameters
+    same goes for any other clastic builtins, like _route or _application
+    """
+    return dict(request.args)
+
+
+@get('/path/<a_list*>')
+def get_len_tuple(a_list):
+    "note that clastic turns paths into lists"
+    return (len(a_list), a_list)
 
 
 if __name__ == '__main__':
