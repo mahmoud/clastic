@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Cline Todo Application</title>
+  </head>
+  <body>
+    <h2>Todo List</h2>
+    {?tasks}
+    <ul>
+      {#tasks}
+      <li>
+        <input type="checkbox" {@eq key=status value=1}checked{/eq}/>
+        {task}
+      </li>
+      {/tasks}
+    </ul>
+    {/tasks}
+  </body>
+</html>

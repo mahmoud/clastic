@@ -7,7 +7,11 @@ import os
 import sqlite3
 
 from clastic.cline import Cline
+from clastic.render import AshesRenderFactory
 from clastic.middleware import GetParamMiddleware
+
+
+_CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TodoList(object):
@@ -53,6 +57,7 @@ class TodoList(object):
 
     @staticmethod
     def _dict_factory(cursor, row):
+        # from the sqlite3 module docs, enables prettier JSON
         d = {}
         for idx, col in enumerate(cursor.description):
             d[col[0]] = row[idx]
@@ -71,13 +76,16 @@ the_list.create_db(reset=True)
 _add_test_data(the_list)
 
 app = Cline(resources={'todo_list': the_list})
+ashes_rf = AshesRenderFactory(_CUR_DIR)
 done_mw = GetParamMiddleware({'done': int})
 
 
-@app.route('/', middlewares=[done_mw])
-@app.route('/todo', middlewares=[done_mw])
+@app.route('/', render_arg=ashes_rf('todo.html'), middlewares=[done_mw])
+@app.route('/api/todo', middlewares=[done_mw])
 def get_tasks(todo_list, done=None):
-    return todo_list.get_tasks(done=done)
+    tasks = todo_list.get_tasks(done=done)
+    print tasks
+    return {'tasks': tasks}
 
 
 if __name__ == '__main__':
