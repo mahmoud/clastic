@@ -259,7 +259,7 @@ def check_render_error(render_error, resources):
 
 
 class Route(BaseRoute):
-    def __init__(self, pattern, endpoint, render_arg=None,
+    def __init__(self, pattern, endpoint, render=None,
                  render_error=None, **kwargs):
         self._middlewares = list(kwargs.pop('middlewares', []))
         self._resources = dict(kwargs.pop('resources', []))
@@ -271,9 +271,9 @@ class Route(BaseRoute):
         self._execute = None
         self._render = None
         self._render_factory = None
-        self.render_arg = render_arg
-        if callable(render_arg):
-            self._render = render_arg
+        self.render_arg = render
+        if callable(self.render_arg):
+            self._render = self.render_arg
         self._render_error = render_error
 
     def execute(self, request, **kwargs):

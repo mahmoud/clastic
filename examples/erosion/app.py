@@ -109,9 +109,10 @@ def create_app(link_list_path=None, local_root=None, host_url=None,
               ('/<alias>', use_entry)]
     scm = SignedCookieMiddleware(secret_key=secret_key)
     scp = SimpleContextProcessor('local_root', 'full_host_url')
+    middlewares = [scm, scp]
 
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    app = Application(routes, resources, arf, [scm, scp])
+    app = Application(routes, resources, middlewares, arf)
     return app
 
 

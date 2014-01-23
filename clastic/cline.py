@@ -30,8 +30,8 @@ class Cline(Application):
             self.add(_route)
             return endpoint_func
 
-        if self.autorender and not kwargs.get('render_arg'):
-            kwargs['render_arg'] = render_basic
+        if self.autorender and not kwargs.get('render'):
+            kwargs['render'] = render_basic
         kwargs['methods'] = methods
 
         if endpoint_func is None:

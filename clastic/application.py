@@ -49,8 +49,8 @@ class BaseApplication(object):
     request_type = Request
     response_type = Response
 
-    def __init__(self, routes=None, resources=None, render_factory=None,
-                 middlewares=None, render_error=None, **kwargs):
+    def __init__(self, routes=None, resources=None, middlewares=None,
+                 render_factory=None, render_error=None, **kwargs):
         self.debug = kwargs.pop('debug', None)
         self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
         if kwargs:
@@ -60,7 +60,13 @@ class BaseApplication(object):
         if resource_conflicts:
             raise NameError('resource names conflict with builtins: %r' %
                             resource_conflicts)
-        self.middlewares = list(middlewares or [])
+        try:
+            self.middlewares = list(middlewares or [])
+        except TypeError:
+            # TODO: tmp message until 0.6 or so
+            raise TypeError('expected an iterable for middlewares (as of '
+                            'Clastic 0.4, middlewares and render_factory '
+                            'swapped argument position)')
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
         self.render_error = render_error or default_render_error

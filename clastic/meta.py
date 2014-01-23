@@ -49,7 +49,7 @@ def create_app(page_title='Clastic'):
     arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
     middlewares = [ScriptRootMiddleware(),
                    SimpleContextProcessor('script_root')]
-    app = Application(routes, resources, arf, middlewares)
+    app = Application(routes, resources, middlewares, arf)
     return app
 
 
