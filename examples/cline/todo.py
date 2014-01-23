@@ -80,7 +80,7 @@ ashes_rf = AshesRenderFactory(_CUR_DIR)
 done_mw = GetParamMiddleware({'done': int})
 
 
-@app.route('/', render_arg=ashes_rf('todo.html'), middlewares=[done_mw])
+@app.route('/', render=ashes_rf('todo.html'), middlewares=[done_mw])
 @app.route('/api/todo', middlewares=[done_mw])
 def get_tasks(todo_list, done=None):
     tasks = todo_list.get_tasks(done=done)
