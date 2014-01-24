@@ -281,7 +281,7 @@ And with any luck this simple Application should be even simpler::
    render_factory = TemplateRenderFactory('/path/to/templates/')
    routes = [('/', hello_world, 'home.html')]
 
-   hello_world_app = Application(routes, resources, render_factory, middlewares)
+   hello_world_app = Application(routes, resources, middlewares, render_factory)
 
 ``hello_world_app`` is a full-blown WSGI application ready for serving
 to any users needing some greeting.
