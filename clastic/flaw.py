@@ -26,13 +26,13 @@ def create_app(traceback_string, monitored_files=None):
                  'parsed_error': parsed_error,
                  'all_mon_files': monitored_files,
                  'mon_files': non_site_files}
-    render_fact = AshesRenderFactory()
-    render_fact.register_source('flaw_tmpl', _FLAW_TEMPLATE)
+    arf = AshesRenderFactory()
+    arf.register_source('flaw_tmpl', _FLAW_TEMPLATE)
     routes = [('/', get_flaw_info, 'flaw_tmpl'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/<_ignored*>', get_flaw_info, 'flaw_tmpl')]
 
-    app = Application(routes, resources, render_fact)
+    app = Application(routes, resources, render_factory=arf)
     return app
 
 
