@@ -13,6 +13,8 @@ def getargspec(f):
     # TODO: support partials
     if not inspect.isfunction(f) and not inspect.ismethod(f) \
             and hasattr(f, '__call__'):
+        if isinstance(getattr(f, '_argspec', None), ArgSpec):
+            return f._argspec
         f = f.__call__  # callable objects
 
     if isinstance(getattr(f, '_argspec', None), ArgSpec):
