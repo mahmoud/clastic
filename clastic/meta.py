@@ -39,8 +39,9 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 # TODO: nominal SLA vs real/sampled SLA
 
+DEFAULT_PAGE_TITLE = 'Clastic'
 
-def create_app(page_title='Clastic'):
+def create_app(page_title=DEFAULT_PAGE_TITLE):
     routes = [('/', get_all_meta_info, 'meta_base.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', get_all_meta_info, render_json)]
@@ -332,6 +333,55 @@ def get_route_arg_info(route):
 
 
 MetaApplication = create_app()
+
+
+class MetaPeripheral(object):
+    title = 'Clastic MetaPeripheral'
+
+    def get_general_items(self):
+        "Returns list of 2-tuples to appear in the general section table"
+        return {}
+
+    def get_extra_routes(self):
+        return []
+
+
+class MetaSummarySection(object):
+    def __init__(self, title, subsections=None):
+        self.title = title
+        self.subsections = list(subsections or [])
+
+
+class MetaApplication2(Application):
+    def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE):
+        self.peripherals = peripherals or []
+        self.page_title = page_title
+        routes = [('/', self.get_main_page, 'meta_base.html'),
+                  ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
+                  ('/json/', self.get_main_page, render_json)]
+        for peri in self.peripherals:
+            routes.extend(peri.get_extra_routes())
+        resources = {'_meta_start_time': datetime.datetime.utcnow(),
+                     'page_title': page_title}
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        mwares = [ScriptRootMiddleware(),
+                  SimpleContextProcessor('script_root')]
+        super(MetaApplication2, self).__init__(routes, resources, mwares, arf)
+
+    def get_main_page(self):
+        context = {'page_title': self.page_title,
+                   'peripheral': []}
+        for peri in self.peripherals:
+            cur = {'title': peri.title,
+                   'note_text': peri.get_note_text(),
+                   'help_text': peri.get_help_text(),
+                   'content': peri.get_content()}
+            context['sections'].append(cur)
+
+            general_items = peri.get_general_items() or []
+            context['general'].extend(general_items)
+        return context
+
 
 if __name__ == '__main__':
     MetaApplication.serve()
