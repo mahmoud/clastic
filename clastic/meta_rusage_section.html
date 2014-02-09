@@ -1,0 +1,35 @@
+<table>
+  <tr><th>CPU time, user</th><td>{cpu_times.user_time} seconds</td></tr>
+  <tr><th>CPU time, system</th><td>{cpu_times.sys_time} seconds</td></tr>
+  {#memory}
+  <tr>
+    <th><abbr title="Resident set size">Peak RSS</abbr></th>
+    <td><span title="{max_rss}k">{max_rss_human}</span></td>
+    <!-- Untracked on Linux:-->
+    <!-- Shared:{shared_rss}, Unshared:{unshared_rss}, Stack:{stack_rss} -->
+  </tr>
+  {/memory}
+  {#page_faults}
+  <tr><th>Page faults, major</th><td>{major_faults}</td></tr>
+  <tr><th>Page faults, minor</th><td>{minor_faults}</td></tr>
+  <!-- Untracked on Linux:-->
+  <!-- Page outs:{page_outs} -->
+  {/page_faults}
+  {#blocking_io}
+  <tr><th>Blocking IO, in</th><td>{input_ops}</td></tr>
+  <tr><th>Blocking IO, out</th><td>{output_ops}</td></tr>
+  {/blocking_io}
+  {#ctx_switches}
+  <tr><th>Context switches, voluntary</th><td>{voluntary}</td></tr>
+  <tr><th>Context switches, involuntary</th><td>{involuntary}</td></tr>
+  {/ctx_switches}
+  <!-- Untracked on Linux:-->
+  <!-- Signals received:{signals.received} -->
+  {#messages}
+  <!-- POSIX messages sent:{sent} -->
+  <!-- POSIX messages received:{received} -->
+  {/messages}
+  {#rlimit}
+  <tr><th>File limit (soft, hard)</th><td>{nofile}</td></tr>
+  {/rlimit}
+</table>

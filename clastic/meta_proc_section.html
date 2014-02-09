@@ -1,0 +1,12 @@
+<table>
+  <tr><th>Owner</th><td>{owner}</td></tr>
+  <tr><th><abbr title="Process ID">PID</abbr></th><td>{pid}</td></tr>
+  {?ppid}
+  <tr><th><abbr title="Parent process ID">PPID</abbr></th><td>{ppid}</td></tr>
+  <tr><th><abbr title="Process group ID">PGID</abbr></th><td>{pgid}</td></tr>
+  {/ppid}
+  <tr><th><code>umask</code></th><td>{umask_str}</td></tr>
+  {?niceness}
+  <tr><th><code>nice</code></th><td>{niceness}</td></tr>
+  {/niceness}
+</table>

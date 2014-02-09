@@ -192,6 +192,7 @@ def get_rusage_dict(children=False):
            'signals': {'received': rr.ru_nsignals},  # *
            'ctx_switches': {'voluntary': rr.ru_nvcsw,
                             'involuntary': rr.ru_nivcsw}}
+    ret['rlimit'] = get_rlimit_dict()
     return ret
 
 
@@ -397,6 +398,51 @@ class ResourcePeripheral(AshesMetaPeripheral):
         return {'resources': get_resource_info(_application)}
 
 
+class ProcessPeripheral(AshesMetaPeripheral):
+    title = 'Process IDs and Settings'
+    group_key = 'proc'
+    template_path = 'meta_proc_section.html'
+
+    get_context = staticmethod(get_proc_info)
+
+    def get_general_items(self, context):
+        return [('PID', context['pid'])]
+
+
+class HostPeripheral(AshesMetaPeripheral):
+    title = 'Host Information'
+    group_key = 'host'
+    template_path = 'meta_host_section.html'
+
+    get_context = staticmethod(get_host_info)
+
+    def get_general_items(self, context):
+        ret = []
+        load_avgs = context.get('load_avgs')
+        if load_avgs:
+            ret.append(('Load averages', repr(load_avgs)))
+        return ret
+
+
+class ResourceUsagePeripheral(AshesMetaPeripheral):
+    title = 'Process Resource Usage'
+    group_key = 'rusage'
+    template_path = 'meta_rusage_section.html'
+
+    def get_context(self):
+        rusage = get_rusage_dict()
+        rusage['rlimit'] = get_rlimit_dict()
+        return rusage
+
+
+class PythonPeripheral(AshesMetaPeripheral):
+    title = 'Python Runtime'
+    group_key = 'pyvm'
+    template_path = 'meta_pyvm_section.html'
+
+    get_context = staticmethod(get_pyvm_info)
+
+
 class MetaApplication2(Application):
     def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE):
         self.page_title = page_title
@@ -440,10 +486,9 @@ class MetaApplication2(Application):
             try:
                 cur_context = context[peri.group_key]
                 kwargs = {'context': cur_context}
-                content = inject(peri.render_main_page_html, kwargs)
-                cur['content'] = content
+                cur['content'] = inject(peri.render_main_page_html, kwargs)
 
-                prev_exc = cur_context.get('exc_content', None)
+                prev_exc = cur_context.get('exc_content')
                 if prev_exc:
                     cur['exc_content'] = prev_exc
             except Exception as e:

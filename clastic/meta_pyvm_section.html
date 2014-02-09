@@ -1,0 +1,27 @@
+<table>
+  <tr><th>Executable</th><td>{executable}</td></tr>
+  <tr><th>Version</th><td>{version}</td></tr>
+  <tr>
+    <th>Features</th>
+    <td>
+      <span class="pyvmfeature">{?is_64bit}(64-bit){:else}(32-bit){/is_64bit} </span>
+      <span class="pyvmfeature">{?have_ucs4}(with UCS-4){:else}(with UCS-2){/have_ucs4} </span>
+      <span class="pyvmfeature">{?have_readline}(with readline support){:else}(no readline support){/have_readline} </span>
+    </td>
+  </tr>
+  <tr><th>Thread count</th><td>{active_thread_count}</td></tr>
+  {#gc}
+  {#obj_count}
+  <tr><th>Object count</th><td>{obj_count}</td></tr>
+  {:else}
+  <tr><th>Object count</th><td>(unavailable)</td></tr>
+  {/obj_count}
+  <tr><th><abbr title="Garbage collection">GC</abbr> enabled</th><td>{is_enabled}</td></tr>
+  <tr><th><abbr title="Garbage collection">GC</abbr> thresholds</th><td>{thresholds}</td></tr>
+  <tr><th><abbr title="Garbage collection">GC</abbr> generations</th><td>{counts}</td></tr>
+  {:else}
+  <tr><th>Object count</th><td>(failed to load <abbr title="Garbage collection">GC</abbr> info)</td></tr>
+  {/gc}
+  <tr><th>Recursion limit</th><td>{recursion_limit}</td></tr>
+  <tr><th>Check interval</th><td>{check_interval}</td></tr>
+</table>

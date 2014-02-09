@@ -1,0 +1,10 @@
+<table>
+  <tr><th>Hostname</th><td>{hostname}</td></tr>
+  <tr><th><abbr title="Fully-qualified domain name">FQDN</abbr></th><td>{hostfqdn}</td></tr>
+  {#cpu_count}
+  <tr><th><abbr title="Central Processing Unit">CPU</abbr> count</th><td>{cpu_count}</td></tr>
+  {/cpu_count}
+  <tr><th>Load averages</th><td>{load_avgs}</td></tr>
+  <tr><th><code>uname</code></th><td>{#uname}{.}<br/>{/uname}</td></tr>
+  <tr><th>Platform</th><td>{platform}</td></tr>
+</table>
