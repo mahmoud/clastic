@@ -69,7 +69,7 @@ td, th {
   text-align: left;
 }
 
-#route-info table {
+.route-table {
   width: 100%;
 }
 

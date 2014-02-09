@@ -5,7 +5,7 @@ import sys
 import socket
 import platform
 import datetime
-import collections
+
 
 IS_64BIT = sys.maxsize > 2 ** 32
 try:
@@ -29,7 +29,7 @@ from application import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec, inject
 from render import render_json, AshesRenderFactory
 from static import StaticApplication
-from utils import bytes2human
+from utils import bytes2human, rel_datetime
 
 from middleware.url import ScriptRootMiddleware
 from middleware.context import SimpleContextProcessor
@@ -63,13 +63,10 @@ def get_all_meta_info(_application, _meta_start_time, page_title):
     ret['resources'] = get_resource_info(app)
     ret['env'] = get_env_info()
 
-    mw_infos = []
-    for mw in app.middlewares:
-        mw_infos.append(get_mw_info(mw))
-    ret['middlewares'] = mw_infos
+    ret['middlewares'] = get_mw_infos(_application)
 
     ret['abs_start_time'] = str(_meta_start_time)
-    ret['rel_start_time'] = _rel_datetime(_meta_start_time)
+    ret['rel_start_time'] = rel_datetime(_meta_start_time)
     ret['page_title'] = page_title
     return ret
 
@@ -97,32 +94,6 @@ def _trunc(str_val, length=70, trailer='...'):
         else:
             str_val = str_val[:length]
     return str_val
-
-
-def _rel_datetime(d, other=None):
-    # TODO: add decimal rounding factor (default 0)
-    if other is None:
-        other = datetime.datetime.utcnow()
-    diff = other - d
-    s, days = diff.seconds, diff.days
-    if days > 7 or days < 0:
-        return d.strftime('%d %b %y')
-    elif days == 1:
-        return '1 day ago'
-    elif days > 1:
-        return '{0} days ago'.format(diff.days)
-    elif s < 5:
-        return 'just now'
-    elif s < 60:
-        return '{0} seconds ago'.format(s)
-    elif s < 120:
-        return '1 minute ago'
-    elif s < 3600:
-        return '{0} minutes ago'.format(s / 60)
-    elif s < 7200:
-        return '1 hour ago'
-    else:
-        return '{0} hours ago'.format(s / 3600)
 
 
 def get_env_info():
@@ -269,13 +240,16 @@ def get_resource_info(_application):
     return ret
 
 
-def get_mw_info(mw):
+def get_mw_infos(_application):
     # TODO: what to do about render and endpoint provides?
-    ret = {}
-    ret['type_name'] = mw.__class__.__name__
-    ret['provides'] = mw.provides
-    ret['requires'] = mw.requires
-    ret['repr'] = repr(mw)
+    ret = []
+    for mw in _application.middlewares:
+        cur = {}
+        cur['type_name'] = mw.__class__.__name__
+        cur['provides'] = mw.provides
+        cur['requires'] = mw.requires
+        cur['repr'] = repr(mw)
+        ret.append(cur)
     return ret
 
 
@@ -355,6 +329,15 @@ class MetaPeripheral(object):
         return []
 
 
+class AshesMetaPeripheral(MetaPeripheral):
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load(self.template_path)
+
+    def render_main_page_html(self, context):
+        return self.loaded_template.render(context)
+
+
 class BasicPeripheral(MetaPeripheral):
     title = 'Basic Peripheral'
     group_key = 'basic'
@@ -362,20 +345,17 @@ class BasicPeripheral(MetaPeripheral):
     def get_context(self, _meta_application):
         start_time = _meta_application.resources['_meta_start_time']
         return {'abs_start_time': str(start_time),
-                'rel_start_time': _rel_datetime(start_time)}
+                'rel_start_time': rel_datetime(start_time)}
 
     def get_general_items(self, context):
         return [('Start time', (context['rel_start_time'],
                                 context['abs_start_time']))]
 
 
-class EnvironmentPeripheral(MetaPeripheral):
+class EnvironmentPeripheral(AshesMetaPeripheral):
     title = 'Environment'
     group_key = 'env'
-
-    def __init__(self):
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self.loaded_template = arf.env.load('meta_env_section.html')
+    template_path = 'meta_env_section.html'
 
     get_context = staticmethod(get_env_info)
 
@@ -389,53 +369,32 @@ class EnvironmentPeripheral(MetaPeripheral):
             pass
         return ret
 
-    def render_main_page_html(self, context):
-        return self.loaded_template.render(context)
 
-
-class RoutePeripheral(MetaPeripheral):
+class RoutePeripheral(AshesMetaPeripheral):
     title = 'Routes'
     group_key = 'app'
-
-    def __init__(self):
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self.loaded_template = arf.env.load('meta_route_section.html')
+    template_path = 'meta_route_section.html'
 
     def get_context(self, _application):
         return {'routes': get_route_infos(_application)}
 
-    def render_main_page_html(self, context):
-        return self.loaded_template.render(context)
 
-
-class MiddlewarePeripheral(MetaPeripheral):
+class MiddlewarePeripheral(AshesMetaPeripheral):
     title = 'Application-wide Middlewares'
     group_key = 'app'
-
-    def __init__(self):
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self.loaded_template = arf.env.load('meta_mw_section.html')
+    template_path = 'meta_mw_section.html'
 
     def get_context(self, _application):
-        return {'middlewares': get_mw_info(_application)}
-
-    def render_main_page_html(self, context):
-        return self.loaded_template.render(context)
+        return {'middlewares': get_mw_infos(_application)}
 
 
-class ResourcePeripheral(MetaPeripheral):
+class ResourcePeripheral(AshesMetaPeripheral):
     title = 'Application Resources'
     group_key = 'app'
-
-    def __init__(self):
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self.loaded_template = arf.env.load('meta_resource_section.html')
+    template_path = 'meta_resource_section.html'
 
     def get_context(self, _application):
         return {'resources': get_resource_info(_application)}
-
-    def render_main_page_html(self, context):
-        return self.loaded_template.render(context)
 
 
 class MetaApplication2(Application):
@@ -479,9 +438,14 @@ class MetaApplication2(Application):
             cur = {'title': peri.title,
                    'group_key': peri.group_key}
             try:
-                kwargs = {'context': context[peri.group_key]}
+                cur_context = context[peri.group_key]
+                kwargs = {'context': cur_context}
                 content = inject(peri.render_main_page_html, kwargs)
                 cur['content'] = content
+
+                prev_exc = cur_context.get('exc_content', None)
+                if prev_exc:
+                    cur['exc_content'] = prev_exc
             except Exception as e:
                 cur['exc_content'] = repr(e)
             try:
@@ -531,12 +495,3 @@ def _process_items(all_items):
                 cur['value'] = str(value)
         ret.append(cur)
     return ret
-
-
-"""
-* register template, get keys
-"""
-
-
-if __name__ == '__main__':
-    pass
