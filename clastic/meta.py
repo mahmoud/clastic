@@ -41,6 +41,7 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
 DEFAULT_PAGE_TITLE = 'Clastic'
 
+
 def create_app(page_title=DEFAULT_PAGE_TITLE):
     routes = [('/', get_all_meta_info, 'meta_base.html'),
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
@@ -337,13 +338,14 @@ MetaApplication = create_app()
 
 class MetaPeripheral(object):
     title = 'Clastic MetaPeripheral'
+    group_key = 'mp'
 
     def get_general_items(self):
         "Returns list of 2-tuples to appear in the general section table"
         return []
 
     def get_all_items(self):
-        return []
+        return self.get_general_items()
 
     def get_content(self):
         return None
@@ -360,6 +362,7 @@ class MetaPeripheral(object):
 
 class BasicPeripheral(MetaPeripheral):
     title = 'Start Time'
+    group_key = 'basic'
 
     def get_general_items(self, _meta_application):
         start_time = _meta_application.resources['_meta_start_time']
@@ -371,6 +374,28 @@ class BasicPeripheral(MetaPeripheral):
 #    def __init__(self, title, subsections=None):
 #        self.title = title
 #        self.subsections = list(subsections or [])
+
+def _autohuman(obj):
+    try:
+        text = unicode(obj).replace('_', ' ').strip().capitalize()
+    except:
+        try:
+            text = repr(obj)
+        except:
+            text = 'unreprable object %s' % object.__repr__(obj)
+    return text
+
+
+class Item(object):
+    def __init__(self, key, value,
+                 key_detail=None, value_detail=None,
+                 key_human=None, value_human=None):
+        self.key = key
+        self.value = value
+        self.key_detail = key_detail or ''
+        self.value_detail = value_detail or ''
+        self.key_human = key_human or _autohuman(key)
+        self.value_human = value_human or _autohuman(value)
 
 
 class MetaApplication2(Application):
@@ -390,6 +415,9 @@ class MetaApplication2(Application):
                   SimpleContextProcessor('script_root')]
         super(MetaApplication2, self).__init__(routes, resources, mwares, arf)
 
+    def get_main(self):  # let's try this again
+        pass
+
     def get_main_page(self, request, _application, _route):
         context = {'page_title': self.page_title,
                    'sections': [],
@@ -403,7 +431,8 @@ class MetaApplication2(Application):
                    'note_text': inject(peri.get_note_text, kwargs),
                    'help_text': inject(peri.get_help_text, kwargs),
                    'content': inject(peri.get_content, kwargs)}
-            context['sections'].append(cur)
+            context[peri.group_key] = cur
+            #context['sections'].append(cur)
 
             gen_items = inject(peri.get_general_items, kwargs) or []
             gen_items = _process_items(gen_items)
@@ -411,7 +440,21 @@ class MetaApplication2(Application):
         return context
 
 
+class EnvironmentPeripheral(MetaPeripheral):
+    title = 'Environment'
+    group_key = 'env'
+
+    # general items: load averages
+
+    def get_context(self):
+        return get_env_info()
+
+
 def _process_items(all_items):
+    """ Really, each key/value/key detail/value detail should have a
+    human readable form and a machine readable form. That's a lot of
+    keys, should probably do that later.
+    """
     ret = []
     for i, item in enumerate(all_items):
         cur = {}
@@ -444,6 +487,11 @@ def _process_items(all_items):
                 cur['value'] = str(value)
         ret.append(cur)
     return ret
+
+
+"""
+* register template, get keys
+"""
 
 
 if __name__ == '__main__':
