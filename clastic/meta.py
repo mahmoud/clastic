@@ -344,16 +344,10 @@ class MetaPeripheral(object):
         "Returns list of 2-tuples to appear in the general section table"
         return []
 
-    def get_all_items(self):
-        return self.get_general_items()
+    def get_context(self):
+        return {}
 
-    def get_content(self):
-        return None
-
-    def get_help_text(self):
-        return None
-
-    def get_note_text(self):
+    def render_main_page_html(self, context):
         return None
 
     def get_extra_routes(self):
@@ -361,46 +355,42 @@ class MetaPeripheral(object):
 
 
 class BasicPeripheral(MetaPeripheral):
-    title = 'Start Time'
+    title = 'Basic Peripheral'
     group_key = 'basic'
 
-    def get_general_items(self, _meta_application):
+    def get_context(self, _meta_application):
         start_time = _meta_application.resources['_meta_start_time']
-        item = ('Start time', (_rel_datetime(start_time), start_time))
-        return [item]
+        return {'abs_start_time': str(start_time),
+                'rel_start_time': _rel_datetime(start_time)}
+
+    def get_general_items(self, context):
+        return [('Start time', (context['rel_start_time'],
+                                context['abs_start_time']))]
 
 
-#class MetaSummarySection(object):
-#    def __init__(self, title, subsections=None):
-#        self.title = title
-#        self.subsections = list(subsections or [])
+class EnvironmentPeripheral(MetaPeripheral):
+    title = 'Environment'
+    group_key = 'env'
 
-def _autohuman(obj):
-    try:
-        text = unicode(obj).replace('_', ' ').strip().capitalize()
-    except:
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load('meta_env_section.html')
+        self.template_path = self.loaded_template.name
+
+    get_context = staticmethod(get_env_info)
+
+    def get_general_items(self, context):
+        ret = []
         try:
-            text = repr(obj)
-        except:
-            text = 'unreprable object %s' % object.__repr__(obj)
-    return text
+            load_avgs = context['host']['load_avgs']
+            if load_avgs:
+                ret.append(('Load averages', repr(load_avgs)))
+        except KeyError:
+            pass
+        return ret
 
-
-class Item(object):
-    def __init__(self, key, value,
-                 key_detail=None, value_detail=None,
-                 key_human=None, value_human=None):
-        self.key = key
-        self.value = value
-        self.key_detail = key_detail or ''
-        self.value_detail = value_detail or ''
-        self.key_human = key_human or _autohuman(key)
-        self.value_human = value_human or _autohuman(value)
-
-
-def _debug(request, _application, _route):
-    import pdb;pdb.set_trace()
-    return {}
+    def render_main_page_html(self, context):
+        return self.loaded_template.render(context)
 
 
 class MetaApplication2(Application):
@@ -408,12 +398,11 @@ class MetaApplication2(Application):
         self.page_title = page_title
         self.peripherals = peripherals or []
 
-        self._arf = arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self._main_page_render = arf('meta_main_base.html')
+        self._arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self._main_page_render = self._arf('meta2_base.html')
         routes = [('/', self.get_main, self.render_main_page_html),
                   ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-                  ('/json/', self.get_main, render_json),
-                  ('/debug', _debug, render_json)]
+                  ('/json/', self.get_main, render_json)]
         for peri in self.peripherals:
             routes.extend(peri.get_extra_routes())
         resources = {'_meta_start_time': datetime.datetime.utcnow(),
@@ -421,7 +410,7 @@ class MetaApplication2(Application):
 
         mwares = [ScriptRootMiddleware(),
                   SimpleContextProcessor('script_root')]
-        super(MetaApplication2, self).__init__(routes, resources, mwares, arf)
+        super(MetaApplication2, self).__init__(routes, resources, mwares)
 
     def get_main(self, request, _application, _route):  # let's try this again
         full_ctx = {'page_title': self.page_title}
@@ -436,52 +425,25 @@ class MetaApplication2(Application):
 
     def render_main_page_html(self, context):
         context['sections'] = []
-        for peri in self.peripherals:
-            cur = {'title': peri.title}
-            cur['content'] = peri.render_html(context[peri.group_key])
-            cur['template_path'] = peri.template_path
-            context['sections'].append(cur)
-        return self._main_page_render(context)
+        general_items = context['general'] = []
 
-    def get_main_page(self, request, _application, _route):
-        context = {'page_title': self.page_title,
-                   'sections': [],
-                   'general': []}
-        kwargs = {'request': request,
-                  '_route': _route,
-                  '_application': _application,
-                  '_meta_application': self}
         for peri in self.peripherals:
             cur = {'title': peri.title,
-                   'note_text': inject(peri.get_note_text, kwargs),
-                   'help_text': inject(peri.get_help_text, kwargs),
-                   'content': inject(peri.get_content, kwargs)}
-            context[peri.group_key] = cur
-            #context['sections'].append(cur)
-
-            gen_items = inject(peri.get_general_items, kwargs) or []
-            gen_items = _process_items(gen_items)
-            context['general'].extend(gen_items)
-        return context
-
-
-class EnvironmentPeripheral(MetaPeripheral):
-    title = 'Environment'
-    group_key = 'env'
-
-    # general items: load averages
-
-    def __init__(self):
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self.loaded_template = arf.env.load('meta_env_section.html')
-        self.template_path = self.loaded_template.name
-
-    get_context = staticmethod(get_env_info)
-    #def get_context(self):
-    #    return get_env_info()
-
-    def render_html(self, context):
-        return self.loaded_template.render(context)
+                   'group_key': peri.group_key}
+            try:
+                kwargs = {'context': context[peri.group_key]}
+                content = inject(peri.render_main_page_html, kwargs)
+                cur['content'] = content
+            except Exception as e:
+                cur['exc_content'] = repr(e)
+            try:
+                cur_general_items = inject(peri.get_general_items, kwargs)
+                cur_general_items = _process_items(cur_general_items)
+            except Exception as e:
+                cur_general_items = []
+            context['sections'].append(cur)
+            general_items.extend(cur_general_items)
+        return self._main_page_render(context)
 
 
 def _process_items(all_items):

@@ -21,5 +21,11 @@
     {:else}
     <p><i>No general items</i></p>
     {/general}
+    {#sections}
+    <div id="{group_key}-div">
+      {?.content} <h2>{title}</h2> {content|s} {/content}
+      {?.exc_content} <!-- {exc_content} --> {/exc_content}
+    </div>
+    {/sections}
   </div>
 </body>
