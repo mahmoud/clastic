@@ -24,19 +24,25 @@ from .errors import (NotFound,
                      MIME_SUPPORT_MAP,
                      InternalServerError)
 
+_meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
+                 ' subtype, so instantiate it before passing it in.')
+
 
 def cast_to_route_factory(in_arg):
+    from meta import MetaApplication
     if isinstance(in_arg, BaseRoute):
         return in_arg
     elif isinstance(in_arg, Sequence):
         try:
+            if in_arg[1] is MetaApplication:
+                raise ValueError(_meta_exc_msg)
             if isinstance(in_arg[1], BaseApplication):
                 return SubApplication(*in_arg)
             if callable(in_arg[1]):
                 return Route(*in_arg)
         except TypeError:
             pass
-    raise TypeError('Could not create routes from %r' % in_arg)
+    raise TypeError('Could not create route from %r' % (in_arg,))
 
 
 def default_render_error(request, _error, **kwargs):
@@ -228,7 +234,7 @@ class Application(BaseApplication):
         wrapped_wsgi = self
         if use_meta:
             from meta import MetaApplication
-            self.add(('/_meta/', MetaApplication))
+            self.add(('/_meta/', MetaApplication()))
         if use_static:
             from static import StaticApplication
             static_path = args.static_path or static_path or \

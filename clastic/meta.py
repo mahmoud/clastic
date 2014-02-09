@@ -43,34 +43,6 @@ _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 DEFAULT_PAGE_TITLE = 'Clastic'
 
 
-def create_app(page_title=DEFAULT_PAGE_TITLE):
-    routes = [('/', get_all_meta_info, 'meta_base.html'),
-              ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-              ('/json/', get_all_meta_info, render_json)]
-    resources = {'_meta_start_time': datetime.datetime.utcnow(),
-                 'page_title': page_title}
-    arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-    middlewares = [ScriptRootMiddleware(),
-                   SimpleContextProcessor('script_root')]
-    app = Application(routes, resources, middlewares, arf)
-    return app
-
-
-def get_all_meta_info(_application, _meta_start_time, page_title):
-    app = _application
-    ret = {}
-    ret['routes'] = get_route_infos(app)
-    ret['resources'] = get_resource_info(app)
-    ret['env'] = get_env_info()
-
-    ret['middlewares'] = get_mw_infos(_application)
-
-    ret['abs_start_time'] = str(_meta_start_time)
-    ret['rel_start_time'] = rel_datetime(_meta_start_time)
-    ret['page_title'] = page_title
-    return ret
-
-
 def get_route_infos(_application):
     app = _application
     ret = []
@@ -94,14 +66,6 @@ def _trunc(str_val, length=70, trailer='...'):
         else:
             str_val = str_val[:length]
     return str_val
-
-
-def get_env_info():
-    ret = {}
-    ret['proc'] = get_proc_info()
-    ret['host'] = get_host_info()
-    ret['pyvm'] = get_pyvm_info()
-    return ret
 
 
 def get_proc_info():
@@ -309,9 +273,6 @@ def get_route_arg_info(route):
     return arg_srcs
 
 
-MetaApplication = create_app()
-
-
 class MetaPeripheral(object):
     title = 'Clastic MetaPeripheral'
     group_key = 'mp'
@@ -351,24 +312,6 @@ class BasicPeripheral(MetaPeripheral):
     def get_general_items(self, context):
         return [('Start time', (context['rel_start_time'],
                                 context['abs_start_time']))]
-
-
-class EnvironmentPeripheral(AshesMetaPeripheral):
-    title = 'Environment'
-    group_key = 'env'
-    template_path = 'meta_env_section.html'
-
-    get_context = staticmethod(get_env_info)
-
-    def get_general_items(self, context):
-        ret = [('PID', context['proc']['pid'])]
-        try:
-            load_avgs = context['host']['load_avgs']
-            if load_avgs:
-                ret.append(('Load averages', repr(load_avgs)))
-        except KeyError:
-            pass
-        return ret
 
 
 class RoutePeripheral(AshesMetaPeripheral):
@@ -443,10 +386,22 @@ class PythonPeripheral(AshesMetaPeripheral):
     get_context = staticmethod(get_pyvm_info)
 
 
-class MetaApplication2(Application):
-    def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE):
+DEFAULT_PERIPHERALS = [BasicPeripheral(),
+                       RoutePeripheral(),
+                       MiddlewarePeripheral(),
+                       ResourcePeripheral(),
+                       HostPeripheral(),
+                       ProcessPeripheral(),
+                       ResourceUsagePeripheral(),
+                       PythonPeripheral()]
+
+
+class MetaApplication(Application):
+    def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE,
+                 base_peripherals=DEFAULT_PERIPHERALS):
         self.page_title = page_title
-        self.peripherals = peripherals or []
+        self.peripherals = list(base_peripherals)
+        self.peripherals.extend(peripherals or [])
 
         self._arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
         self._main_page_render = self._arf('meta2_base.html')
@@ -460,7 +415,7 @@ class MetaApplication2(Application):
 
         mwares = [ScriptRootMiddleware(),
                   SimpleContextProcessor('script_root')]
-        super(MetaApplication2, self).__init__(routes, resources, mwares)
+        super(MetaApplication, self).__init__(routes, resources, mwares)
 
     def get_main(self, request, _application, _route):
         full_ctx = {'page_title': self.page_title}
