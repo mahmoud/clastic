@@ -1,0 +1,41 @@
+<table>
+  <thead>
+    <tr><th>URL</th><th>Endpoint</th><th>Render</th></tr>
+  </thead>
+  <tbody>
+    {#routes}
+    <tr>
+      <td><span title="{url_regex_pattern}"><a href="{script_root}{url_pattern}">{url_pattern}</a></span></td>
+      <td>
+        {#endpoint}
+        <span title="{.module_name}">{.name}</span>
+        {/endpoint}
+        (
+        {#args}
+        <span title="{.source}" class="arg {.source}">{.name}</span>{@sep}, {/sep}
+        {/args}
+        )
+      </td>
+      <td>
+        {#render}
+        {?.type}
+        {.type}('{.arg}')
+        {:else}
+        {#.arg}{.}{:else}None{/arg}
+        {/type}
+        {/render}
+      </td>
+    </tr>
+    {/routes}
+  </tbody>
+</table>
+<p/>
+<table>
+  <tr>
+    <th>Legend</th>
+    <td class="arg builtin">builtin</td>
+    <td class="arg middleware">middleware</td>
+    <td class="arg resources">resources</td>
+    <td class="arg url">url</td>
+  </tr>
+</table>

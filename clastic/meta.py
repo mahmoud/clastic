@@ -5,6 +5,7 @@ import sys
 import socket
 import platform
 import datetime
+import collections
 
 IS_64BIT = sys.maxsize > 2 ** 32
 try:
@@ -375,12 +376,11 @@ class EnvironmentPeripheral(MetaPeripheral):
     def __init__(self):
         arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
         self.loaded_template = arf.env.load('meta_env_section.html')
-        self.template_path = self.loaded_template.name
 
     get_context = staticmethod(get_env_info)
 
     def get_general_items(self, context):
-        ret = []
+        ret = [('PID', context['proc']['pid'])]
         try:
             load_avgs = context['host']['load_avgs']
             if load_avgs:
@@ -388,6 +388,51 @@ class EnvironmentPeripheral(MetaPeripheral):
         except KeyError:
             pass
         return ret
+
+    def render_main_page_html(self, context):
+        return self.loaded_template.render(context)
+
+
+class RoutePeripheral(MetaPeripheral):
+    title = 'Routes'
+    group_key = 'app'
+
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load('meta_route_section.html')
+
+    def get_context(self, _application):
+        return {'routes': get_route_infos(_application)}
+
+    def render_main_page_html(self, context):
+        return self.loaded_template.render(context)
+
+
+class MiddlewarePeripheral(MetaPeripheral):
+    title = 'Application-wide Middlewares'
+    group_key = 'app'
+
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load('meta_mw_section.html')
+
+    def get_context(self, _application):
+        return {'middlewares': get_mw_info(_application)}
+
+    def render_main_page_html(self, context):
+        return self.loaded_template.render(context)
+
+
+class ResourcePeripheral(MetaPeripheral):
+    title = 'Application Resources'
+    group_key = 'app'
+
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load('meta_resource_section.html')
+
+    def get_context(self, _application):
+        return {'resources': get_resource_info(_application)}
 
     def render_main_page_html(self, context):
         return self.loaded_template.render(context)
@@ -412,14 +457,17 @@ class MetaApplication2(Application):
                   SimpleContextProcessor('script_root')]
         super(MetaApplication2, self).__init__(routes, resources, mwares)
 
-    def get_main(self, request, _application, _route):  # let's try this again
+    def get_main(self, request, _application, _route):
         full_ctx = {'page_title': self.page_title}
         kwargs = {'request': request,
                   '_route': _route,
                   '_application': _application,
                   '_meta_application': self}
         for peri in self.peripherals:
-            peri_ctx = inject(peri.get_context, kwargs)
+            try:
+                peri_ctx = inject(peri.get_context, kwargs)
+            except Exception as e:
+                peri_ctx = {'exc_content': repr(e)}
             full_ctx.setdefault(peri.group_key, {}).update(peri_ctx)
         return full_ctx
 
@@ -452,7 +500,7 @@ def _process_items(all_items):
     keys, should probably do that later.
     """
     ret = []
-    for i, item in enumerate(all_items):
+    for item in all_items:
         cur = {}
         try:
             key, value = item
