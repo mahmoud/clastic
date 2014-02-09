@@ -398,25 +398,50 @@ class Item(object):
         self.value_human = value_human or _autohuman(value)
 
 
+def _debug(request, _application, _route):
+    import pdb;pdb.set_trace()
+    return {}
+
+
 class MetaApplication2(Application):
     def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE):
         self.page_title = page_title
         self.peripherals = peripherals or []
 
-        routes = [('/', self.get_main_page, 'meta2_base.html'),
+        self._arf = arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self._main_page_render = arf('meta_main_base.html')
+        routes = [('/', self.get_main, self.render_main_page_html),
                   ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
-                  ('/json/', self.get_main_page, render_json)]
+                  ('/json/', self.get_main, render_json),
+                  ('/debug', _debug, render_json)]
         for peri in self.peripherals:
             routes.extend(peri.get_extra_routes())
         resources = {'_meta_start_time': datetime.datetime.utcnow(),
                      'page_title': page_title}
-        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+
         mwares = [ScriptRootMiddleware(),
                   SimpleContextProcessor('script_root')]
         super(MetaApplication2, self).__init__(routes, resources, mwares, arf)
 
-    def get_main(self):  # let's try this again
-        pass
+    def get_main(self, request, _application, _route):  # let's try this again
+        full_ctx = {'page_title': self.page_title}
+        kwargs = {'request': request,
+                  '_route': _route,
+                  '_application': _application,
+                  '_meta_application': self}
+        for peri in self.peripherals:
+            peri_ctx = inject(peri.get_context, kwargs)
+            full_ctx.setdefault(peri.group_key, {}).update(peri_ctx)
+        return full_ctx
+
+    def render_main_page_html(self, context):
+        context['sections'] = []
+        for peri in self.peripherals:
+            cur = {'title': peri.title}
+            cur['content'] = peri.render_html(context[peri.group_key])
+            cur['template_path'] = peri.template_path
+            context['sections'].append(cur)
+        return self._main_page_render(context)
 
     def get_main_page(self, request, _application, _route):
         context = {'page_title': self.page_title,
@@ -446,8 +471,17 @@ class EnvironmentPeripheral(MetaPeripheral):
 
     # general items: load averages
 
-    def get_context(self):
-        return get_env_info()
+    def __init__(self):
+        arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
+        self.loaded_template = arf.env.load('meta_env_section.html')
+        self.template_path = self.loaded_template.name
+
+    get_context = staticmethod(get_env_info)
+    #def get_context(self):
+    #    return get_env_info()
+
+    def render_html(self, context):
+        return self.loaded_template.render(context)
 
 
 def _process_items(all_items):

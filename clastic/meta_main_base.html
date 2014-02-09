@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <title>{page_title} MetaApplication</title>
+  <link rel="stylesheet" type="text/css" href="clastic_assets/normalize.css">
+  <link rel="stylesheet" type="text/css" href="clastic_assets/common.css">
+</head>
+<body>
+<h1 class="page_title">{page_title}</h1>
+<div class="content">
+  <div>
+    <h2>General</h2>
+    <table>
+      <tr><th>Start time</th><td title="{abs_start_time} UTC">{rel_start_time}</td></tr>
+      <tr><th>PID</th><td>{env.proc.pid}</td></tr>
+      <tr><th>Load averages</th><td>{env.host.load_avgs}</td></tr>
+    </table>
+  </div>
+  {#sections}
+  <div>
+    <h2>{title}</h2>
+    {>"{template_path}" /}
+    {#env}
+    {/env}
+  </div>
+  {/sections}
+</div>
+<div class="footer"></div>
+</body>
+</html>
