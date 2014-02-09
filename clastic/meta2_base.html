@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <title>{page_title} MetaApplication</title>
+  <link rel="stylesheet" type="text/css" href="clastic_assets/normalize.css">
+  <link rel="stylesheet" type="text/css" href="clastic_assets/common.css">
+</head>
+<body>
+  <h1 class="page_title">{page_title}</h1>
+  <div class="content">
+    <h2>General</h2>
+    {?general}
+    <table>
+      {#general}
+      <tr>
+        <th>{?key_detail}<abbr title="{key_detail}">{key}</abbr>{:else}{key}{/key_detail}</th>
+        <td>{?value_detail}<abbr title="{value_detail}">{value}</abbr>{:else}{value}{/value_detail}</td>
+      </tr>
+      {/general}
+    </table>
+    {:else}
+    <p><i>No general items</i></p>
+    {/general}
+  </div>
+</body>

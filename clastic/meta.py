@@ -25,7 +25,7 @@ except ImportError:
     resource = None
 
 from application import Application, NullRoute, RESERVED_ARGS
-from sinter import getargspec
+from sinter import getargspec, inject
 from render import render_json, AshesRenderFactory
 from static import StaticApplication
 from utils import bytes2human
@@ -340,23 +340,45 @@ class MetaPeripheral(object):
 
     def get_general_items(self):
         "Returns list of 2-tuples to appear in the general section table"
-        return {}
+        return []
+
+    def get_all_items(self):
+        return []
+
+    def get_content(self):
+        return None
+
+    def get_help_text(self):
+        return None
+
+    def get_note_text(self):
+        return None
 
     def get_extra_routes(self):
         return []
 
 
-class MetaSummarySection(object):
-    def __init__(self, title, subsections=None):
-        self.title = title
-        self.subsections = list(subsections or [])
+class BasicPeripheral(MetaPeripheral):
+    title = 'Start Time'
+
+    def get_general_items(self, _meta_application):
+        start_time = _meta_application.resources['_meta_start_time']
+        item = ('Start time', (_rel_datetime(start_time), start_time))
+        return [item]
+
+
+#class MetaSummarySection(object):
+#    def __init__(self, title, subsections=None):
+#        self.title = title
+#        self.subsections = list(subsections or [])
 
 
 class MetaApplication2(Application):
     def __init__(self, peripherals=None, page_title=DEFAULT_PAGE_TITLE):
-        self.peripherals = peripherals or []
         self.page_title = page_title
-        routes = [('/', self.get_main_page, 'meta_base.html'),
+        self.peripherals = peripherals or []
+
+        routes = [('/', self.get_main_page, 'meta2_base.html'),
                   ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
                   ('/json/', self.get_main_page, render_json)]
         for peri in self.peripherals:
@@ -368,20 +390,61 @@ class MetaApplication2(Application):
                   SimpleContextProcessor('script_root')]
         super(MetaApplication2, self).__init__(routes, resources, mwares, arf)
 
-    def get_main_page(self):
+    def get_main_page(self, request, _application, _route):
         context = {'page_title': self.page_title,
-                   'peripheral': []}
+                   'sections': [],
+                   'general': []}
+        kwargs = {'request': request,
+                  '_route': _route,
+                  '_application': _application,
+                  '_meta_application': self}
         for peri in self.peripherals:
             cur = {'title': peri.title,
-                   'note_text': peri.get_note_text(),
-                   'help_text': peri.get_help_text(),
-                   'content': peri.get_content()}
+                   'note_text': inject(peri.get_note_text, kwargs),
+                   'help_text': inject(peri.get_help_text, kwargs),
+                   'content': inject(peri.get_content, kwargs)}
             context['sections'].append(cur)
 
-            general_items = peri.get_general_items() or []
-            context['general'].extend(general_items)
+            gen_items = inject(peri.get_general_items, kwargs) or []
+            gen_items = _process_items(gen_items)
+            context['general'].extend(gen_items)
         return context
 
 
+def _process_items(all_items):
+    ret = []
+    for i, item in enumerate(all_items):
+        cur = {}
+        try:
+            key, value = item
+        except:
+            try:
+                key, value = item[0], item[1:]
+            except:
+                value = ''
+                try:
+                    key = repr(item)
+                except:
+                    key = 'unreprable object %s' % object.__repr__(key)
+        if isinstance(key, basestring):
+            cur['key'] = key
+        else:
+            try:
+                cur['key'] = unicode(key[0])
+                cur['key_detail'] = unicode(key[1])
+            except:
+                cur['key'] = unicode(key)
+        if isinstance(value, basestring):
+            cur['value'] = value
+        else:
+            try:
+                cur['value'] = unicode(value[0])
+                cur['value_detail'] = unicode(value[1])
+            except:
+                cur['value'] = str(value)
+        ret.append(cur)
+    return ret
+
+
 if __name__ == '__main__':
-    MetaApplication.serve()
+    pass
