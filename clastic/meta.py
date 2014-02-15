@@ -38,9 +38,16 @@ from middleware.context import SimpleContextProcessor
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
 
-# TODO: nominal SLA vs real/sampled SLA
-
 DEFAULT_PAGE_TITLE = 'Clastic'
+
+
+def _trunc(str_val, length=70, trailer='...'):
+    if len(str_val) > length:
+        if trailer:
+            str_val = str_val[:length - len(trailer)] + trailer
+        else:
+            str_val = str_val[:length]
+    return str_val
 
 
 def get_route_infos(_application):
@@ -57,15 +64,6 @@ def get_route_infos(_application):
         r_info['args'] = get_route_arg_info(r)
         ret.append(r_info)
     return ret
-
-
-def _trunc(str_val, length=70, trailer='...'):
-    if len(str_val) > length:
-        if trailer:
-            str_val = str_val[:length - len(trailer)] + trailer
-        else:
-            str_val = str_val[:length]
-    return str_val
 
 
 def get_proc_info():
@@ -98,17 +96,6 @@ def get_proc_info():
     return ret
 
 
-def get_rlimit_dict():
-    ret = {}
-    if not resource:
-        return ret
-    rname_val = [(rn[7:].lower(), val) for rn, val in resource.__dict__.items()
-                 if rn.startswith('RLIMIT_')]
-    for rn, val in rname_val:
-        ret[rn] = resource.getrlimit(val)
-    return ret
-
-
 # TODO: byte order, path, prefix
 def get_host_info():
     ret = {}
@@ -125,6 +112,17 @@ def get_host_info():
     return ret
 
 
+def get_rlimit_dict():
+    ret = {}
+    if not resource:
+        return ret
+    rname_val = [(rn[7:].lower(), val) for rn, val in resource.__dict__.items()
+                 if rn.startswith('RLIMIT_')]
+    for rn, val in rname_val:
+        ret[rn] = resource.getrlimit(val)
+    return ret
+
+
 def get_rusage_dict(children=False):
     # TODO:
     # number of child processes?
@@ -137,7 +135,11 @@ def get_rusage_dict(children=False):
     if children:
         who = resource.RUSAGE_CHILDREN
     rr = resource.getrusage(who)
-    max_rss_human = bytes2human(rr.ru_maxrss * 1024, ndigits=1)
+    if sys.platform == 'darwin':
+        rss_bytes = rr.ru_maxrss  # darwin breaks posix
+    else:
+        rss_bytes = rr.ru_maxrss * 1024
+    max_rss_human = bytes2human(rss_bytes, ndigits=1)
 
     ret = {'cpu_times': {'user_time': rr.ru_utime,
                          'sys_time': rr.ru_stime},
