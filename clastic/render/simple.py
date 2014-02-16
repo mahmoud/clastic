@@ -79,7 +79,7 @@ class BasicRender(object):
 
     def __call__(self, context):
         if isinstance(context, basestring):
-            if '<html' in context[:98]:
+            if '<html' in context[:168]:
                 return Response(context, mimetype="text/html")
             else:
                 return Response(context, mimetype="text/plain")
