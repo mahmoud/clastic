@@ -79,8 +79,10 @@ class BasicRender(object):
 
     def __call__(self, context):
         if isinstance(context, basestring):
-            if '<html' in context[:168]:
+            if '<html' in context[:168]:  # based on the longest DOCTYPE found
                 return Response(context, mimetype="text/html")
+            elif self._guess_json(context):
+                return Response(context, mimetype="application/json")
             else:
                 return Response(context, mimetype="text/plain")
         if isinstance(context, Sized):
@@ -89,6 +91,17 @@ class BasicRender(object):
             except:
                 pass
         return Response(unicode(context), mimetype="text/plain")
+
+    @staticmethod
+    def _guess_json(text):
+        if not text:
+            return False
+        elif text[0] == '{' and text[-1] == '}':
+            return True
+        elif text[0] == '[' and text[-1] == ']':
+            return True
+        else:
+            return False
 
     @classmethod
     def factory(cls, *a, **kw):
