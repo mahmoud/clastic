@@ -25,7 +25,7 @@ def see_modules(start_time, module_list, name=None):
             % (name, start_time, pformat(sorted(module_list))))
 
 
-def debug(request, _application, _route):
+def debug(request, _application, _route, **kw):
     import pdb;pdb.set_trace()
     return {}
 
