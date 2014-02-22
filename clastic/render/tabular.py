@@ -33,6 +33,7 @@ class TabularRender(object):
             func_name = route.endpoint.func_name
         except:
             func_name = repr(route.endpoint)
+        func_name = func_name.replace('<', '(').replace('>', ')')
         args, _, _, _ = getargspec(route.endpoint)
         argstr = ', '.join(args)
         title = ('<h2><small><sub>%s</sub></small><br/>%s(%s)</h2>'

@@ -60,15 +60,27 @@ Some idle thoughts:
 """
 
 
-def escape_html(text):
-    text = unicode(text)
-    return cgi.escape(text, True)
+def to_text(obj):
+    try:
+        text = unicode(obj)
+    except:
+        try:
+            text = unicode(repr(obj))
+        except:
+            text = unicode(object.__repr__(obj))
+    return text
+
+
+def escape_html(obj):
+    text = to_text(obj)
+    return cgi.escape(text, quote=True)
 
 
 _DNR = set([types.NoneType, types.BooleanType, types.IntType, types.LongType,
             types.ComplexType, types.FloatType, types.StringType,
-            types.UnicodeType, types.NotImplementedType, types.SliceType])
-# + function/method?
+            types.UnicodeType, types.NotImplementedType, types.SliceType,
+            types.FunctionType, types.MethodType, types.BuiltinFunctionType,
+            types.GeneratorType])
 
 
 class UnsupportedData(TypeError):
