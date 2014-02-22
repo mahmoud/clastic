@@ -7,19 +7,20 @@ Core
 * polish sub-application mounting
 * Sphinx docs
 * Pretty 4xx handlers for dev
+* Make MetaApplication instantiatable
+* Make render functions more like middlewares (to unify return/raise branching and facilitate format-multiplexed renderers)
+* Give render_factories a chance to return something for None inputs
+* `context` is way too general of a name for the return of the endpoint
 
 Contrib
 -------
-* Secure cookies/sessions
-* JSON middleware
+* Secure sessions
 * Cache middleware
-* Cline (bottle-like functionality)
-* Example application
 * Form processing middleware?
 * Freshen up debugger
   * Hide interstitial frames
-* Lighter-weight static content route/middleware/application
 * Document Flaw Application
+* Memory referrents app
 
 MetaApplication
 ---------------
