@@ -150,7 +150,21 @@ class ListInputType(InputType):
         return obj_seq
 
 
-class NamedTupleType(InputType):
+class TupleInputType(InputType):
+    def check_type(self, obj):
+        return isinstance(obj, tuple)
+
+    def guess_headers(self, obj):
+        return None
+
+    def get_entry(self, obj, headers):
+        return list(obj)
+
+    def get_entry_seq(self, obj_seq, headers):
+        return [list(t) for t in obj_seq]
+
+
+class NamedTupleInputType(InputType):
     def check_type(self, obj):
         return hasattr(obj, '_fields') and isinstance(obj, tuple)
 
@@ -166,7 +180,9 @@ class NamedTupleType(InputType):
 
 class Table(object):
     # order definitely matters here
-    _input_types = [DictInputType(), ListInputType(), ObjectInputType()]
+    _input_types = [DictInputType(), ListInputType(),
+                    NamedTupleInputType(), TupleInputType(),
+                    ObjectInputType()]
 
     _html_tr, _html_tr_close = '<tr>', '</tr>'
     _html_th, _html_th_close = '<th>', '</th>'
