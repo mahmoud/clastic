@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
 
 import itertools
 from json import JSONEncoder
 from collections import Mapping, Sized, Iterable
 
 from werkzeug.wrappers import Response
+
+from tabular import TabularRender
 
 
 class ClasticJSONEncoder(JSONEncoder):
@@ -67,6 +70,7 @@ class JSONPRender(JSONRender):
         if not cb_name:
             return super(JSONPRender, self).__call__(context)
         json_iter = self.json_encoder.iterencode(context)
+        # TODO: this is probably not v performant
         resp_iter = itertools.chain([cb_name, '('], json_iter, [');'])
         resp = Response(resp_iter, mimetype="application/javascript")
         resp.mimetype_params['charset'] = self.encoding
@@ -74,23 +78,63 @@ class JSONPRender(JSONRender):
 
 
 class BasicRender(object):
-    def __init__(self, dev_mode=True):
-        self.json_render = JSONRender(dev_mode=dev_mode)
+    _default_mime = 'application/json'
+    _format_mime_map = {'html': 'text/html',
+                        'json': 'application/json'}
 
-    def __call__(self, context):
-        if isinstance(context, basestring):
-            if '<html' in context[:168]:  # based on the longest DOCTYPE found
-                return Response(context, mimetype="text/html")
-            elif self._guess_json(context):
+    def __init__(self, dev_mode=True, qp_name='format'):
+        self.qp_name = qp_name
+        self.json_render = JSONRender(dev_mode=dev_mode)
+        self.autotable_render = TabularRender()
+
+    def render_response(self, request, context, _route):
+        from collections import Sized
+        if isinstance(context, basestring):  # already serialized
+            if self._guess_json(context):
                 return Response(context, mimetype="application/json")
+            elif '<html' in context[:168]:
+                # based on the longest DOCTYPE I found in a brief search
+                return Response(context, mimetype="text/html")
             else:
                 return Response(context, mimetype="text/plain")
-        if isinstance(context, Sized):
-            try:
-                return self.json_render(context)
-            except:
-                pass
+
+        # not serialized yet, time to guess what the requester wants
+        if not isinstance(context, Sized):
+            return Response(unicode(context), mimetype="text/plain")
+        return self._serialize_to_resp(context, request, _route)
+
+    __call__ = render_response
+
+    def _serialize_to_resp(self, context, request, _route):
+        req_format = request.args.get(self.qp_name)  # explicit GET query param
+        if req_format and req_format not in self._format_mime_map:
+            # TODO: badrequest
+            raise ValueError('format expected one of %r, not %r'
+                             % (self.formats, req_format))
+
+        resp_mime = self._format_mime_map.get(req_format)
+        if not resp_mime and request.accept_mimetypes:
+            resp_mime = request.accept_mimetypes.best_match(self.mimetypes)
+        if resp_mime not in self._mime_format_map:
+            resp_mime = self._default_mime
+
+        if resp_mime == 'application/json':
+            return self.json_render(context)
+        elif resp_mime == 'text/html':
+            return self.autotable_render(context, _route)
         return Response(unicode(context), mimetype="text/plain")
+
+    @property
+    def _mime_format_map(self):
+        return dict([(v, k) for k, v in self._format_mime_map.items()])
+
+    @property
+    def formats(self):
+        return self._format_mime_map.keys()
+
+    @property
+    def mimetypes(self):
+        return self._format_mime_map.values()
 
     @staticmethod
     def _guess_json(text):
