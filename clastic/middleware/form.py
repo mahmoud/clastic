@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# -*- coding: utf-8 -*-
-
 from collections import Mapping, Iterable
 
 from .core import Middleware

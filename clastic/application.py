@@ -279,6 +279,10 @@ TODO: divide up paths by HTTP method (minor optimization for match speed)
 TODO: special handling for HTTPExceptions objects raised in debug mode
 TODO: should TracebackInfo optionally know about exc_type and exc_msg?
 
+Redirecting on a non-GET request can lead to a confusing error,
+because redirects only yield GET responses. Maybe don't normalize
+slashes on POST and such?
+
 Note to self: Raising and returning an exception should look basically the
 same in production mode.
 
