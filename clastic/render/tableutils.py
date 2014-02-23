@@ -255,6 +255,15 @@ class Table(object):
             if not data:
                 return cls(headers=headers)
             to_check = data[0]
+            if not _data_type:
+                for it in cls._input_types:
+                    if it.check_type(to_check):
+                        _data_type = it
+                        break
+                else:
+                    # not particularly happy about this rewind-y approach
+                    is_seq = False
+                    to_check = data
         else:
             if type(data) in _DNR:
                 # hmm, got scalar data.
