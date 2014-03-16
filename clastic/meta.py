@@ -406,7 +406,7 @@ class MetaApplication(Application):
         self.peripherals.extend(peripherals or [])
 
         self._arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
-        self._main_page_render = self._arf('meta2_base.html')
+        self._main_page_render = self._arf('meta_base.html')
         routes = [('/', self.get_main, self.render_main_page_html),
                   ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
                   ('/json/', self.get_main, render_json)]
