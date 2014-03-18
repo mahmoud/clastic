@@ -28,7 +28,10 @@ except ImportError:
 try:
     import sysconfig
 except ImportError:
-    sysconfig = None
+    try:
+        from distutils import sysconfig
+    except ImportError:
+        sysconfig = None
 
 
 from application import Application, NullRoute, RESERVED_ARGS
@@ -402,11 +405,17 @@ class SysconfigPeripheral(MetaPeripheral):
     group_key = 'pyvm'
 
     def get_context(self):
+        ret = {}
         try:
-            return {'sysconfig': sysconfig.get_config_vars(),
-                    'paths': sysconfig.get_paths()}
+            ret['sysconfig'] = sysconfig.get_config_vars()
         except:
-            return {}
+            pass
+        try:
+            ret['paths'] = sysconfig.get_paths()
+        except:
+            pass
+        return ret
+
 
 
 DEFAULT_PERIPHERALS = [BasicPeripheral(),
