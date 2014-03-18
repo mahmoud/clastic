@@ -25,6 +25,12 @@ try:
 except ImportError:
     resource = None
 
+try:
+    import sysconfig
+except ImportError:
+    sysconfig = None
+
+
 from application import Application, NullRoute, RESERVED_ARGS
 from sinter import getargspec, inject
 from render import render_json, AshesRenderFactory
@@ -167,9 +173,12 @@ def get_pyvm_info():
     ret['executable'] = sys.executable
     ret['is_64bit'] = IS_64BIT
     ret['version'] = sys.version
+    ret['compiler'] = platform.python_compiler()
+    ret['build_date'] = platform.python_build()[1]
     ret['version_info'] = list(sys.version_info)
     ret['have_ucs4'] = getattr(sys, 'maxunicode', 0) > 65536
     ret['have_readline'] = HAVE_READLINE
+
     try:
         ret['active_thread_count'] = len(sys._current_frames())
     except:
@@ -388,6 +397,18 @@ class PythonPeripheral(AshesMetaPeripheral):
     get_context = staticmethod(get_pyvm_info)
 
 
+class SysconfigPeripheral(MetaPeripheral):
+    title = 'Python System Configuration'
+    group_key = 'pyvm'
+
+    def get_context(self):
+        try:
+            return {'sysconfig': sysconfig.get_config_vars(),
+                    'paths': sysconfig.get_paths()}
+        except:
+            return {}
+
+
 DEFAULT_PERIPHERALS = [BasicPeripheral(),
                        RoutePeripheral(),
                        MiddlewarePeripheral(),
@@ -395,7 +416,8 @@ DEFAULT_PERIPHERALS = [BasicPeripheral(),
                        HostPeripheral(),
                        ProcessPeripheral(),
                        ResourceUsagePeripheral(),
-                       PythonPeripheral()]
+                       PythonPeripheral(),
+                       SysconfigPeripheral()]
 
 
 class MetaApplication(Application):
