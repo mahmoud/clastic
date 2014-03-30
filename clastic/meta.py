@@ -333,8 +333,9 @@ class RoutePeripheral(AshesMetaPeripheral):
     group_key = 'app'
     template_path = 'meta_route_section.html'
 
-    def get_context(self, _application):
-        return {'routes': get_route_infos(_application)}
+    def get_context(self, _application, script_root):
+        return {'routes': get_route_infos(_application),
+                'script_root': script_root}
 
 
 class MiddlewarePeripheral(AshesMetaPeripheral):
@@ -450,12 +451,13 @@ class MetaApplication(Application):
                   SimpleContextProcessor('script_root')]
         super(MetaApplication, self).__init__(routes, resources, mwares)
 
-    def get_main(self, request, _application, _route):
+    def get_main(self, request, _application, _route, script_root):
         full_ctx = {'page_title': self.page_title}
         kwargs = {'request': request,
                   '_route': _route,
                   '_application': _application,
-                  '_meta_application': self}
+                  '_meta_application': self,
+                  'script_root': script_root}
         for peri in self.peripherals:
             try:
                 peri_ctx = inject(peri.get_context, kwargs)
