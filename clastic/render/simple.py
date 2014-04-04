@@ -25,7 +25,10 @@ class ClasticJSONEncoder(JSONEncoder):
             except:
                 pass
         if isinstance(obj, Sized) and isinstance(obj, Iterable):
-            return list(obj)
+            try:
+                return list(obj)
+            except:
+                pass
         if callable(getattr(obj, 'to_dict', None)):
             return obj.to_dict()
 
