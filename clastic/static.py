@@ -41,6 +41,8 @@ def peek_file(file_obj, size=-1):
 
 
 def find_file(search_paths, path, limit_root=True):
+    if path.startswith('/') and limit_root:
+        raise ValueError('expected relative path, not %r' % path)
     rel_path = os.path.normpath(path)
     if rel_path.startswith(os.pardir) and limit_root:
         raise ValueError('attempted to access beyond root directory')
