@@ -117,6 +117,9 @@ class HTTPException(BaseResponse, Exception):
     def to_escaped_dict(self):
         ret = {}
         for k, v in self.to_dict().items():
+            if v is None:
+                ret[k] = ''
+                continue
             try:
                 ret[k] = cgi.escape(v, True)
             except Exception as e:
@@ -143,6 +146,7 @@ class HTTPException(BaseResponse, Exception):
         if params['detail']:
             lines.append('<p>{detail}</p>')
         if params['error_type']:
+            import pdb;pdb.set_trace()
             if params['error_type'].startswith('http'):
                 lines.append('<p>Error type: '
                              '<a target="_blank" href="{error_type}">'
