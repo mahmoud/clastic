@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import mimetypes
+
 from os.path import isfile, join as pjoin
 from datetime import datetime
 
@@ -23,6 +25,8 @@ DEFAULT_BINARY_MIME = 'application/octet-stream'
 _PRINTABLE = ''.join([chr(x) for x in [7, 8, 9, 10, 12, 13, 27] +
                       range(32, 256)])
 
+IS_WINDOWS = sys.platform == 'win32'
+
 
 def is_binary_string(byte_string, sample_size=4096):
     if len(byte_string) > sample_size:
@@ -41,11 +45,14 @@ def peek_file(file_obj, size=-1):
 
 
 def find_file(search_paths, path, limit_root=True):
-    if path.startswith('/') and limit_root:
-        raise ValueError('expected relative path, not %r' % path)
     rel_path = os.path.normpath(path)
-    if rel_path.startswith(os.pardir) and limit_root:
-        raise ValueError('attempted to access beyond root directory')
+    if limit_root:
+        if rel_path.startswith('/'):
+            raise ValueError('expected relative path, not %r' % path)
+        if IS_WINDOWS and ':' in path:
+            raise ValueError('unexpected colon in path: %r' % path)
+        if rel_path.startswith(os.pardir):
+            raise ValueError('attempted to access beyond root directory')
     for sr in search_paths:
         full_path = pjoin(sr, rel_path)
         if isfile(full_path):

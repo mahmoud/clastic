@@ -27,3 +27,5 @@ def test_basic_static_serve():
     yield eq_, resp.status_code, 200
     resp = c.get('/static/_ashes_tmpls/../../core.py')
     yield eq_, resp.status_code, 403
+    resp = c.get('/static//etc/hosts')
+    yield eq_, resp.status_code, 403
