@@ -83,7 +83,7 @@ def iter_monitor_files():
                     yield filename
 
 
-def restart_with_reloader():
+def restart_with_reloader(error_func=None):
     to_mon = []
     while 1:
         _log('info', ' * Clastic restarting with reloader')
@@ -117,14 +117,10 @@ def restart_with_reloader():
 
         if exit_code == 3:
             continue
-        elif exit_code == 1 and stderr_buff:
+        elif error_func and exit_code == 1 and stderr_buff:
             enable_tty_echo()
-            from clastic import flaw
             tb_str = ''.join(stderr_buff)
-            err_app = flaw.create_app(tb_str, to_mon)
-            # TODO: these values should be passed through
-            err_server = make_server('localhost', 5000, err_app)
-            thread.start_new_thread(err_server.serve_forever, ())
+            err_server = error_func(tb_str, to_mon)
             try:
                 reloader_loop(to_mon, 1)
             except KeyboardInterrupt:
@@ -141,7 +137,8 @@ def restart_with_reloader():
             return exit_code
 
 
-def run_with_reloader(main_func, extra_files=None, interval=1):
+def run_with_reloader(main_func, extra_files=None, interval=1,
+                      error_func=None):
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
     enable_tty_echo()
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
@@ -156,7 +153,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1):
             sys.stderr.write(repr(mon_list))
             raise
     try:
-        sys.exit(restart_with_reloader())
+        sys.exit(restart_with_reloader(error_func=error_func))
     except KeyboardInterrupt:
         pass
 
@@ -176,6 +173,13 @@ def run_simple(hostname, port, application, use_reloader=False,
                     threaded=threaded, passthrough_errors=passthrough_errors,
                     ssl_context=ssl_context).serve_forever()
 
+    def serve_error_app(tb_str, monitored_files):
+        from clastic import flaw
+        err_app = flaw.create_app(tb_str, monitored_files)
+        err_server = make_server(hostname, port, err_app)
+        thread.start_new_thread(err_server.serve_forever, ())
+        return err_server
+
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         display_hostname = hostname != '*' and hostname or 'localhost'
         if ':' in display_hostname:
@@ -185,6 +189,7 @@ def run_simple(hostname, port, application, use_reloader=False,
 
     if use_reloader:
         open_test_socket(hostname, port)
-        run_with_reloader(serve_forever, extra_files, reloader_interval)
+        run_with_reloader(serve_forever, extra_files, reloader_interval,
+                          error_func=serve_error_app)
     else:
         serve_forever()
