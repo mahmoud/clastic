@@ -29,7 +29,9 @@ Hello World!
 
 Getting up and running with Clastic is exceedingly difficult. Just try
 and create a file called ``hello.py`` with the following
-indecipherable runes::
+indecipherable runes:
+
+.. code-block:: python
 
   from clastic import Application, render_basic
 
@@ -53,7 +55,9 @@ Getting fancy with request objects
 
 If we add the ``request`` argument to any endpoint function, we get
 access to all of the request data, including any GET or POST
-parameters or cookies that may have been sent with the request.::
+parameters or cookies that may have been sent with the request.:
+
+.. code-block:: python
 
   from clastic import Application, render_basic
 
@@ -98,7 +102,9 @@ route, opting to instantiate and return our own ``Response`` object
 directly.
 
 In the following example, we alter the response headers and status
-code to forward the browser back to the main page::
+code to forward the browser back to the main page:
+
+.. code-block:: python
 
   from clastic import Application, render_basic, Response, redirect
 
@@ -274,7 +280,9 @@ Application
    instances, with an optional Render Factory to create the rendering
    step for each of the routes.
 
-And with any luck this simple Application should be even simpler::
+And with any luck this simple Application should be even simpler:
+
+.. code-block:: python
 
    resources = {'start_time': time.time()}
    middlewares = [CookieSessionMiddleware()]
@@ -304,7 +312,9 @@ A simple example
 ^^^^^^^^^^^^^^^^
 
 Arguments are simply checked by name. Consider the following
-"Hello, World!" Application::
+"Hello, World!" Application:
+
+.. code-block:: python
 
   from clastic import Application, render_basic
 
@@ -322,7 +332,9 @@ the root URL, and one which takes a ``name`` as a URL path segment. On
 visiting the root URL, one sees ``Hello, world!``, and if a ``name`` is
 provided, ``Hello, (whatever-was-in-the-URL)``.
 
-If the ``hello()`` function was changed to read::
+If the ``hello()`` function was changed to read:
+
+.. code-block:: python
 
   def hello(first_name):
       return 'Hello, %s!' % first_name
@@ -334,7 +346,9 @@ raised, originating from line 9, ``app = Application(routes)``::
 
 Hmm, looks like we've got a bug, but at least we caught it early. In
 the future we should probably use a message bus or maybe Cassandra??
-Actually, let's write a quick test::
+Actually, let's write a quick test:
+
+.. code-block:: python
 
   def test_hello():
       assert hello() == 'Hello, world!'
@@ -446,7 +460,9 @@ There is one substantial exception to this assertion, which is that of
 function decorators, which make extensive use of ``*args`` and
 ``**kwargs``, and of which Clastic is a close cousin. To use
 decorators, simply import ``clastic_decorator`` and decorate your
-decorator, like so::
+decorator, like so:
+
+.. code-block:: python
 
   from clastic.decorators import clastic_decorator
   cl_my_deco = clastic_decorator(my_deco)
@@ -573,7 +589,9 @@ In any framework, all but the simplest middlewares serve some stateful
 purpose. Even a simple timer middleware needs to associate a request
 with a response to calculate how much time elapsed in between. In
 other middleware paradigms, this state usually ends up attached to the
-``request`` object, or worse, somewhere in global state::
+``request`` object, or worse, somewhere in global state:
+
+.. code-block:: python
 
    class DjangoTimingMiddleware(object):
        # Django-like, might be somewhat simplified
@@ -588,7 +606,9 @@ other middleware paradigms, this state usually ends up attached to the
        def process_exception(self, request, exception):
            ...  # TODO: exception handling
 
-In Clastic, this would look like::
+In Clastic, this would look like:
+
+.. code-block:: python
 
    class TimingMiddleware(Middleware):
        def request(self, next):
@@ -610,7 +630,9 @@ Provides
 Often, well-intentioned middlewares want to give a little something
 back. Clastic let's them do this with *provides*. For an example of
 this, here's an ever-so-slightly simplified version of Clastic's basic
-built-in cookie session middleware::
+built-in cookie session middleware:
+
+.. code-block:: python
 
     class CookieSessionMiddleware(Middleware):
         provides = ('session',)
@@ -676,11 +698,15 @@ Proactive URL route checking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For an example of the aggressive checking Clastic provides, consider
-the following Django URL route::
+the following Django URL route:
+
+.. code-block:: python
 
    (r'^articles/(?P<year>\d{4})/$', 'news.views.year_archive')
 
-And view function::
+And view function:
+
+.. code-block:: python
 
     def year_archive(year, month):
         pass
