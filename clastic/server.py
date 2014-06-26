@@ -97,13 +97,18 @@ def restart_with_reloader(error_func=None):
         stderr_buff = []
         child_proc = subprocess.Popen(args, env=new_environ, stderr=subprocess.PIPE)
         rf = child_proc.stderr
+        stderr_is_open = True
         exit_code, lines = None, []
         while exit_code is None or lines:
-            if child_proc.poll() is None:
-                lines.append(rf.readline())
-            elif exit_code is None:
+            exit_code = child_proc.poll()
+            if exit_code is None and stderr_is_open:
+                line = rf.readline()
+                if not line:
+                    stderr_is_open = False
+                    continue
+                lines.append(line)
+            else:
                 lines.extend(rf.readlines())
-                exit_code = child_proc.returncode
                 if not lines:
                     break
             cur_line = lines.pop(0)
@@ -149,8 +154,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1,
             return
         except SystemExit:
             mon_list = list(chain(iter_monitor_files(), extra_files or ()))
-            sys.stderr.write(_MON_PREFIX)
-            sys.stderr.write(repr(mon_list))
+            sys.stderr.write('%s%r\n' % (_MON_PREFIX, mon_list))
             raise
     try:
         sys.exit(restart_with_reloader(error_func=error_func))
