@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from collections import deque
 import os
 import sys
 import socket
@@ -94,32 +95,20 @@ def restart_with_reloader(error_func=None):
             for key, value in new_environ.iteritems():
                 if isinstance(value, unicode):
                     new_environ[key] = value.encode('iso-8859-1')
-        stderr_buff = []
-        child_proc = subprocess.Popen(args, env=new_environ, stderr=subprocess.PIPE)
-        rf = child_proc.stderr
-        stderr_is_open = True
-        exit_code, lines = None, []
-        while exit_code is None or lines:
-            exit_code = child_proc.poll()
-            if exit_code is None and stderr_is_open:
-                line = rf.readline()
-                if not line:
-                    stderr_is_open = False
-                    continue
-                lines.append(line)
-            else:
-                lines.extend(rf.readlines())
-                if not lines:
-                    break
-            cur_line = lines.pop(0)
-            if cur_line.startswith(_MON_PREFIX):
-                to_mon = literal_eval(cur_line[len(_MON_PREFIX):])
-            else:
-                sys.stderr.write(cur_line)
-                stderr_buff.append(cur_line)
-                if len(stderr_buff) > _STDERR_BUFF_SIZE:
-                    stderr_buff.pop(0)
+        child_proc = subprocess.Popen(args,
+                                      env=new_environ,
+                                      stderr=subprocess.PIPE)
+        stderr_buff = deque(maxlen=_STDERR_BUFF_SIZE)
 
+        while child_proc.poll() is None:
+            for line in iter(child_proc.stderr.readline, ''):
+                if line.startswith(_MON_PREFIX):
+                    to_mon = literal_eval(line[len(_MON_PREFIX):])
+                else:
+                    sys.stderr.write(line)
+                    stderr_buff.append(line)
+
+        exit_code = child_proc.returncode
         if exit_code == 3:
             continue
         elif error_func and exit_code == 1 and stderr_buff:
