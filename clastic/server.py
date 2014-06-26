@@ -100,13 +100,17 @@ def restart_with_reloader(error_func=None):
                                       stderr=subprocess.PIPE)
         stderr_buff = deque(maxlen=_STDERR_BUFF_SIZE)
 
-        while child_proc.poll() is None:
+        def consume_lines():
             for line in iter(child_proc.stderr.readline, ''):
                 if line.startswith(_MON_PREFIX):
-                    to_mon = literal_eval(line[len(_MON_PREFIX):])
+                    to_mon[:] = literal_eval(line[len(_MON_PREFIX):])
                 else:
                     sys.stderr.write(line)
                     stderr_buff.append(line)
+
+        while child_proc.poll() is None:
+            consume_lines()
+        consume_lines()
 
         exit_code = child_proc.returncode
         if exit_code == 3:
