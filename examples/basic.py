@@ -30,14 +30,32 @@ def debug(request, _application, _route, **kw):
     return {}
 
 
+def fizzbuzz(limit):
+    """\
+    See http://rosettacode.org/wiki/FizzBuzz for more info.
+    """
+    ret = []
+    for i in xrange(1, int(limit) + 1):
+        if i % 15 == 0:
+            ret.append("FizzBuzz")
+        elif i % 3 == 0:
+            ret.append("Fizz")
+        elif i % 5 == 0:
+            ret.append("Buzz")
+        else:
+            ret.append(str(i))
+    return ret
+
+
 def create_decked_out_app():
     resources = {'start_time': time.time(),
                  'module_list': sys.modules.keys()}
-    middlewares = [GetParamMiddleware(['name', 'date', 'session_id']),
+    middlewares = [GetParamMiddleware(['name', 'date', 'session_id', 'limit']),
                    SignedCookieMiddleware(),
                    SimpleContextProcessor('name')]
     routes = [('/', cookie_hello_world, render_basic),
               ('/debug', debug, render_basic),
+              ('/fizzbuzz/', fizzbuzz, render_basic),
               ('/modules/', see_modules, render_basic)]
     return Application(routes, resources, middlewares=middlewares)
 
