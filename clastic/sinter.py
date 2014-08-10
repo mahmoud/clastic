@@ -11,8 +11,8 @@ _INDENT = '    '
 
 def getargspec(f):
     # TODO: support partials
-    if not inspect.isfunction(f) and not inspect.ismethod(f) \
-            and hasattr(f, '__call__'):
+    if not (inspect.isfunction(f) or inspect.ismethod(f) or \
+            inspect.isbuiltin(f)) and hasattr(f, '__call__'):
         if isinstance(getattr(f, '_argspec', None), ArgSpec):
             return f._argspec
         f = f.__call__  # callable objects
