@@ -35,6 +35,7 @@ def fizzbuzz(limit):
     See http://rosettacode.org/wiki/FizzBuzz for more info.
     """
     ret = []
+    limit = limit or 0
     for i in xrange(1, int(limit) + 1):
         if i % 15 == 0:
             ret.append("FizzBuzz")
@@ -55,7 +56,7 @@ def create_decked_out_app():
                    SimpleContextProcessor('name')]
     routes = [('/', cookie_hello_world, render_basic),
               ('/debug', debug, render_basic),
-              ('/fizzbuzz/', fizzbuzz, render_basic),
+              ('/fizzbuzz', fizzbuzz, render_basic),
               ('/modules/', see_modules, render_basic)]
     return Application(routes, resources, middlewares=middlewares)
 
