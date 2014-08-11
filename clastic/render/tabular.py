@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import cgi
 from inspect import getargspec
 
 from werkzeug.wrappers import Response
@@ -12,8 +13,11 @@ _CSS_PATH = _CUR_PATH + '/../_clastic_assets/common.css'
 try:
     _STYLE_CONTENT = open(_CSS_PATH).read()
 except:
-    import pdb;pdb.set_trace()
     _STYLE_CONTENT = ''
+
+
+def escape_html(text):
+    return cgi.escape(text, True)
 
 
 class TabularRender(object):
@@ -36,8 +40,16 @@ class TabularRender(object):
         func_name = func_name.replace('<', '(').replace('>', ')')
         args, _, _, _ = getargspec(route.endpoint)
         argstr = ', '.join(args)
-        title = ('<h2><small><sub>%s</sub></small><br/>%s(%s)</h2>'
-                 % (module_name, func_name, argstr))
+
+        func_doc = getattr(route.endpoint, '__doc__', '')
+        if func_doc:
+            escaped_doc = escape_html(func_doc.lstrip())
+            html_doc = '<p style="white-space: pre;">%s</p>' % escaped_doc
+        else:
+            html_doc = '<!-- add a docstring to display a message here! -->'
+
+        title = ('<h2><small><sub>%s</sub></small><br/>%s(%s)</h2>%s'
+                 % (module_name, func_name, argstr, html_doc))
         return title
 
     def __call__(self, context, _route):
