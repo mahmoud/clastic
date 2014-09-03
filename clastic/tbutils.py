@@ -3,8 +3,10 @@
 """Extract, format and print information about Python stack traces."""
 from __future__ import print_function
 
-import linecache
+import re
 import sys
+import linecache
+
 
 # TODO: cross compatibility (jython, etc.)
 # TODO: parser
@@ -30,6 +32,20 @@ class Callpoint(object):
         self.module_path = module_path
         self.lasti = lasti
         self.line = line
+
+    def to_dict(self):
+        ret = {}
+        for slot in self.__slots__:
+            try:
+                ret[slot] = getattr(self, slot)
+            except AttributeError:
+                pass
+        return ret
+
+    @classmethod
+    def from_current(cls, level=1):
+        frame = sys._getframe(level)
+        return cls.from_frame(frame)
 
     @classmethod
     def from_frame(cls, frame):
@@ -181,16 +197,10 @@ class TracebackInfo(object):
 
     @classmethod
     def from_dict(cls, d):
-        # TODO: respect message, exception; part of
-        # StackInfo/TracebackInfo split
         return cls(d['frames'])
 
     def to_dict(self):
-        # TODO: fill in message, exception; part of
-        # StackInfo/TracebackInfo split
-        return {'frames': [f._asdict() for f in self],
-                'message': None,
-                'exception': None}
+        return {'frames': [f.to_dict() for f in self.frames]}
 
     def __len__(self):
         return len(self.frames)
@@ -316,6 +326,78 @@ def fix_print_exception():
     sys.excepthook = print_exception
 
 
+_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)'
+                       r', in (?P<funcname>.+)$')
+_se_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)')
+
+
+class ParsedTB(object):
+    """
+    Parses a traceback string as typically output by sys.excepthook.
+    """
+    def __init__(self, exc_type_name, exc_msg, frames=None):
+        self.exc_type = exc_type_name
+        self.exc_msg = exc_msg
+        self.frames = list(frames or [])
+
+    @property
+    def source_file(self):
+        try:
+            return self.frames[-1]['filepath']
+        except IndexError:
+            return None
+
+    def to_dict(self):
+        return {'exc_type': self.exc_type,
+                'exc_msg': self.exc_msg,
+                'frames': self.frames}
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return ('%s(%r, %r, frames=%r)'
+                % (cn, self.exc_type, self.exc_msg, self.frames))
+
+    @classmethod
+    def from_string(cls, tb_str):
+        if not isinstance(tb_str, unicode):
+            tb_str = tb_str.decode('utf-8')
+        tb_lines = tb_str.lstrip().splitlines()
+        if tb_lines[0].strip() == 'Traceback (most recent call last):':
+            frame_lines = tb_lines[1:-1]
+            frame_re = _frame_re
+        elif len(tb_lines) > 1 and tb_lines[-2].lstrip().startswith('^'):
+            frame_lines = tb_lines[:-2]
+            frame_re = _se_frame_re
+        else:
+            raise ValueError('unrecognized traceback string format')
+        while tb_lines:
+            cl = tb_lines[-1]
+            if cl.startswith('Exception ') and cl.endswith('ignored'):
+                # handle some ignored exceptions
+                tb_lines.pop()
+            else:
+                break
+        for line in reversed(tb_lines):
+            # get the bottom-most line that looks like an actual Exception
+            # repr(), (i.e., "Exception: message")
+            exc_type, sep, exc_msg = line.partition(':')
+            if sep and exc_type and len(exc_type.split()) == 1:
+                break
+
+        frames = []
+        for pair_idx in range(0, len(frame_lines), 2):
+            frame_line = frame_lines[pair_idx].strip()
+            frame_match = frame_re.match(frame_line)
+            if frame_match:
+                frame_dict = frame_match.groupdict()
+            else:
+                continue
+            frame_dict['source_line'] = frame_lines[pair_idx + 1].strip()
+            frames.append(frame_dict)
+
+        return cls(exc_type, exc_msg, frames)
+
+
 if __name__ == '__main__':
     import cStringIO
 
@@ -357,5 +439,22 @@ if __name__ == '__main__':
 
     assert new_exc_hook_res == builtin_exc_hook_res
 
-    print('1: ', repr(exc_info))
-    print('2: ', repr(exc_info2))
+    FAKE_TB_STR = u"""
+Traceback (most recent call last):
+  File "example.py", line 2, in <module>
+    plarp
+NameError: name 'plarp' is not defined
+"""
+    parsed_tb = ParsedTB.from_string(FAKE_TB_STR)
+    print(parsed_tb)
+
+    def func1():
+        return func2()
+    def func2():
+        return func3()
+    def func3():
+        return Callpoint.from_current(level=2)
+
+    callpoint = func1()
+    print(repr(callpoint))
+    assert 'func2' in repr(callpoint)
