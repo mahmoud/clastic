@@ -4,16 +4,18 @@ from __future__ import unicode_literals
 import os
 import re
 import cgi
-import json
-import urllib
-import codecs
-
 import sys
+import json
+import codecs
+import pprint
+import urllib
+
+
 PY3 = (sys.version_info[0] == 3)
 if PY3:
     unicode, basestring = str, str
 
-__version__ = '0.6.0'
+__version__ = '0.7.2dev'
 __author__ = 'Mahmoud Hashemi'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/ashes'
@@ -27,7 +29,7 @@ node_re = re.compile(r'({'
                      r'(?:(?P<symbol>[\~\#\?\@\:\<\>\+\^\%])\s*)?'
                      r'(?P<refpath>[a-zA-Z0-9_\$\.]+|"[^"]+")'
                      r'(?:\:(?P<contpath>[a-zA-Z0-9\$\.]+))?'
-                     r'(?P<filters>\|[a-z]+)*?'
+                     r'(?P<filters>[\|a-z]+)*?'
                      r'(?P<params>(?:\s+\w+\=(("[^"]*?")|([\w\.]+)))*)?'
                      r'\s*'
                      r'(?P<selfclosing>\/)?'
@@ -37,7 +39,7 @@ node_re = re.compile(r'({'
 key_re_str = '[a-zA-Z_$][0-9a-zA-Z_$]*'
 key_re = re.compile(key_re_str)
 path_re = re.compile('(' + key_re_str + ')?(\.' + key_re_str + ')+')
-comment_re = re.compile(r'(\{!.+?!\})', flags=re.DOTALL)
+comment_re = re.compile(r'(\{!.+?!\})|(\{`.+?`\})', flags=re.DOTALL)
 
 
 def get_path_or_key(pork):
@@ -84,6 +86,11 @@ class Token(object):
 class CommentToken(Token):
     def to_dust_ast(self):
         return [['comment', self.text]]
+
+
+class RawToken(Token):
+    def to_dust_ast(self):
+        return [['raw', self.text]]
 
 
 class BufferToken(Token):
@@ -173,10 +180,6 @@ class Tag(Token):
         return obj
 
 
-class BlockTag(Tag):
-    all_attrs = ('contpath',)
-
-
 class ReferenceTag(Tag):
     all_attrs = ('refpath',)
     opt_attrs = ('filters',)
@@ -218,14 +221,34 @@ class PartialTag(Tag):
         self.subtokens = parse_inline(self.refpath)
 
     def to_dust_ast(self):
+        """
+            2014.05.09
+                This brings compatibility to the more popular fork of Dust.js
+                from LinkedIn (v1.0)
+
+                Adding in `params` so `partials` function like sections.
+        """
         context = ['context']
         contpath = self.contpath
         if contpath:
             context.append(get_path_or_key(contpath))
+
+        params = ['params']
+        param_list = self.param_list
+        if param_list:
+            try:
+                params.extend(params_to_dust_ast(param_list))
+            except ParseError as pe:
+                pe.token = self
+                raise
+
+        ## tying to make this more standardized
         inline_body = inline_to_dust_ast(self.subtokens)
         return [['partial',
                  inline_body,
-                 context]]
+                 context,
+                 params,
+                 ]]
 
 
 def parse_inline(source):
@@ -315,8 +338,11 @@ def tokenize(source, inline=False):
     for cnc in com_nocom:
         if not cnc:
             continue
-        if cnc.startswith('{!') and cnc.endswith('!}'):
+        elif cnc.startswith('{!') and cnc.endswith('!}'):
             _add_token(CommentToken(cnc[2:-2]))
+            continue
+        elif cnc.startswith('{`') and cnc.endswith('`}'):
+            _add_token(RawToken(cnc[2:-2]))
             continue
         prev_end = 0
         start = None
@@ -497,7 +523,7 @@ DEFAULT_OPTIMIZERS = {
     'format': 'nullify',
     'comment': 'nullify'}
 
-for nsym in ('buffer', 'filters', 'key', 'path', 'literal'):
+for nsym in ('buffer', 'filters', 'key', 'path', 'literal', 'raw'):
     DEFAULT_OPTIMIZERS[nsym] = 'noop'
 
 for nsym in ('#', '?', '^', '<', '+', '@', '%', 'reference',
@@ -666,7 +692,6 @@ class Compiler(object):
             return self._section(node, stype)
         elif ntype in self.nodes:
             ntype = self.nodes[ntype]
-
         cfunc = getattr(self, '_' + ntype, None)
         if not callable(cfunc):
             raise TypeError('unsupported node type: "%r"', node[0])
@@ -684,6 +709,9 @@ class Compiler(object):
         for part in body[1:]:
             parts.append(self._node(part))
         return ''.join(parts)
+
+    def _raw(self, node):
+        return '.write(%r)' % node[1]
 
     def _buffer(self, node):
         return '.write(%s)' % escape(node[1])
@@ -748,11 +776,29 @@ class Compiler(object):
         return pragma(self, ctx, bodies, params)
 
     def _partial(self, node):
+        """
+        2014.05.09
+          This brings compatibility to the more popular fork of Dust.js
+          from LinkedIn (v1.0)
+
+          Adding in `params` so `partials` function like sections.
+          updating call to .partial() to include the kwargs
+
+          dust.js reference :
+                compile.nodes = {
+                    partial: function(context, node) {
+                      return '.partial(' +
+                          compiler.compileNode(context, node[1]) +
+                          ',' + compiler.compileNode(context, node[2]) +
+                          ',' + compiler.compileNode(context, node[3]) + ')';
+                    },
+        """
         if node[0] == 'body':
             body_name = self._node(node[1])
             return '.partial(' + body_name + ', %s)' % self._node(node[2])
-        return '.partial(%s, %s)' % (self._node(node[1]),
-                                     self._node(node[2]))
+        return '.partial(%s, %s, %s)' % (self._node(node[1]),
+                                         self._node(node[2]),
+                                         self._node(node[3]))
 
     def _context(self, node):
         contpath = node[1:]
@@ -796,12 +842,24 @@ class Compiler(object):
 # Runtime
 #########
 
-# Escapes/filters
 
+class UndefinedValueType(object):
+    def __repr__(self):
+        return self.__class__.__name__ + '()'
+
+    def __str__(self):
+        return ''
+
+
+UndefinedValue = UndefinedValueType()
+
+
+# Escapes/filters
 
 def escape_html(text):
     text = unicode(text)
-    # TODO: dust.js doesn't use this, but maybe we should: .replace("'", '&squot;')
+    # TODO: dust.js doesn't use this, but maybe we should:
+    # .replace("'", '&squot;')
     return cgi.escape(text, True)
 
 
@@ -829,6 +887,28 @@ def escape_uri_component(text):
             .replace('?', '%3F')
             .replace('=', '%3D')
             .replace('&', '%26'))
+
+
+def comma_num(val):
+    try:
+        return '{0:,}'.format(val)
+    except ValueError:
+        return str(val)
+
+
+def pp_filter(val):
+    return pprint.pformat(val)
+
+
+JSON_PP_INDENT = 2
+
+
+def ppjson_filter(val):
+    "A best-effort pretty-printing filter, based on the JSON module"
+    try:
+        return json.dumps(val, indent=JSON_PP_INDENT, sort_keys=True)
+    except TypeError:
+        return unicode(val)
 
 
 # Helpers
@@ -884,10 +964,12 @@ def _do_compare(chunk, context, bodies, params, cmp_op):
         body = bodies['block']
         key = params['key']
         value = params['value']
-        typestr = params.get('type', 'string')
+        typestr = params.get('type')
     except KeyError:
         return chunk
     rkey = _resolve_value(key, chunk, context)
+    if not typestr:
+        typestr = _COERCE_REV_MAP.get(type(rkey), 'string')
     rvalue = _resolve_value(value, chunk, context)
     crkey, crvalue = _coerce(rkey, typestr), _coerce(rvalue, typestr)
     if isinstance(crvalue, type(crkey)) and cmp_op(crkey, crvalue):
@@ -913,6 +995,12 @@ _COERCE_MAP = {
     'string': unicode,
     'boolean': bool,
 }  # Not implemented: date, context
+_COERCE_REV_MAP = dict([(v, k) for k, v in _COERCE_MAP.items()])
+_COERCE_REV_MAP[int] = 'number'
+try:
+    _COERCE_REV_MAP[long] = 'number'
+except NameError:
+    pass
 
 
 def _coerce(value, typestr):
@@ -948,10 +1036,43 @@ DEFAULT_HELPERS = {'first': first_helper,
                    'size': size_helper}
 DEFAULT_HELPERS.update(_make_compare_helpers())
 
+
+def make_base(env, stack, global_vars=None):
+    """`make_base( env, stack, global_vars=None )`
+        `env` and `stack` are required by the Python implementation.
+        `global_vars` is optional. set to global_vars.
+
+    2014.05.09
+        This brings compatibility to the more popular fork of Dust.js
+        from LinkedIn (v1.0)
+
+        adding this to try and create compatibility with Dust
+
+        this is used for the non-activated alternative approach of rendering a
+        partial with a custom context object
+
+          dust.makeBase = function(global) {
+            return new Context(new Stack(), global);
+          };
+    """
+    return Context(env, stack, global_vars)
+
+
 # Actual runtime objects
 
-
 class Context(object):
+    """\
+    The context is a special object that handles variable lookups and
+    controls template behavior. It is the interface between your
+    application logic and your templates. The context can be
+    visualized as a stack of objects that grows as we descend into
+    nested sections.
+
+    When looking up a key, Dust searches the context stack from the
+    bottom up. There is no need to merge helper functions into the
+    template data; instead, create a base context onto which you can
+    push your local template data.
+    """
     def __init__(self, env, stack, global_vars=None, blocks=None):
         self.env = env
         self.stack = stack
@@ -966,52 +1087,98 @@ class Context(object):
             return context
         return cls(env, Stack(context))
 
-    def get(self, key):
-        ctx = self.stack
-        value = None
-        while ctx:
-            try:
-                value = ctx.head[key]
-            except (AttributeError, KeyError, TypeError):
-                ctx = ctx.tail
-            else:
-                return value
-        if value is None:
-            return self.globals.get(key)
-        else:
-            return value
+    def get(self, path, cur=False):
+        "Retrieves the value `path` as a key from the context stack."
+        if isinstance(path, (str, unicode)):
+            if path[0] == '.':
+                cur = True
+                path = path[1:]
+            path = path.split('.')
+        return self._get(cur, path)
 
     def get_path(self, cur, down):
+        return self._get(cur, down)
+
+    def _get(self, cur, down):
+        # many thanks to jvanasco for his contribution -mh 2014
+        """
+           * Get a value from the context
+           * @method `_get`
+           * @param {boolean} `cur` Get only from the current context
+           * @param {array} `down` An array of each step in the path
+           * @private
+           * @return {string | object}
+        """
         ctx = self.stack
-        length = len(down)  # TODO: try/except?
+        length = 0 if not down else len(down)  # TODO: try/except?
+
+        if not length:
+            # wants nothing?  ok, send back the entire payload
+            return ctx.head
+
+        first_path_element = down[0]
+
+        value = UndefinedValue
+
         if cur and not length:
-            return ctx.head  # aka implicit
-        try:
             ctx = ctx.head
-        except AttributeError:
-            return None
-        for down_part in down:
-            try:
-                ctx = ctx[down_part]
-            except (AttributeError, TypeError):
-                break
-            except KeyError:
+        else:
+            if not cur:
+                # Search up the stack for the first_path_element value
+                while ctx:
+                    if isinstance(ctx.head, dict):
+                        if first_path_element in ctx.head:
+                            value = ctx.head[first_path_element]
+                            break
+                    ctx = ctx.tail
+                if value is UndefinedValue:
+                    if first_path_element in self.globals:
+                        ctx = self.globals[first_path_element]
+                    else:
+                        ctx = UndefinedValue
+                else:
+                    ctx = value
+            else:
+                #if scope is limited by a leading dot, don't search up the tree
+                if first_path_element in ctx.head:
+                    ctx = ctx.head[first_path_element]
+                else:
+                    ctx = UndefinedValue
+
+            i = 1
+            while ctx and ctx is not UndefinedValue and i < length:
+                if down[i] in ctx:
+                    ctx = ctx[down[i]]
+                else:
+                    ctx = UndefinedValue
+                i += 1
+
+            if ctx is UndefinedValue:
                 return None
-        return ctx
+            else:
+                return ctx
 
     def push(self, head, index=None, length=None):
+        """\
+        Pushes an arbitrary value `head` onto the context stack and returns
+        a new `Context` instance. Specify `index` and/or `length` to enable
+        enumeration helpers."""
         return Context(self.env,
                        Stack(head, self.stack, index, length),
                        self.globals,
                        self.blocks)
 
     def rebase(self, head):
+        """\
+        Returns a new context instance consisting only of the value at
+        `head`, plus any previously defined global object."""
         return Context(self.env,
                        Stack(head),
                        self.globals,
                        self.blocks)
 
     def current(self):
+        """Returns the head of the context stack."""
         return self.stack.head
 
     def get_block(self, key):
@@ -1065,7 +1232,7 @@ class Stub(object):
         return ''.join(self._out)
 
     def flush(self):
-        chunk =  self.head
+        chunk = self.head
         while chunk:
             if chunk.flushable:
                 self._out.append(chunk.data)
@@ -1121,6 +1288,13 @@ def is_empty(obj):
 
 
 class Chunk(object):
+    """\
+    A Chunk is a Dust primitive for controlling the flow of the
+    template. Depending upon the behaviors defined in the context,
+    templates may output one or more chunks during rendering. A
+    handler that writes to a chunk directly must return the modified
+    chunk.
+    """
     def __init__(self, root, next_chunk=None, taps=None):
         self.root = root
         self.next = next_chunk
@@ -1130,12 +1304,19 @@ class Chunk(object):
         self.error = None
 
     def write(self, data):
+        "Writes data to this chunk's buffer"
         if self.taps:
             data = self.taps.go(data)
         self._data.append(data)
         return self
 
     def end(self, data=None):
+        """\
+        Writes data to this chunk's buffer and marks it as flushable. This
+        method must be called on any chunks created via chunk.map. Do
+        not call this method on a handler's main chunk -- dust.render
+        and dust.stream take care of this for you.
+        """
         if data:
             self.write(data)
         self.data = ''.join(self._data)
@@ -1144,6 +1325,15 @@ class Chunk(object):
         return self
 
     def map(self, callback):
+        """\
+        Creates a new chunk and passes it to `callback`. Use map to wrap
+        asynchronous functions and to partition the template for
+        streaming.  chunk.map tells Dust to manufacture a new chunk,
+        reserving a slot in the output stream before continuing on to
+        render the rest of the template. You must (eventually) call
+        chunk.end() on a mapped chunk to weave its content back into
+        the stream.
+        """
         cursor = Chunk(self.root, self.next, self.taps)
         branch = Chunk(self.root, cursor, self.taps)
         self.next = branch
@@ -1153,6 +1343,7 @@ class Chunk(object):
         return cursor
 
     def tap(self, tap):
+        "Convenience methods for applying filters to a stream."
         if self.taps:
             self.taps = self.taps.push(tap)
         else:
@@ -1160,10 +1351,15 @@ class Chunk(object):
         return self
 
     def untap(self):
+        "Convenience methods for applying filters to a stream."
         self.taps = self.taps.tail
         return self
 
     def render(self, body, context):
+        """\
+        Renders a template block, such as a default block or an else
+        block. Basically equivalent to body(chunk, context).
+        """
         return body(self, context)
 
     def tap_render(self, body, context):
@@ -1181,6 +1377,13 @@ class Chunk(object):
         return ''.join(output)
 
     def reference(self, elem, context, auto, filters=None):
+        """\
+        These methods implement Dust's default behavior for keys,
+        sections, blocks, partials and context helpers. While it is
+        unlikely you'll need to modify these methods or invoke them
+        from within handlers, the source code may be a useful point of
+        reference for developers.
+        """
         if callable(elem):
             # this whole callable thing is a quirky thing about dust
             try:
@@ -1199,6 +1402,11 @@ class Chunk(object):
             return self.write(filtered)
 
     def section(self, elem, context, bodies, params=None):
+        """\
+        These methods implement Dust's default behavior for keys, sections,
+        blocks, partials and context helpers. While it is unlikely you'll need
+        to modify these methods or invoke them from within handlers, the
+        source code may be a useful point of reference for developers."""
         if callable(elem):
             try:
                 elem = elem(self, context, bodies, params)
@@ -1233,6 +1441,11 @@ class Chunk(object):
             return chunk
 
     def exists(self, elem, context, bodies, params=None):
+        """\
+        These methods implement Dust's default behavior for keys, sections,
+        blocks, partials and context helpers. While it is unlikely you'll need
+        to modify these methods or invoke them from within handlers, the
+        source code may be a useful point of reference for developers."""
         if not is_empty(elem):
             if bodies.get('block'):
                 return bodies['block'](self, context)
@@ -1241,6 +1454,13 @@ class Chunk(object):
         return self
 
     def notexists(self, elem, context, bodies, params=None):
+        """\
+        These methods implement Dust's default behavior for keys,
+        sections, blocks, partials and context helpers. While it is
+        unlikely you'll need to modify these methods or invoke them
+        from within handlers, the source code may be a useful point of
+        reference for developers.
+        """
         if is_empty(elem):
             if bodies.get('block'):
                 return bodies['block'](self, context)
@@ -1249,6 +1469,13 @@ class Chunk(object):
         return self
 
     def block(self, elem, context, bodies, params=None):
+        """\
+        These methods implement Dust's default behavior for keys,
+        sections, blocks, partials and context helpers. While it is
+        unlikely you'll need to modify these methods or invoke them
+        from within handlers, the source code may be a useful point of
+        reference for developers.
+        """
         body = bodies.get('block')
         if elem:
             body = elem
@@ -1256,13 +1483,28 @@ class Chunk(object):
             body(self, context)
         return self
 
-    def partial(self, elem, context, bodies=None):
+    def partial(self, elem, context, params=None):
+        """These methods implement Dust's default behavior for keys, sections,
+        blocks, partials and context helpers. While it is unlikely you'll need
+        to modify these methods or invoke them from within handlers, the
+        source code may be a useful point of reference for developers.
+        """
+        if params:
+            context = context.push(params)
         if callable(elem):
-            cback = lambda name, chk: context.env.load_chunk(name, chk, context).end()
+            _env = context.env
+            cback = lambda name, chk: _env.load_chunk(name, chk, context).end()
             return self.capture(elem, context, cback)
         return context.env.load_chunk(elem, self, context)
 
     def helper(self, name, context, bodies, params=None):
+        """\
+        These methods implement Dust's default behavior for keys,
+        sections, blocks, partials and context helpers. While it is
+        unlikely you'll need to modify these methods or invoke them
+        from within handlers, the source code may be a useful point of
+        reference for developers.
+        """
         return context.env.helpers[name](self, context, bodies, params)
 
     def capture(self, body, context, callback):
@@ -1277,6 +1519,7 @@ class Chunk(object):
         return self.map(map_func)
 
     def set_error(self, error):
+        "Sets an error on this chunk and immediately flushes the output."
         self.error = error
         self.root.flush()
         return self
@@ -1306,7 +1549,10 @@ DEFAULT_FILTERS = {
     'h': escape_html,
     'j': escape_js,
     'u': escape_uri,
-    'uc': escape_uri_component}
+    'uc': escape_uri_component,
+    'cn': comma_num,
+    'pp': pp_filter,
+    'ppjson': ppjson_filter}
 
 
 #########
@@ -1416,6 +1662,13 @@ class Template(object):
             # for testing/dev purposes
             return Compiler(self.env)._gen_python(ast)
         return func
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        name, source_file = self.name, self.source_file
+        if not source_file:
+            return '<%s name=%r>' % (cn, name)
+        return '<%s name=%r source_file=%r>' % (cn, name, source_file)
 
 
 class AshesException(Exception):
@@ -1730,10 +1983,21 @@ def _main():
                 '{/eq}'
                 ', {@size key=hello/} characters')
         ashes.register_source('hi', tmpl)
-        print(ashes.render('hi', {'hello': lambda x: None}))
+        #print(ashes.render('hi', {'hello': lambda x: None}))
     except Exception as e:
         import pdb;pdb.post_mortem()
         raise
+
+    ae = AshesEnv(filters={'cn': comma_num})
+    ae.register_source('cn_tmpl', 'comma_numd: {thing|cn}')
+    #print(ae.render('cn_tmpl', {'thing': 21000}))
+    ae.register_source('tmpl', '{`{ok}thing`}')
+    print(ae.render('tmpl', {'thing': 21000}))
+
+    ae.register_source('tmpl2', '{test|pp}')
+    out = ae.render('tmpl2', {'test': ['<hi>'] * 10})
+    print(out)
+
 
 if __name__ == '__main__':
     _main()
