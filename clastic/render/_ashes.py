@@ -8,7 +8,7 @@ import sys
 import json
 import codecs
 import pprint
-import urllib
+import string
 
 
 PY3 = (sys.version_info[0] == 3)
@@ -853,8 +853,41 @@ class UndefinedValueType(object):
 
 UndefinedValue = UndefinedValueType()
 
+# Prerequisites for escape_url_path
+
+
+def _make_quote_map(allowed_chars):
+    ret = {}
+    for i, c in zip(range(256), str(bytearray(range(256)))):
+        ret[c] = c if c in allowed_chars else '%{0:02X}'.format(i)
+    return ret
+
+# The unreserved URI characters (per RFC 3986)
+_UNRESERVED_CHARS = (frozenset(string.ascii_letters)
+                     | frozenset(string.digits)
+                     | frozenset('-._~'))
+_RESERVED_CHARS = frozenset(":/?#[]@!$&'()*+,;=")
+_PCT_ENCODING = (frozenset('%')
+                 | frozenset(string.hexdigits))
+_ALLOWED_CHARS = _UNRESERVED_CHARS | _RESERVED_CHARS | _PCT_ENCODING
+
+_PATH_QUOTE_MAP = _make_quote_map(_ALLOWED_CHARS - set('?#'))
+
+
+def escape_uri_path(text, to_bytes=True):
+    if not to_bytes:
+        return unicode().join([_PATH_QUOTE_MAP.get(c, c) for c in text])
+    try:
+        bytestr = text.encode('utf-8')
+    except UnicodeDecodeError:
+        bytestr = text
+    except:
+        raise ValueError('expected text or UTF-8 encoded bytes, not %r' % text)
+    return ''.join([_PATH_QUOTE_MAP[b] for b in bytestr])
+
 
 # Escapes/filters
+
 
 def escape_html(text):
     text = unicode(text)
@@ -877,12 +910,8 @@ def escape_js(text):
             .replace('\t', '\\t'))
 
 
-def escape_uri(text):
-    return urllib.quote(text)
-
-
 def escape_uri_component(text):
-    return (escape_uri(text)
+    return (escape_uri_path(text)
             .replace('/', '%2F')
             .replace('?', '%3F')
             .replace('=', '%3D')
@@ -897,7 +926,13 @@ def comma_num(val):
 
 
 def pp_filter(val):
-    return pprint.pformat(val)
+    try:
+        return pprint.pformat(val)
+    except:
+        try:
+            return repr(val)
+        except:
+            return 'unreprable object %s' % object.__repr__(val)
 
 
 JSON_PP_INDENT = 2
@@ -955,6 +990,83 @@ def size_helper(chunk, context, bodies, params):
         return chunk.write(str(len(key)))
     except (KeyError, TypeError):
         return chunk
+
+
+def _sort_iterate_items(items, sort_key, direction):
+    if not items:
+        return items
+    reverse = False
+    if direction == 'desc':
+        reverse = True
+    if not sort_key:
+        sort_key = 0
+    elif sort_key[0] == '$':
+        sort_key = sort_key[1:]
+    if sort_key == 'key':
+        sort_key = 0
+    elif sort_key == 'value':
+        sort_key = 1
+    else:
+        try:
+            sort_key = int(sort_key)
+        except:
+            sort_key = 0
+    return sorted(items, key=lambda x: x[sort_key], reverse=reverse)
+
+
+def iterate_helper(chunk, context, bodies, params):
+    params = params or {}
+    body = bodies.get('block')
+    sort = params.get('sort')
+    sort_key = params.get('sort_key')
+    target = params.get('key')
+    if not body or not target:
+        return chunk  # log error
+    try:
+        iter(target)
+    except:
+        return chunk  # log error
+    try:
+        items = target.items()
+        is_dict = True
+    except:
+        items = target
+        is_dict = False
+    if sort:
+        try:
+            items = _sort_iterate_items(items, sort_key, direction=sort)
+        except:
+            return chunk  # log error
+    if is_dict:
+        for key, value in items:
+            body(chunk, context.push({'$key': key,
+                                      '$value': value,
+                                      '$type': type(value).__name__,
+                                      '$0': key,
+                                      '$1': value}))
+    else:
+        # all this is for iterating over tuples and the like
+        for values in items:
+            try:
+                key = values[0]
+            except:
+                key, value = None, None
+            else:
+                try:
+                    value = values[1]
+                except:
+                    value = None
+            new_scope = {'$key': key,
+                         '$value': value,
+                         '$type': type(value).__name__}
+            try:
+                for i, value in enumerate(values):
+                    new_scope['$%s' % i] = value
+            except TypeError:
+                return chunk
+            else:
+                body(chunk, context.push(new_scope))
+    return chunk
 
 
 def _do_compare(chunk, context, bodies, params, cmp_op):
@@ -1033,7 +1145,8 @@ DEFAULT_HELPERS = {'first': first_helper,
                    'sep': sep_helper,
                    'idx': idx_helper,
                    'idx_1': idx_1_helper,
-                   'size': size_helper}
+                   'size': size_helper,
+                   'iterate': iterate_helper}
 DEFAULT_HELPERS.update(_make_compare_helpers())
 
 
@@ -1547,8 +1660,9 @@ class Tap(object):
 
 DEFAULT_FILTERS = {
     'h': escape_html,
+    's': unicode,
     'j': escape_js,
-    'u': escape_uri,
+    'u': escape_uri_path,
     'uc': escape_uri_component,
     'cn': comma_num,
     'pp': pp_filter,
@@ -1810,8 +1924,16 @@ class BaseAshesEnv(object):
 
     def apply_filters(self, string, auto, filters):
         filters = filters or []
-        if auto and 's' not in filters and auto not in filters:
-            filters = filters + [auto]
+        if not filters:
+            if auto:
+                filters = ['s', auto]
+            else:
+                filters = ['s']
+        elif filters[-1] != 's':
+            if auto and auto not in filters:
+                filters += ['s', auto]
+            else:
+                filters += ['s']
         for f in filters:
             filt_fn = self.filters.get(f)
             if filt_fn:
@@ -1994,8 +2116,15 @@ def _main():
     ae.register_source('tmpl', '{`{ok}thing`}')
     print(ae.render('tmpl', {'thing': 21000}))
 
-    ae.register_source('tmpl2', '{test|pp}')
+    ae.register_source('tmpl2', '{test|s}')
     out = ae.render('tmpl2', {'test': ['<hi>'] * 10})
+    print(out)
+
+    ae.register_source('tmpl3', '{@iterate sort="desc" sort_key=1 key=lol}'
+                       '{$0}: {$1}{~n}{/iterate}')
+    out = ae.render('tmpl3', {'lol': {'uno': 1, 'dos': 2}})
+    print(out)
+    out = ae.render('tmpl3', {'lol': [(1, 2, 3), (4, 5, 6)]})
     print(out)
 
 
