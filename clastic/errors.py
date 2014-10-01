@@ -103,6 +103,7 @@ class HTTPException(BaseResponse, Exception):
         self.headers['Content-Type'] = get_content_type(mimetype, self.charset)
 
     def transcribe(self, request):
+        # TODO
         # create a new Response object with content and headers
         # adapted to Accept headers
         pass
