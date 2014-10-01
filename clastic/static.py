@@ -88,12 +88,12 @@ class StaticApplication(Application):
                 path = '/'.join(path)
             full_path = find_file(self.search_paths, path)
             if full_path is None:
-                raise NotFound()
+                raise NotFound(is_breaking=False)
             file_obj = open(full_path, 'rb')
             mtime = get_file_mtime(full_path)
             fsize = os.path.getsize(full_path)
         except (ValueError, IOError, OSError):
-            raise Forbidden()
+            raise Forbidden(is_breaking=False)
         mimetype, encoding = mimetypes.guess_type(full_path)
         if not mimetype:
             peeked = peek_file(file_obj, 1024)
