@@ -32,10 +32,10 @@ def debug(request, _application, _route, **kw):
 
 def fizzbuzz(limit):
     """\
-    See http://rosettacode.org/wiki/FizzBuzz for more info.
+    Use ?limit=n to set the limit. See http://rosettacode.org/wiki/FizzBuzz for more info.
     """
     ret = []
-    limit = limit or 0
+    limit = limit or 15
     for i in xrange(1, int(limit) + 1):
         if i % 15 == 0:
             ret.append("FizzBuzz")
