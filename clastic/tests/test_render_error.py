@@ -7,24 +7,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, Route, render_basic
-from clastic.errors import BadGateway
-
-
-def render_error_basic(_error):
-    return _error
-
-
-def render_error_broken(_error):
-    return 1/0
-
-
-def accum_render_error(_error, request, error_list):
-    if 'reraise' in request.path:
-        raise _error
-    if 'badgateway' in request.path:
-        _error = BadGateway()
-    error_list.append(_error)
-    return _error
+from clastic.errors import BadGateway, RoutingErrorHandler
 
 
 def odd_endpoint(number):
@@ -34,11 +17,12 @@ def odd_endpoint(number):
 
 
 def test_app_error_render():
+
     rt = Route('/<number:int>', odd_endpoint, render_basic)
     yield eq_, rt._render_error, None
 
-    app = Application([rt], render_error=render_error_basic)
-    yield eq_, rt._render_error, render_error_basic
+    app = Application([rt])
+    # yield eq_, rt._render_error, render_error_basic
 
     cl = Client(app, BaseResponse)
     yield eq_, cl.get('/1').status_code, 200
@@ -53,13 +37,21 @@ def test_app_error_render():
 
 @raises(NameError)
 def test_unresolved_error_render():
+    class BadErrorHandler(RoutingErrorHandler):
+        def render_error(self, nopenope, **kwargs):
+            return False
+
     rt = Route('/<number:int>', odd_endpoint, render_basic)
-    Application([rt], render_error=lambda nopenope: False)
+    Application([rt], error_handler=BadErrorHandler())
 
 
 def test_broken_error_render():
+    class BrokenErrorHandler(RoutingErrorHandler):
+        def render_error(self, **kwargs):
+            1/0
+
     rt = Route('/<number:int>', odd_endpoint, render_basic)
-    app = Application([rt], render_error=render_error_broken)
+    app = Application([rt], error_handler=BrokenErrorHandler())
     cl = Client(app, BaseResponse)
     err_resp = cl.get('/2')
     yield eq_, err_resp.status_code, 500
@@ -67,10 +59,20 @@ def test_broken_error_render():
 
 
 def test_error_render_count():
+
+    class AccumErrorHandler(RoutingErrorHandler):
+        def render_error(self, _error, request, error_list, **kwargs):
+            if 'reraise' in request.path:
+                raise _error
+            if 'badgateway' in request.path:
+                _error = BadGateway()
+            error_list.append(_error)
+            return _error
+
     rt = Route('/<number:int>/<option?>', odd_endpoint, render_basic)
     error_list = []
     rsrc = {'error_list': error_list}
-    app = Application([rt], rsrc, render_error=accum_render_error)
+    app = Application([rt], rsrc, error_handler=AccumErrorHandler())
     cl = Client(app, BaseResponse)
 
     err_resp = cl.get('/39')
@@ -86,5 +88,7 @@ def test_error_render_count():
     yield eq_, len(error_list), 1
 
     err_resp = cl.get('/6/badgateway')
+    #if err_resp.status_code != 502:
+    #    import pdb;pdb.set_trace()
     yield eq_, err_resp.status_code, 502
     yield eq_, len(error_list), 2

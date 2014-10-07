@@ -319,7 +319,7 @@ class Route(BaseRoute):
         else:
             render_factory = self._render_factory
         if rebind_render_error:
-            render_error = getattr(app, 'render_error', None)
+            render_error = getattr(app.error_handler, 'render_error', None)
         else:
             render_error = self._render_error
 

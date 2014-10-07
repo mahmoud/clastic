@@ -22,7 +22,9 @@ from .middleware import check_middlewares
 from .errors import (NotFound,
                      HTTPException,
                      MIME_SUPPORT_MAP,
-                     InternalServerError)
+                     InternalServerError,
+                     RoutingErrorHandler,
+                     DebugRoutingErrorHandler)
 
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')
@@ -46,6 +48,7 @@ def cast_to_route_factory(in_arg):
 
 
 def default_render_error(request, _error, **kwargs):
+    # TODO: remove in favor of DefaultErrorHandler?
     best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
     _error.adapt(best_match)
     return _error
@@ -56,7 +59,7 @@ class BaseApplication(object):
     response_type = Response
 
     def __init__(self, routes=None, resources=None, middlewares=None,
-                 render_factory=None, render_error=None, **kwargs):
+                 render_factory=None, error_handler=None, **kwargs):
         self.debug = kwargs.pop('debug', None)
         self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
         if kwargs:
@@ -75,8 +78,14 @@ class BaseApplication(object):
                             'swapped argument position)')
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
-        self.render_error = render_error or default_render_error
-        check_render_error(self.render_error, self.resources)
+
+        if error_handler is None:
+            if self.debug:
+                error_handler = DebugRoutingErrorHandler()
+            else:
+                error_handler = RoutingErrorHandler()
+        check_render_error(error_handler.render_error, self.resources)
+        self.error_handler = error_handler
 
         routes = routes or []
         self.routes = []
@@ -110,8 +119,10 @@ class BaseApplication(object):
         ret = None
         url_path, method = request.path, request.method
         dispatch_state = DispatchState()
+        err_handler = self.error_handler
         base_params = dict(self.resources,
                            request=request,
+                           _application=self,
                            _dispatch_state=dispatch_state)
 
         for route in self.routes + [self._null_route]:
@@ -129,9 +140,9 @@ class BaseApplication(object):
                 if norm_path != url_path:
                     if route.slash_mode == S_REDIRECT:
                         dest_url = request.url_root.rstrip('/') + norm_path
-                        return redirect(dest_url)
+                        return redirect(dest_url)  # TODO: error_handler
                     elif route.slash_mode == S_STRICT:
-                        nf_exc = NotFound(source_route=route)
+                        nf_exc = err_handler.not_found_type(source_route=route)
                         dispatch_state.add_exception(nf_exc)
                         continue
             try:
@@ -141,14 +152,10 @@ class BaseApplication(object):
                     raise TypeError(msg)
             except Exception as ret:
                 if not isinstance(ret, HTTPException):
-                    if self.debug:
-                        raise
-                    exc_info = ExceptionInfo.from_current()
-                    tmp_msg = repr(exc_info)
-                    ret = InternalServerError(tmp_msg,
-                                              traceback=exc_info,
-                                              source_route=route)
+                    uncaught_params = dict(params, _route=route, _error=ret)
+                    ret = err_handler.uncaught_to_response(**uncaught_params)
             if not isinstance(ret, HTTPException):
+                # TODO: verify behavior
                 break
             if not getattr(ret, 'source_route', None):
                 ret.source_route = route
@@ -160,6 +167,8 @@ class BaseApplication(object):
         if isinstance(ret, HTTPException):
             error_params = dict(params, _error=ret)
             try:
+                #if 'badgateway' in url_path:
+                #    import pdb;pdb.set_trace()
                 ret = ret.source_route.render_error(**error_params)
             except:
                 ret = default_render_error(**error_params)

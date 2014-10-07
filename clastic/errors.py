@@ -47,6 +47,7 @@ import exceptions
 from werkzeug.utils import get_content_type
 from werkzeug.wrappers import BaseResponse
 
+from .tbutils import ExceptionInfo, ContextualExceptionInfo
 
 ERROR_CODE_MAP = None
 STDLIB_EXC_URL = 'http://docs.python.org/2/library/exceptions.html#exceptions.'
@@ -380,11 +381,11 @@ class InternalServerError(HTTPException):
               " to complete your request.")
 
     def __init__(self, detail=None, **kwargs):
-        self.traceback = kwargs.pop('traceback', None)
+        self.exc_info = kwargs.pop('exc_info', None)
         super(InternalServerError, self).__init__(detail, **kwargs)
         if self.error_type is None:
             try:
-                exc_type_name = self.traceback.exc_type
+                exc_type_name = self.exc_info.exc_type
                 exc_type = getattr(exceptions, exc_type_name)
                 self.error_type = STDLIB_EXC_URL + exc_type.__name__
             except:
@@ -392,7 +393,7 @@ class InternalServerError(HTTPException):
 
     def to_dict(self):
         ret = super(InternalServerError, self).to_dict()
-        ret['traceback'] = self.traceback
+        ret['exc_info'] = self.exc_info
         return ret
 
 
@@ -433,6 +434,46 @@ class HTTPVersionNotSupported(InternalServerError):
     detail = ("The endpoint does not support the version of HTTP specified"
               " by the request.")
 
+
+## START ERROR HANDLER
+
+class RoutingErrorHandler(object):
+
+    # TODO: allow overriding redirects (?)
+
+    # 404
+    not_found_type = NotFound
+
+    # 405
+    method_not_allowed_type = MethodNotAllowed
+
+    # 500
+    exc_info_type = ExceptionInfo
+    server_error_type = InternalServerError
+
+    def __init__(self, reraise_uncaught=False):
+        self.reraise_uncaught = reraise_uncaught
+
+    def render_error(self, request, _error, **kwargs):
+        best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
+        _error.adapt(best_match)
+        return _error
+
+    def uncaught_to_response(self, _application, _route, **kwargs):
+        eh = _application.error_handler
+        if _application.debug:
+            raise  # will use the werkzeug debugger 500 page
+
+        exc_info = eh.exc_info_type.from_current()
+        return eh.server_error_type(repr(exc_info),
+                                    exc_info=exc_info,
+                                    source_route=_route)
+
+
+class DebugRoutingErrorHandler(RoutingErrorHandler):
+    exc_info_type = ContextualExceptionInfo
+
+## END ERROR HANDLER
 
 _module_init()
 
