@@ -26,7 +26,7 @@ __STYLE_SCRIPT_STUFF__
   <table class="meta">
     {#req}
     <tr><th>Request Method:</th><td>{.method}</td></tr>
-    <tr><th>Request URL:</th><td>{.abs_path}</td></tr>
+    <tr><th>Request URL:</th><td><span title="{.full_url}">{.abs_path}</span></td></tr>
     {/req}
     <tr><th>Clastic Version:</th><td>{clastic_version_info}</td></tr>
     {?exc_type}
@@ -38,12 +38,12 @@ __STYLE_SCRIPT_STUFF__
     {?last_frame}
     <tr>
       <th>Exception Location:</th>
-      <td>{last_frame.module_path} in {last_frame.func_name}, line {last_frame.lineno}</td>
+      <td><a href="#f{last_frame.id}">{last_frame.module_path} in {last_frame.func_name}, line {last_frame.lineno}</a></td>
     </tr>
    {/last_frame}
     <tr><th>Python Executable:</th><td>{python.executable}</td></tr>
     <tr><th>Python Version:</th><td>{python.version}</td></tr>
-    <tr><th>Server time:</th><td title="{server_time_utc} UTC">{server_time}</td></tr>
+    <tr><th>Server Time:</th><td title="{server_time_utc} UTC">{server_time}</td></tr>
   </table>
 </div>
 {?exc_tb.frames}
@@ -52,8 +52,7 @@ __STYLE_SCRIPT_STUFF__
   <div id="browserTraceback">
     <ul class="traceback">
       {#exc_tb.frames}
-        {?.is_hidden}{:else}
-        <li class="frame {.type}">
+        <li id="f{.id}" class="frame {.type} {?is_hidden}hiddenframe{/is_hidden}">
           <code>{.module_path}</code> in <code>{.func_name}</code>:
 
           {?.line}
@@ -92,11 +91,10 @@ __STYLE_SCRIPT_STUFF__
             </table>
           {/locals}
         </li>
-        {/is_hidden}
       {/exc_tb.frames}
     </ul>
   </div>
-  <form action="http://dpaste.com/" name="pasteform" id="pasteform" method="post">
+  <form action="http://dpaste.com/" name="pasteform" id="pasteform" method="POST">
 {^is_email}
   <div id="pastebinTraceback" class="pastebin">
     <input type="hidden" name="language" value="PythonConsole">
@@ -104,24 +102,24 @@ __STYLE_SCRIPT_STUFF__
     <input type="hidden" name="source" value="Clastic Dpaste Agent">
     <input type="hidden" name="poster" value="Clastic">
     <textarea name="content" id="traceback_area" cols="140" rows="25">
-Environment:
+Clastic Internal Server Error
 
+Exception Type: {exc_type}
+Exception Value: {exc_value}
+
+Context:
 {#req}
 Request Method: {.method}
-Request URL: {.abs_path}
+Request URL Path: {.abs_path}
+Request Full URL: {.full_url}
 {/req}
 Clastic Version: {clastic_version_info}
 Python Version: {python.version}
-
-Middleware:
-{{ settings.MIDDLEWARE_CLASSES|pprint }}
-
-Traceback:
+Python Executable: {python.executable}
+Server Time: {server_time} ({server_time_utc} UTC)
 
 {exc_tb_str}
 
-Exception Type: {{ exception_type|escape }}{% if request %} at {{ request.path_info|escape }}{% endif %}
-Exception Value: {{ exception_value|force_escape }}
 </textarea>
   <br><br>
   <input type="submit" value="Share this traceback on a public Web site">
@@ -353,6 +351,7 @@ STYLE_SCRIPT_STUFF = """
     h2 span { font-size:80%; color:#666; font-weight:normal; }
     h3 { margin:1em 0 .5em 0; }
     h4 { margin:0 0 .5em 0; font-weight: normal; }
+    a { color: #3389c5; }
     code, pre { font-size: 100%; white-space: pre-wrap; }
     table { border:1px solid #ccc; border-collapse: collapse; width:100%; background:white; }
     tbody td, tbody th { vertical-align:top; padding:2px 3px; }
@@ -368,6 +367,7 @@ STYLE_SCRIPT_STUFF = """
     table.source td { font-family:monospace; white-space:pre; border-bottom:1px solid #eee; }
     ul.traceback { list-style-type:none; color: #222; }
     ul.traceback li.frame { padding-bottom:1em; color:#666; }
+    ul.traceback li.hiddenframe {display: none;}
     ul.traceback li.user { background-color:#e0e0e0; color:#000 }
     div.context { padding:10px 0; overflow:hidden; }
     div.context ol { padding-left:30px; margin:0 10px; list-style-position: inside; }

@@ -543,6 +543,7 @@ class ContextualInternalServerError(InternalServerError):
         request = self.request
         if request:
             eid['req'] = {'path': request.path,
+                          'full_url': request.url,
                           'method': request.method,
                           'abs_path': request.path,
                           'url_params': request.args,
