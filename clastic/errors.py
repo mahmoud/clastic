@@ -41,13 +41,19 @@ Possible values to support templating:
 
 """
 import cgi
+import sys
 import json
+import datetime
 import exceptions
 
 from werkzeug.utils import get_content_type
 from werkzeug.wrappers import BaseResponse
 
+import sinter
 from .tbutils import ExceptionInfo, ContextualExceptionInfo
+from .render.simple import ClasticJSONEncoder
+from ._contextual_errors import CONTEXTUAL_ENV
+
 
 ERROR_CODE_MAP = None
 STDLIB_EXC_URL = 'http://docs.python.org/2/library/exceptions.html#exceptions.'
@@ -129,8 +135,10 @@ class HTTPException(BaseResponse, Exception):
         return ret
 
     def to_json(self, indent=2, sort_keys=True, skipkeys=True):
-        return json.dumps(self.to_dict(), indent=indent, sort_keys=sort_keys,
-                          ensure_ascii=False, skipkeys=skipkeys)
+        encoder = ClasticJSONEncoder(dev_mode=True, indent=indent,
+                                     sort_keys=sort_keys, ensure_ascii=False,
+                                     skipkeys=skipkeys)
+        return encoder.encode(self.to_dict())
 
     def to_text(self):
         lines = ['%s - %s' % (self.code, self.message)]
@@ -148,7 +156,6 @@ class HTTPException(BaseResponse, Exception):
         if params['detail']:
             lines.append('<p>{detail}</p>')
         if params['error_type']:
-            import pdb;pdb.set_trace()
             if params['error_type'].startswith('http'):
                 lines.append('<p>Error type: '
                              '<a target="_blank" href="{error_type}">'
@@ -393,7 +400,10 @@ class InternalServerError(HTTPException):
 
     def to_dict(self):
         ret = super(InternalServerError, self).to_dict()
-        ret['exc_info'] = self.exc_info
+        try:
+            ret['exc_info'] = self.exc_info.to_dict()
+        except:
+            ret['exc_info'] = None
         return ret
 
 
@@ -461,17 +471,90 @@ class RoutingErrorHandler(object):
 
     def uncaught_to_response(self, _application, _route, **kwargs):
         eh = _application.error_handler
-        if _application.debug:
+        if self.reraise_uncaught:  # _application.debug:
             raise  # will use the werkzeug debugger 500 page
-
         exc_info = eh.exc_info_type.from_current()
         return eh.server_error_type(repr(exc_info),
                                     exc_info=exc_info,
                                     source_route=_route)
 
 
+class ContextualInternalServerError(InternalServerError):
+    """\
+    An Internal Server Error with a full contextual view of the
+    exception, mostly for development (non-production) purposes.
+
+    # NOTE: The dict returned by to_dict is not JSON-encodable with
+    the default encoder. It relies on the ClasticJSONEncoder currently
+    used in the InternalServerError class.
+    """
+    def __init__(self, *a, **kw):
+        self.request = kw['request']
+        super(ContextualInternalServerError, self).__init__(*a, **kw)
+
+    def to_dict(self, *a, **kw):
+        ret = super(ContextualInternalServerError, self).to_dict(*a, **kw)
+        del ret['exc_info']
+        exc_info = getattr(self, 'exc_info', None)
+        if not exc_info:
+            return ret
+        exc_tb = exc_info.tb_info.to_dict()
+        for i, frame in enumerate(exc_tb['frames']):
+            frame['id'] = i
+            try:
+                pre_start_lineno = frame['pre_lines'][0]['lineno']
+            except IndexError:
+                pre_start_lineno = 1
+            frame['pre_start_lineno'] = pre_start_lineno
+            frame['post_start_lineno'] = frame['lineno'] + 1
+        try:
+            last_frame = exc_tb['frames'][-1]
+        except:
+            last_frame = None
+
+        eid = {'is_email': False,
+               'exc_type': exc_info.exc_type,
+               'exc_value': exc_info.exc_msg,
+               'exc_tb': exc_tb,
+               'last_frame': last_frame,
+               'exc_tb_str': str(exc_info.tb_info),
+               'server_time': str(datetime.datetime.now()),
+               'server_time_utc': str(datetime.datetime.utcnow()),
+               'python': {'executable': sys.executable,
+                          'version': sys.version.replace('\n', ' '),
+                          'path': sys.path}}
+        if self.request:
+            request = self.request
+            eid['req'] = {'path': request.path,
+                          'method': request.method,
+                          'abs_path': request.path,
+                          'url_params': request.args,
+                          'cookies': request.cookies,
+                          'headers': request.headers,
+                          'files': request.files}
+        ret.update(eid)
+        return ret
+
+    def to_html(self, *a, **kw):
+        render_ctx = self.to_dict()
+        return CONTEXTUAL_ENV.render('500.html', render_ctx)
+
+
 class DebugRoutingErrorHandler(RoutingErrorHandler):
     exc_info_type = ContextualExceptionInfo
+    server_error_type = ContextualInternalServerError
+
+    def uncaught_to_response(self, _application, _route, **kwargs):
+        eh = _application.error_handler
+        if self.reraise_uncaught:  # _application.debug:
+            raise  # will use the werkzeug debugger 500 page
+        exc_info = eh.exc_info_type.from_current()
+        return eh.server_error_type(repr(exc_info),
+                                    exc_info=exc_info,
+                                    source_route=_route,
+                                    request=kwargs.get('request'))
+
+
 
 ## END ERROR HANDLER
 
