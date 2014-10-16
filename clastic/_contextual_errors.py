@@ -102,24 +102,25 @@ __STYLE_SCRIPT_STUFF__
     <input type="hidden" name="source" value="Clastic Dpaste Agent">
     <input type="hidden" name="poster" value="Clastic">
     <textarea name="content" id="traceback_area" cols="140" rows="25">
-Clastic Internal Server Error
+---  # Clastic Internal Server Error
 
-Exception Type: {exc_type}
-Exception Value: {exc_value}
+Exception:
+    Type: {exc_type}
+    Value: {exc_value}
 
-Context:
-{#req}
-Request Method: {.method}
-Request URL Path: {.abs_path}
-Request Full URL: {.full_url}
+Request:{#req}
+    Method: {.method}
+    URL Path: {.abs_path}
+    Full URL: {.full_url}
 {/req}
-Clastic Version: {clastic_version_info}
-Python Version: {python.version}
-Python Executable: {python.executable}
-Server Time: {server_time} ({server_time_utc} UTC)
+Environment:
+    Clastic Version: {clastic_version_info}
+    Python Version: {python.version}
+    Python Executable: {python.executable}
+    Server Time: {server_time} ({server_time_utc} UTC)
 
-{exc_tb_str}
-
+Traceback: |
+  {exc_tb_str}
 </textarea>
   <br><br>
   <input type="submit" value="Share this traceback on a public Web site">
