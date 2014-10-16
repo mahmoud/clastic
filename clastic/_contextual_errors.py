@@ -52,6 +52,7 @@ __STYLE_SCRIPT_STUFF__
   <div id="browserTraceback">
     <ul class="traceback">
       {#exc_tb.frames}
+        {?.is_hidden}{:else}
         <li class="frame {.type}">
           <code>{.module_path}</code> in <code>{.func_name}</code>:
 
@@ -91,6 +92,7 @@ __STYLE_SCRIPT_STUFF__
             </table>
           {/locals}
         </li>
+        {/is_hidden}
       {/exc_tb.frames}
     </ul>
   </div>
@@ -152,7 +154,7 @@ Exception Value: {{ exception_value|force_escape }}
       </tbody>
     </table>
   {:else}
-    <p>No GET data</p>
+    <p>No query parameters present in URL.</p>
   {/req.url_params}
 
   <h3 id="form-data-h">FORM DATA</h3>
@@ -174,7 +176,7 @@ Exception Value: {{ exception_value|force_escape }}
       </tbody>
     </table>
   {:else}
-    <p>No form data</p>
+    <p>No form-encoded data submitted.</p>
   {/req.form_data}
 
   <h3 id="meta-info">HEADERS</h3>
@@ -240,34 +242,39 @@ Exception Value: {{ exception_value|force_escape }}
         </tbody>
     </table>
   {:else}
-    <p>No files uploaded</p>
+    <p>No files uploaded.</p>
   {/request.files}
 {:else}
   <p>Request data not supplied</p>
 {/req}
+
+{!
+  <h3 id="injectables-info">INJECTABLES</h3>
+  {?injectables}
+    <table class="req">
+        <thead>
+            <tr>
+                <th>Variable</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+        {@iterate key=injectables sort="asc"}
+          <tr>
+            <td>{$key}</td>
+            <td class="code"><pre>{$value}</pre></td>
+          </tr>
+        {/iterate}
+        </tbody>
+    </table>
+  {:else}
+    <p>Injectables not available</p>
+  {/injectables}
+!}
   <h3 title="{@size key=python.path}{.}{/size} entries">PYTHON PATH</h3>
-  <table class=req><tbody><tr><td>
+  <table class="req"><tbody><tr><td>
     <pre>{python.path|pp}</pre>
   </td></tr></tbody></table>
-  <h3 id="settings-info">Settings</h3>
-  <h4>Using settings module <code>{{ settings.SETTINGS_MODULE }}</code></h4>
-  <table class="req">
-    <thead>
-      <tr>
-        <th>Setting</th>
-        <th>Value</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for var in settings.items|dictsort:"0" %}
-        <tr>
-          <td>{{ var.0 }}</td>
-          <td class="code"><pre>{{ var.1|pprint }}</pre></td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
 </div>
 {^is_email}
   <div id="explanation">

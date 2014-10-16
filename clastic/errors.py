@@ -499,6 +499,7 @@ class ContextualInternalServerError(InternalServerError):
     """
     def __init__(self, *a, **kw):
         self.request = kw.get('request')
+        self.hide_internal_frames = kw.pop('hide_internal_frames', True)
         super(ContextualInternalServerError, self).__init__(*a, **kw)
 
     def to_dict(self, *a, **kw):
@@ -509,6 +510,12 @@ class ContextualInternalServerError(InternalServerError):
             return ret
         exc_tb = exc_info.tb_info.to_dict()
         for i, frame in enumerate(exc_tb['frames']):
+            if self.hide_internal_frames:
+                if not frame['line'] and frame['module_path'] == '<string>':
+                    frame['is_hidden'] = True
+                elif frame['module_name'] == 'clastic.sinter' and \
+                     frame['func_name'] == 'inject':
+                    frame['is_hidden'] = True
             frame['id'] = i
             try:
                 pre_start_lineno = frame['pre_lines'][0]['lineno']
@@ -596,15 +603,21 @@ class DebugRoutingErrorHandler(RoutingErrorHandler):
 
     not_found_type = ContextualNotFound
 
+    def __init__(self, *a, **kw):
+        self.hide_internal_frames = kw.pop('hide_internal_frames', True)
+        super(DebugRoutingErrorHandler, self).__init__(*a, **kw)
+
     def uncaught_to_response(self, _application, _route, **kwargs):
         eh = _application.error_handler
         if self.reraise_uncaught:  # _application.debug:
             raise  # will use the werkzeug debugger 500 page
         exc_info = eh.exc_info_type.from_current()
-        return eh.server_error_type(repr(exc_info),
-                                    exc_info=exc_info,
-                                    source_route=_route,
-                                    request=kwargs.get('request'))
+        SEType = eh.server_error_type
+        return SEType(repr(exc_info),
+                      exc_info=exc_info,
+                      source_route=_route,
+                      request=kwargs.get('request'),
+                      hide_internal_frames=self.hide_internal_frames)
 
 
 
