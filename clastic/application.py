@@ -142,7 +142,9 @@ class BaseApplication(object):
                         dest_url = request.url_root.rstrip('/') + norm_path
                         return redirect(dest_url)  # TODO: error_handler
                     elif route.slash_mode == S_STRICT:
-                        nf_exc = err_handler.not_found_type(source_route=route)
+                        nf_exc = err_handler.not_found_type(request=request,
+                                                            application=self,
+                                                            source_route=route)
                         dispatch_state.add_exception(nf_exc)
                         continue
             try:
@@ -167,8 +169,6 @@ class BaseApplication(object):
         if isinstance(ret, HTTPException):
             error_params = dict(params, _error=ret)
             try:
-                #if 'badgateway' in url_path:
-                #    import pdb;pdb.set_trace()
                 ret = ret.source_route.render_error(**error_params)
             except:
                 ret = default_render_error(**error_params)
@@ -179,6 +179,10 @@ class DispatchState(object):
     def __init__(self):
         self.exceptions = []
         self.allowed_methods = set()
+        self.attempted_routes = []
+
+    def add_route(self, route):
+        self.attempted_routes.append(route)
 
     def add_exception(self, exception):
         self.exceptions.append(exception)

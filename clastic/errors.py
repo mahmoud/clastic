@@ -5,6 +5,9 @@ One notable (if incremental) improvement over Werkzeug's error system
 is that 400-level requests share a common base class
 (BadRequest). Same goes for do 500-coded requests
 (InternalServerError).
+
+Another note: If you subclass any of these errors, make sure
+the __init__ accepts **kwargs.
 """
 
 """
@@ -166,6 +169,7 @@ class HTTPException(BaseResponse, Exception):
         return '\n'.join(lines).format(**params)
 
     def to_xml(self):
+        # TODO: generically create xml based on escaped dictionary
         params = self.to_escaped_dict()
         ret = ('<http_error>'
                '<code>{code}</code>'
@@ -216,6 +220,10 @@ class NotFound(BadRequest):
     message = "Not found"
     detail = "The requested URL was not found on this server."
 
+    def __init__(self, *args, **kwargs):
+        self.dispatch_state = kwargs.get('dispatch_state', None)
+        super(NotFound, self).__init__(*args, **kwargs)
+
 
 class MethodNotAllowed(BadRequest):
     code = 405
@@ -224,6 +232,7 @@ class MethodNotAllowed(BadRequest):
 
     def __init__(self, allowed_methods=None, *args, **kwargs):
         self.allowed_methods = set(allowed_methods or [])
+        # TODO: should go after super call?
         if self.allowed_methods:
             method_list = sorted(self.allowed_methods)
             self.detail = '%s Allowed methods: %r' % (self.detail,
@@ -489,7 +498,7 @@ class ContextualInternalServerError(InternalServerError):
     used in the InternalServerError class.
     """
     def __init__(self, *a, **kw):
-        self.request = kw['request']
+        self.request = kw.get('request')
         super(ContextualInternalServerError, self).__init__(*a, **kw)
 
     def to_dict(self, *a, **kw):
@@ -513,6 +522,7 @@ class ContextualInternalServerError(InternalServerError):
             last_frame = None
 
         eid = {'is_email': False,
+               'clastic_version_info': '0.4.1dev', # TODO
                'exc_type': exc_info.exc_type,
                'exc_value': exc_info.exc_msg,
                'exc_tb': exc_tb,
@@ -523,8 +533,8 @@ class ContextualInternalServerError(InternalServerError):
                'python': {'executable': sys.executable,
                           'version': sys.version.replace('\n', ' '),
                           'path': sys.path}}
-        if self.request:
-            request = self.request
+        request = self.request
+        if request:
             eid['req'] = {'path': request.path,
                           'method': request.method,
                           'abs_path': request.path,
@@ -540,9 +550,51 @@ class ContextualInternalServerError(InternalServerError):
         return CONTEXTUAL_ENV.render('500.html', render_ctx)
 
 
+class ContextualNotFound(NotFound):
+
+    def __init__(self, *a, **kw):
+        self.request = kw.get('request')
+        self.application = kw.get('application')
+        self.dispatch_state = kw.get('dispatch_state')
+        super(ContextualNotFound, self).__init__(*a, **kw)
+
+    def to_dict(self):
+        """
+        One design ideal:
+        [{'route': ('pattern', 'endpoint', 'render_func'),
+          'path_matched': False,
+          'method_matched': False,
+          'slash_matched': False}]
+        """
+        ret = super(ContextualNotFound, self).to_dict()
+        app = self.application
+        if not app:
+            return ret
+
+        route_results = []
+        for route in app.routes:
+            cur = {'pattern': route.pattern,
+                   'regex': route.regex.pattern}
+            if route.methods:
+                cur['methods'] = sorted(route.methods)
+            route_results.append(cur)
+        ret['routes'] = route_results
+        if self.request:
+            ret['request'] = _req = {}
+            _req['path'] = self.request.path
+            _req['method'] = self.request.method
+        return ret
+
+    def to_html(self, *a, **kw):
+        render_ctx = self.to_dict()
+        return CONTEXTUAL_ENV.render('404.html', render_ctx)
+
+
 class DebugRoutingErrorHandler(RoutingErrorHandler):
     exc_info_type = ContextualExceptionInfo
     server_error_type = ContextualInternalServerError
+
+    not_found_type = ContextualNotFound
 
     def uncaught_to_response(self, _application, _route, **kwargs):
         eh = _application.error_handler
@@ -559,11 +611,3 @@ class DebugRoutingErrorHandler(RoutingErrorHandler):
 ## END ERROR HANDLER
 
 _module_init()
-
-if __name__ == '__main__':
-    gt = GatewayTimeout()
-    print repr(gt)
-    mna = MethodNotAllowed(['GET'])
-    print repr(mna)
-    print mna.detail
-    print len(ERROR_CODE_MAP)

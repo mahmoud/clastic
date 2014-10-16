@@ -411,13 +411,19 @@ class NullRoute(Route):
                                         self.handle_sentinel_condition,
                                         slash_mode=S_REWRITE)
 
-    def handle_sentinel_condition(self, _route, _dispatch_state):
+    def handle_sentinel_condition(self, request,
+                                  _application, _route, _dispatch_state):
+        err_handler = _application.error_handler
         if _dispatch_state.exceptions:
             return _dispatch_state.exceptions[-1]
         elif _dispatch_state.allowed_methods:
-            return MethodNotAllowed(_dispatch_state.allowed_methods)
+            MNAType = err_handler.method_not_allowed_type
+            return MNAType(allowed_methods=_dispatch_state.allowed_methods)
         else:
-            return NotFound()
+            NFType = err_handler.not_found_type
+            return NFType(dispatch_state=_dispatch_state,
+                          request=request,
+                          application=_application)
 
     def bind(self, *a, **kw):
         kw['inherit_slashes'] = False

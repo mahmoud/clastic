@@ -418,7 +418,6 @@ class SysconfigPeripheral(MetaPeripheral):
         return ret
 
 
-
 DEFAULT_PERIPHERALS = [BasicPeripheral(),
                        RoutePeripheral(),
                        MiddlewarePeripheral(),

@@ -7,6 +7,7 @@ CONTEXTUAL_ENV = ashes.AshesEnv()
 
 def _register_templates():
     CONTEXTUAL_ENV.register_source('500.html', HTML_500_TMPL)
+    CONTEXTUAL_ENV.register_source('404.html', HTML_404_TMPL)
 
 
 HTML_500_TMPL = """
@@ -272,21 +273,75 @@ Exception Value: {{ exception_value|force_escape }}
   <div id="explanation">
     <p>You're seeing this error because you are in developer/debug mode.
        When served under production settings, Clastic will render a
-       standard server error/500 page.</p>
+       standard <code>500 Internal Server Error</code> page.</p>
   </div>
 {/is_email}
 </body>
 </html>
 """
 
+
+HTML_404_TMPL = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found{?request} at {request.path}{/request}</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  __STYLE_SCRIPT_STUFF__
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <small>(404)</small></h1>
+    <table class="meta">
+      {?request}
+      <tr>
+        <th>Request Method:</th>
+        <td>{request.method}</td>
+      </tr>
+      <tr>
+        <th>Request URL Path:</th>
+      <td>{request.path}</td>
+      </tr>
+      {/request}
+    </table>
+  </div>
+  <div id="info">
+      {?routes}
+      <p>Clastic tried these URL patterns, in this order:</p>
+      <ol>
+        {#routes}
+          <li>
+            <span title="{.regex}">{.pattern}</span> {?.methods}({.methods}){/methods}
+          </li>
+        {/routes}
+      </ol>
+      {?request}
+      <p>The current URL, <code>{request.path}</code>, didn't match any of these.</p>
+      {/request}
+    {/routes}
+  </div>
+
+  <div id="explanation">
+    <p>You're seeing this error because you are in developer/debug mode.
+       When served under production settings, Clastic will render a
+       standard <code>404 Not Found</code> page.</p>
+    </p>
+  </div>
+</body>
+</html>
+"""
+
+
 STYLE_SCRIPT_STUFF = """
   <style type="text/css">
     html * { padding:0; margin:0; }
     body * { padding:10px 20px; }
     body * * { padding:0; }
-    body { font:small sans-serif; }
+    body { font:small sans-serif; background: #eee}
     body>div { border-bottom:1px solid #ddd; }
     h1 { font-weight:normal; }
+    h1 small { font-size:60%; color:#666; font-weight:normal; }
     h2 { margin-bottom:.8em; }
     h2 span { font-size:80%; color:#666; font-weight:normal; }
     h3 { margin:1em 0 .5em 0; }
@@ -335,6 +390,11 @@ STYLE_SCRIPT_STUFF = """
     span.commands a:link {color:#5E5694;}
     pre.exception_value { font-family: sans-serif; color: #666; font-size: 1.5em; margin: 10px 0 10px 0; }
     .frame code {font-size:110%}
+
+    /* 404 specific stuff */
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
   </style>
   {^is_email}
   <script type="text/javascript">
@@ -396,6 +456,8 @@ STYLE_SCRIPT_STUFF = """
 """
 
 HTML_500_TMPL = HTML_500_TMPL.replace('__STYLE_SCRIPT_STUFF__',
+                                      STYLE_SCRIPT_STUFF)
+HTML_404_TMPL = HTML_404_TMPL.replace('__STYLE_SCRIPT_STUFF__',
                                       STYLE_SCRIPT_STUFF)
 
 _register_templates()
