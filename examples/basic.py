@@ -30,6 +30,10 @@ def debug(request, _application, _route, **kw):
     return {}
 
 
+def fraiser():
+    raise ValueError('what am i supposed do with these tossed errors?')
+
+
 def fizzbuzz(limit):
     """\
     Use ?limit=n to set the limit. See http://rosettacode.org/wiki/FizzBuzz for more info.
@@ -57,9 +61,10 @@ def create_decked_out_app():
     routes = [('/', cookie_hello_world, render_basic),
               ('/debug', debug, render_basic),
               ('/fizzbuzz', fizzbuzz, render_basic),
-              ('/modules/', see_modules, render_basic)]
-    return Application(routes, resources, middlewares=middlewares)
+              ('/modules', see_modules, render_basic),
+              ('/fraiser', fraiser, render_basic)]
+    return Application(routes, resources, middlewares=middlewares, debug=True)
 
 
 if __name__ == '__main__':
-    create_decked_out_app().serve()
+    create_decked_out_app().serve(use_debugger=False)
