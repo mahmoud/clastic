@@ -50,6 +50,7 @@ import datetime
 import exceptions
 
 from werkzeug.utils import get_content_type
+from werkzeug.debug import DebuggedApplication
 from werkzeug.wrappers import BaseResponse
 
 import sinter
@@ -456,7 +457,8 @@ class HTTPVersionNotSupported(InternalServerError):
 
 ## START ERROR HANDLER
 
-class RoutingErrorHandler(object):
+class ErrorHandler(object):
+    wsgi_wrapper = None
 
     # TODO: allow overriding redirects (?)
 
@@ -470,7 +472,7 @@ class RoutingErrorHandler(object):
     exc_info_type = ExceptionInfo
     server_error_type = InternalServerError
 
-    def __init__(self, reraise_uncaught=False):
+    def __init__(self, reraise_uncaught=False, **kwargs):
         self.reraise_uncaught = reraise_uncaught
 
     def render_error(self, request, _error, **kwargs):
@@ -598,7 +600,7 @@ class ContextualNotFound(NotFound):
         return CONTEXTUAL_ENV.render('404.html', render_ctx)
 
 
-class DebugRoutingErrorHandler(RoutingErrorHandler):
+class ContextualErrorHandler(ErrorHandler):
     exc_info_type = ContextualExceptionInfo
     server_error_type = ContextualInternalServerError
 
@@ -606,7 +608,7 @@ class DebugRoutingErrorHandler(RoutingErrorHandler):
 
     def __init__(self, *a, **kw):
         self.hide_internal_frames = kw.pop('hide_internal_frames', True)
-        super(DebugRoutingErrorHandler, self).__init__(*a, **kw)
+        super(ContextualErrorHandler, self).__init__(*a, **kw)
 
     def uncaught_to_response(self, _application, _route, **kwargs):
         eh = _application.error_handler
@@ -620,6 +622,15 @@ class DebugRoutingErrorHandler(RoutingErrorHandler):
                       request=kwargs.get('request'),
                       hide_internal_frames=self.hide_internal_frames)
 
+
+class REPLErrorHandler(ErrorHandler):
+    def __init__(self, application, **kwargs):
+        self._use_evalex = kwargs.pop('use_evalex', True)
+        super(REPLErrorHandler, self).__init__(**kwargs)
+        self.wsgi_wrapper = DebuggedApplication(application, self._use_evalex)
+
+    def uncaught_to_response(self, **kwargs):
+        raise
 
 
 ## END ERROR HANDLER

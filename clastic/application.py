@@ -23,8 +23,9 @@ from .errors import (NotFound,
                      HTTPException,
                      MIME_SUPPORT_MAP,
                      InternalServerError,
-                     RoutingErrorHandler,
-                     DebugRoutingErrorHandler)
+                     ErrorHandler,
+                     REPLErrorHandler,
+                     ContextualErrorHandler)
 
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')
@@ -81,9 +82,9 @@ class BaseApplication(object):
 
         if error_handler is None:
             if self.debug:
-                error_handler = DebugRoutingErrorHandler()
+                error_handler = REPLErrorHandler(application=self._dispatch_wsgi)  # ContextualErrorHandler()
             else:
-                error_handler = RoutingErrorHandler()
+                error_handler = ErrorHandler()
         check_render_error(error_handler.render_error, self.resources)
         self.error_handler = error_handler
 
@@ -110,10 +111,16 @@ class BaseApplication(object):
             self.routes.insert(index, route)
             index += 1
 
-    def __call__(self, environ, start_response):
+    def _dispatch_wsgi(self, environ, start_response):
         request = self.request_type(environ)
         response = self.dispatch(request)
         return response(environ, start_response)
+
+    def __call__(self, environ, start_response):
+        wsgi_wrapper = getattr(self.error_handler, 'wsgi_wrapper', None)
+        if not callable(wsgi_wrapper):
+            return self._dispatch_wsgi(environ, start_response)
+        return wsgi_wrapper(environ, start_response)
 
     def dispatch(self, request):
         ret = None
