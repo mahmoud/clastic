@@ -623,11 +623,14 @@ class ContextualErrorHandler(ErrorHandler):
                       hide_internal_frames=self.hide_internal_frames)
 
 
+class _REPLDebuggedApplication(DebuggedApplication):
+    def __init__(self, app, **kwargs):
+        kwargs['evalex'] = True
+        super(_REPLDebuggedApplication, self).__init__(app, **kwargs)
+
+
 class REPLErrorHandler(ErrorHandler):
-    def __init__(self, application, **kwargs):
-        self._use_evalex = kwargs.pop('use_evalex', True)
-        super(REPLErrorHandler, self).__init__(**kwargs)
-        self.wsgi_wrapper = DebuggedApplication(application, self._use_evalex)
+    wsgi_wrapper = _REPLDebuggedApplication
 
     def uncaught_to_response(self, **kwargs):
         raise

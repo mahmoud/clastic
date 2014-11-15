@@ -26,6 +26,7 @@ from .errors import (NotFound,
                      ErrorHandler,
                      REPLErrorHandler,
                      ContextualErrorHandler)
+from .sinter import get_arg_names
 
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')
@@ -58,6 +59,8 @@ def default_render_error(request, _error, **kwargs):
 class BaseApplication(object):
     request_type = Request
     response_type = Response
+    default_error_handler_type = ErrorHandler
+    default_debug_error_handler_type = REPLErrorHandler  # ContextualErrorHandler
 
     def __init__(self, routes=None, resources=None, middlewares=None,
                  render_factory=None, error_handler=None, **kwargs):
@@ -80,13 +83,7 @@ class BaseApplication(object):
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
 
-        if error_handler is None:
-            if self.debug:
-                error_handler = REPLErrorHandler(application=self._dispatch_wsgi)  # ContextualErrorHandler()
-            else:
-                error_handler = ErrorHandler()
-        check_render_error(error_handler.render_error, self.resources)
-        self.error_handler = error_handler
+        self._set_error_handler(error_handler)
 
         routes = routes or []
         self.routes = []
@@ -94,6 +91,34 @@ class BaseApplication(object):
         self._null_route.bind(self)
         for entry in routes:
             self.add(entry)
+
+    def _set_error_handler(self, error_handler=None):
+        if error_handler is None:
+            if self.debug:
+                deh_type = self.default_debug_error_handler_type
+            else:
+                deh_type = self.default_error_handler_type
+            error_handler = deh_type()
+        check_render_error(error_handler.render_error, self.resources)
+
+        wsgi_wrapper = getattr(error_handler, 'wsgi_wrapper', None)
+        if callable(wsgi_wrapper):
+            wrapped_wsgi = wsgi_wrapper(self._dispatch_wsgi)
+            if not callable(wrapped_wsgi):
+                msg = ('error handler (%r) WSGI wrapper (%r) to be callable'
+                       % (error_handler, wsgi_wrapper))
+                raise TypeError(msg)
+            ww_args = get_arg_names(wsgi_wrapper)[:2]
+            if (not len(ww_args) == 2
+                or ww_args[0] != 'environ'
+                or ww_args[1] != 'start_response'):
+                raise TypeError('expected error handler WSGI wrapper (%r)'
+                                ' to accept at least two arguments, `environ`'
+                                ' and `start_response`, respectively, not %r' %
+                                (wsgi_wrapper, ww_args))
+            self._dispatch_wsgi = wrapped_wsgi
+            # TODO: assert wrapped_wsgi api
+        self.error_handler = error_handler
 
     def iter_routes(self):
         for rt in self.routes:
@@ -117,10 +142,7 @@ class BaseApplication(object):
         return response(environ, start_response)
 
     def __call__(self, environ, start_response):
-        wsgi_wrapper = getattr(self.error_handler, 'wsgi_wrapper', None)
-        if not callable(wsgi_wrapper):
-            return self._dispatch_wsgi(environ, start_response)
-        return wsgi_wrapper(environ, start_response)
+        return self._dispatch_wsgi(environ, start_response)
 
     def dispatch(self, request):
         ret = None
