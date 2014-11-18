@@ -5,9 +5,8 @@ from collections import Sequence
 from argparse import ArgumentParser
 
 from werkzeug.utils import redirect
-from werkzeug.wrappers import (Request,
-                               Response,
-                               BaseResponse)
+from werkzeug.wrappers import Request, Response, BaseResponse
+
 from .server import run_simple
 from .route import (Route,
                     BaseRoute,
@@ -17,12 +16,10 @@ from .route import (Route,
                     RESERVED_ARGS,
                     normalize_path,
                     check_render_error)
-from .tbutils import ExceptionInfo
+
 from .middleware import check_middlewares
-from .errors import (NotFound,
-                     HTTPException,
+from .errors import (HTTPException,
                      MIME_SUPPORT_MAP,
-                     InternalServerError,
                      ErrorHandler,
                      REPLErrorHandler,
                      ContextualErrorHandler)
@@ -56,11 +53,25 @@ def default_render_error(request, _error, **kwargs):
     return _error
 
 
+def check_valid_wsgi(wsgi_callable):
+    if not callable(wsgi_callable):
+        raise TypeError('expected WSGI application (%r) to be callable'
+                        % (wsgi_callable,))
+    wc_args = get_arg_names(wsgi_callable)[:2]
+    if (not len(wc_args) == 2
+        or wc_args[0] != 'environ'
+        or wc_args[1] != 'start_response'):
+        raise TypeError('expected WSGI callable (%r)'
+                        ' to accept at least two arguments, `environ`'
+                        ' and `start_response`, respectively, not %r' %
+                        (wsgi_callable, wc_args))
+
+
 class BaseApplication(object):
     request_type = Request
     response_type = Response
     default_error_handler_type = ErrorHandler
-    default_debug_error_handler_type = REPLErrorHandler  # ContextualErrorHandler
+    default_debug_error_handler_type = ContextualErrorHandler
 
     def __init__(self, routes=None, resources=None, middlewares=None,
                  render_factory=None, error_handler=None, **kwargs):
@@ -83,7 +94,7 @@ class BaseApplication(object):
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
 
-        self._set_error_handler(error_handler)
+        self.set_error_handler(error_handler)
 
         routes = routes or []
         self.routes = []
@@ -92,7 +103,8 @@ class BaseApplication(object):
         for entry in routes:
             self.add(entry)
 
-    def _set_error_handler(self, error_handler=None):
+    def set_error_handler(self, error_handler=None):
+        self._orig_error_handler = error_handler
         if error_handler is None:
             if self.debug:
                 deh_type = self.default_debug_error_handler_type
@@ -100,24 +112,17 @@ class BaseApplication(object):
                 deh_type = self.default_error_handler_type
             error_handler = deh_type()
         check_render_error(error_handler.render_error, self.resources)
-
         wsgi_wrapper = getattr(error_handler, 'wsgi_wrapper', None)
         if callable(wsgi_wrapper):
             wrapped_wsgi = wsgi_wrapper(self._dispatch_wsgi)
-            if not callable(wrapped_wsgi):
-                msg = ('error handler (%r) WSGI wrapper (%r) to be callable'
-                       % (error_handler, wsgi_wrapper))
-                raise TypeError(msg)
-            ww_args = get_arg_names(wsgi_wrapper)[:2]
-            if (not len(ww_args) == 2
-                or ww_args[0] != 'environ'
-                or ww_args[1] != 'start_response'):
-                raise TypeError('expected error handler WSGI wrapper (%r)'
-                                ' to accept at least two arguments, `environ`'
-                                ' and `start_response`, respectively, not %r' %
-                                (wsgi_wrapper, ww_args))
+            try:
+                check_valid_wsgi(wrapped_wsgi)
+            except TypeError as te:
+                raise TypeError('expected valid WSGI callable from error'
+                                ' handler (%r) WSGI wrapper (%r), instead'
+                                ' got issue: %r'
+                                % (error_handler, wsgi_wrapper, te))
             self._dispatch_wsgi = wrapped_wsgi
-            # TODO: assert wrapped_wsgi api
         self.error_handler = error_handler
 
     def iter_routes(self):
@@ -267,7 +272,10 @@ class Application(BaseApplication):
         kw['use_reloader'] = args.use_reloader and use_reloader
         kw['use_debugger'] = args.use_debugger and use_debugger
         if kw['use_debugger']:
-            self.debug = True
+            print ('`use_debugger` is deprecated. Instead, set `debug`'
+                   ' or `error_handler` Application keyword argument')
+            self.set_error_handler(REPLErrorHandler())
+            self.debug = True  # not really used for anything now
         kw['processes'] = args.processes or processes
         use_meta = args.use_meta and use_meta
         use_lint = args.use_lint and use_lint

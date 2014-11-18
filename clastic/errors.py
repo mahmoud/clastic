@@ -472,8 +472,12 @@ class ErrorHandler(object):
     exc_info_type = ExceptionInfo
     server_error_type = InternalServerError
 
-    def __init__(self, reraise_uncaught=False, **kwargs):
-        self.reraise_uncaught = reraise_uncaught
+    def __init__(self, **kwargs):
+        """\
+        Use reraise_uncaught=True if you want uncaught exceptions to be
+        handled by the WSGI server rather than by this Clastic error handler.
+        """
+        self.reraise_uncaught = kwargs.get('reraise_uncaught')
 
     def render_error(self, request, _error, **kwargs):
         best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
@@ -481,9 +485,9 @@ class ErrorHandler(object):
         return _error
 
     def uncaught_to_response(self, _application, _route, **kwargs):
+        if self.reraise_uncaught:
+            raise
         eh = _application.error_handler
-        if self.reraise_uncaught:  # _application.debug:
-            raise  # will use the werkzeug debugger 500 page
         exc_info = eh.exc_info_type.from_current()
         return eh.server_error_type(repr(exc_info),
                                     exc_info=exc_info,
@@ -570,7 +574,7 @@ class ContextualNotFound(NotFound):
 
     def to_dict(self):
         """
-        One design ideal:
+        One design ideal, for showing which routes have been hit:
         [{'route': ('pattern', 'endpoint', 'render_func'),
           'path_matched': False,
           'method_matched': False,
@@ -612,8 +616,6 @@ class ContextualErrorHandler(ErrorHandler):
 
     def uncaught_to_response(self, _application, _route, **kwargs):
         eh = _application.error_handler
-        if self.reraise_uncaught:  # _application.debug:
-            raise  # will use the werkzeug debugger 500 page
         exc_info = eh.exc_info_type.from_current()
         SEType = eh.server_error_type
         return SEType(repr(exc_info),
@@ -629,10 +631,11 @@ class _REPLDebuggedApplication(DebuggedApplication):
         super(_REPLDebuggedApplication, self).__init__(app, **kwargs)
 
 
-class REPLErrorHandler(ErrorHandler):
+class REPLErrorHandler(ContextualErrorHandler):
     wsgi_wrapper = _REPLDebuggedApplication
 
     def uncaught_to_response(self, **kwargs):
+        print 'lolololol'
         raise
 
 

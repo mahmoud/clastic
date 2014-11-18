@@ -7,7 +7,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, Route, render_basic
-from clastic.errors import BadGateway, RoutingErrorHandler
+from clastic.errors import BadGateway, ErrorHandler
 
 
 def odd_endpoint(number):
@@ -37,7 +37,7 @@ def test_app_error_render():
 
 @raises(NameError)
 def test_unresolved_error_render():
-    class BadErrorHandler(RoutingErrorHandler):
+    class BadErrorHandler(ErrorHandler):
         def render_error(self, nopenope, **kwargs):
             return False
 
@@ -46,7 +46,7 @@ def test_unresolved_error_render():
 
 
 def test_broken_error_render():
-    class BrokenErrorHandler(RoutingErrorHandler):
+    class BrokenErrorHandler(ErrorHandler):
         def render_error(self, **kwargs):
             1/0
 
@@ -60,7 +60,7 @@ def test_broken_error_render():
 
 def test_error_render_count():
 
-    class AccumErrorHandler(RoutingErrorHandler):
+    class AccumErrorHandler(ErrorHandler):
         def render_error(self, _error, request, error_list, **kwargs):
             if 'reraise' in request.path:
                 raise _error

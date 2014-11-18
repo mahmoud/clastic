@@ -14,7 +14,7 @@ from clastic.route import (InvalidEndpoint,
                            InvalidPattern,
                            InvalidMethod)
 from clastic.route import S_STRICT, S_REWRITE, S_REDIRECT
-from clastic.errors import NotFound
+from clastic.errors import NotFound, ErrorHandler
 
 
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
@@ -178,7 +178,8 @@ def test_debug_raises():
     client = Client(app_nodebug, BaseResponse)
     yield eq_, client.get('/').status_code, 500
 
-    app_debug = Application([('/', lambda: 1/0)], debug=True)
+    err_handler = ErrorHandler(reraise_uncaught=True)
+    app_debug = Application([('/', lambda: 1/0)], error_handler=err_handler)
     client = Client(app_debug, BaseResponse)
     try:
         resp = client.get('/')
