@@ -92,3 +92,17 @@ def test_error_render_count():
     #    import pdb;pdb.set_trace()
     yield eq_, err_resp.status_code, 502
     yield eq_, len(error_list), 2
+
+
+@raises(TypeError)
+def test_invalid_wsgi_wrapper():
+    class InvalidWSGIWrapperEH(ErrorHandler):
+        wsgi_wrapper = lambda app: lambda environ, nope: 'lol'
+    Application([], error_handler=InvalidWSGIWrapperEH())
+
+
+@raises(TypeError)
+def test_uncallable_wsgi_wrapper():
+    class UncallableWSGIWrapperEH(ErrorHandler):
+        wsgi_wrapper = "this should be a callable but isn't"
+    Application([], error_handler=UncallableWSGIWrapperEH())

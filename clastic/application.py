@@ -104,7 +104,6 @@ class BaseApplication(object):
             self.add(entry)
 
     def set_error_handler(self, error_handler=None):
-        self._orig_error_handler = error_handler
         if error_handler is None:
             if self.debug:
                 deh_type = self.default_debug_error_handler_type
@@ -113,7 +112,12 @@ class BaseApplication(object):
             error_handler = deh_type()
         check_render_error(error_handler.render_error, self.resources)
         wsgi_wrapper = getattr(error_handler, 'wsgi_wrapper', None)
-        if callable(wsgi_wrapper):
+        if wsgi_wrapper is None:
+            pass  # no wsgi_wrapper, no problem
+        elif not callable(wsgi_wrapper):
+            raise TypeError('expected error_handler.wsgi_wrapper to be'
+                            ' callable or None, not %r' % (wsgi_wrapper,))
+        else:
             wrapped_wsgi = wsgi_wrapper(self._dispatch_wsgi)
             try:
                 check_valid_wsgi(wrapped_wsgi)
