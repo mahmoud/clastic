@@ -535,7 +535,7 @@ class ContextualInternalServerError(InternalServerError):
             last_frame = None
 
         eid = {'is_email': False,
-               'clastic_version_info': '0.4.1dev', # TODO
+               'clastic_version_info': '0.4.1dev',  # TODO
                'exc_type': exc_info.exc_type,
                'exc_value': exc_info.exc_msg,
                'exc_tb': exc_tb,

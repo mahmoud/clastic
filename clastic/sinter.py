@@ -40,6 +40,7 @@ def get_arg_names(f, only_required=False):
 
 
 def inject(f, injectables):
+    __traceback_hide__ = True  # TODO
     arg_names, _, kw_name, defaults = getargspec(f)
     defaults = dict(reversed(zip(reversed(arg_names),
                                  reversed(defaults or []))))
@@ -96,12 +97,12 @@ def build_chain_str(funcs, params, params_sofar=None, level=0,
         return ''  # stopping case
     if params_sofar is None:
         params_sofar = set(['next'])
-    #if func_names is None:
-    #    func_names = set()
+
     params_sofar.update(params[0])
     next_args = getargspec(funcs[0]).args
     next_arg_dict = dict([(a, a) for a in next_args])
-    next_args = ', '.join(['%s=%s' % kv for kv in next_arg_dict.items()
+    next_arg_items = sorted(next_arg_dict.iteritems())
+    next_args = ', '.join(['%s=%s' % kv for kv in next_arg_items
                            if kv[0] in params_sofar])
     outer_indent = _INDENT * level
     inner_indent = outer_indent + _INDENT
@@ -110,8 +111,9 @@ def build_chain_str(funcs, params, params_sofar=None, level=0,
     body_str = build_chain_str(funcs[1:], params[1:], params_sofar, level + 1)
     #func_name = get_func_name(funcs[0])
     #func_alias = get_next_func_alias(funcs[0])
+    htb_str = '%s__traceback_hide__ = True\n' % (inner_indent,)
     return_str = '%sreturn funcs[%s](%s)\n' % (inner_indent, level, next_args)
-    return ''.join([def_str, body_str, return_str])
+    return ''.join([def_str, body_str, htb_str + return_str])
 
 
 def compile_chain(funcs, params, verbose=_VERBOSE):

@@ -188,6 +188,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
 _REQ_INNER_TMPL = \
 '''
 def process_request({all_args}):
+    __traceback_hide__ = True
     context = endpoint({endpoint_args})
     if isinstance(context, BaseResponse):
         resp = context
