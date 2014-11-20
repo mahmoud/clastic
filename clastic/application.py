@@ -276,10 +276,9 @@ class Application(BaseApplication):
         kw['use_reloader'] = args.use_reloader and use_reloader
         kw['use_debugger'] = args.use_debugger and use_debugger
         if kw['use_debugger']:
-            print ('`use_debugger` is deprecated. Instead, set `debug`'
-                   ' or `error_handler` Application keyword argument')
-            self.set_error_handler(REPLErrorHandler())
-            self.debug = True  # not really used for anything now
+            # TODO: if an error_handler doesn't respect
+            # reraise_uncaught then the debugger won't work
+            self.error_handler.reraise_uncaught = True
         kw['processes'] = args.processes or processes
         use_meta = args.use_meta and use_meta
         use_lint = args.use_lint and use_lint

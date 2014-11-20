@@ -63,8 +63,8 @@ def create_decked_out_app():
               ('/fizzbuzz', fizzbuzz, render_basic),
               ('/modules', see_modules, render_basic),
               ('/fraiser', fraiser, render_basic)]
-    return Application(routes, resources, middlewares=middlewares, debug=True)
+    return Application(routes, resources, middlewares=middlewares)
 
 
 if __name__ == '__main__':
-    create_decked_out_app().serve(use_debugger=False)
+    create_decked_out_app().serve()
