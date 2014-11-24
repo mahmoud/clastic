@@ -8,7 +8,12 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from clastic.render import JSONRender, JSONPRender, render_basic
+from clastic.render import (JSONRender,
+                            JSONPRender,
+                            render_basic,
+                            BasicRender,
+                            Table,
+                            TabularRender)
 
 from common import (hello_world_str,
                     hello_world_html,
@@ -109,3 +114,19 @@ def test_default_render():
     resp = c.get('/html/Asia/')  # test basic html
     yield eq_, resp.status_code, 200
     yield ok_, 'text/html' in resp.headers['Content-Type']
+
+
+def test_custom_table_render():
+    class BoldHTMLTable(Table):
+        def get_cell_html(self, value):
+            std_html = super(BoldHTMLTable, self).get_cell_html(value)
+            return '<b>' + std_html + '</b>'
+
+    custom_tr = TabularRender(table_type=BoldHTMLTable)
+    custom_render = BasicRender(tabular_render=custom_tr)
+    app = Application([('/', hello_world_ctx, custom_render)])
+    c = Client(app, BaseResponse)
+
+    resp = c.get('/?format=html')
+    yield eq_, resp.status_code, 200
+    assert '<b>' in resp.data

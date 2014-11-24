@@ -82,10 +82,12 @@ class BasicRender(object):
     _format_mime_map = {'html': 'text/html',
                         'json': 'application/json'}
 
-    def __init__(self, dev_mode=True, qp_name='format'):
+    def __init__(self, dev_mode=True, qp_name='format', **kwargs):
         self.qp_name = qp_name
-        self.json_render = JSONRender(dev_mode=dev_mode)
-        self.autotable_render = TabularRender()
+        self.json_render = kwargs.pop('json_render',
+                                      JSONRender(dev_mode=dev_mode))
+        self.autotable_render = kwargs.pop('tabular_render',
+                                           TabularRender())
 
     def render_response(self, request, context, _route):
         from collections import Sized

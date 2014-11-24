@@ -343,15 +343,18 @@ class Table(object):
         sep = '\n' if with_newlines else ''
         return sep.join(lines)
 
+    def get_cell_html(self, value):
+        return escape_html(value)
+
     def _add_horizontal_html_lines(self, lines, headers, max_depth):
-        esc = escape_html
+        to_html = self.get_cell_html
         new_depth = max_depth - 1 if max_depth > 1 else max_depth
         if max_depth > 1:
             new_depth = max_depth - 1
         if headers:
             _thth = self._html_th_close + self._html_th
             lines.append(self._html_tr + self._html_th +
-                         _thth.join([esc(h) for h in headers]) +
+                         _thth.join([to_html(h) for h in headers]) +
                          self._html_th_close + self._html_tr_close)
         trtd, _tdtd, _td_tr = (self._html_tr + self._html_td,
                                self._html_td_close + self._html_td,
@@ -363,13 +366,14 @@ class Table(object):
                     if isinstance(cell, Table):
                         _fill_parts.append(cell.to_html(max_depth=new_depth))
                     else:
-                        _fill_parts.append(esc(cell))
+                        _fill_parts.append(to_html(cell))
             else:
-                _fill_parts = [esc(c) for c in row]
+                _fill_parts = [to_html(c) for c in row]
             lines.append(''.join([trtd, _tdtd.join(_fill_parts), _td_tr]))
 
     def _add_vertical_html_lines(self, lines, headers, max_depth):
-        esc = escape_html
+        to_html = self.get_cell_html
+
         new_depth = max_depth - 1 if max_depth > 1 else max_depth
         tr, th, _th = self._html_tr, self._html_th, self._html_th_close
         td, _tdtd = self._html_td, self._html_td_close + self._html_td
@@ -377,7 +381,7 @@ class Table(object):
         for i in range(self._width):
             line_parts = [tr]
             if headers:
-                line_parts.extend([th, esc(headers[i]), _th])
+                line_parts.extend([th, to_html(headers[i]), _th])
             if max_depth > 1:
                 new_depth = max_depth - 1
                 _fill_parts = []
@@ -386,9 +390,9 @@ class Table(object):
                     if isinstance(cell, Table):
                         _fill_parts.append(cell.to_html(max_depth=new_depth))
                     else:
-                        _fill_parts.append(esc(row[i]))
+                        _fill_parts.append(to_html(row[i]))
             else:
-                _fill_parts = [esc(row[i]) for row in self._data]
+                _fill_parts = [to_html(row[i]) for row in self._data]
             line_parts.extend([td, _tdtd.join(_fill_parts), _td_tr])
             lines.append(''.join(line_parts))
 

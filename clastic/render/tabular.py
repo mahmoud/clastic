@@ -21,14 +21,18 @@ def escape_html(text):
 
 
 class TabularRender(object):
+    default_table_type = Table
+
     _html_doctype = '<!doctype html>'
     _html_wrapper, _html_wrapper_close = '<html>', '</html>'
     _html_table_tag = '<table class="clastic-atr-table">'
     _html_style_content = _STYLE_CONTENT
 
-    def __init__(self, max_depth=4, orientation='auto'):
+    def __init__(self, max_depth=4, orientation='auto', **kwargs):
         self.max_depth = max_depth
         self.orientation = orientation
+        self.enable_title = kwargs.pop('enable_title', True)
+        self.table_type = kwargs.pop('table_type', self.default_table_type)
 
     def _html_format_ep(self, route):
         # TODO: callable object endpoints?
@@ -61,7 +65,7 @@ class TabularRender(object):
         content_parts.append('<body>')
         title = self._html_format_ep(_route)
         content_parts.append(title)
-        table = Table.from_data(context, max_depth=self.max_depth)
+        table = self.table_type.from_data(context, max_depth=self.max_depth)
         table._html_table_tag = self._html_table_tag
         content = table.to_html(max_depth=self.max_depth,
                                 orientation=self.orientation)
