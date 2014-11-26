@@ -82,12 +82,14 @@ class BasicRender(object):
     _format_mime_map = {'html': 'text/html',
                         'json': 'application/json'}
 
-    def __init__(self, dev_mode=True, qp_name='format', **kwargs):
-        self.qp_name = qp_name
+    def __init__(self, **kwargs):
+        self.qp_name = kwargs.pop('qp_name', 'format')
+        self.dev_mode = kwargs.pop('dev_mode', True)
         self.json_render = kwargs.pop('json_render',
-                                      JSONRender(dev_mode=dev_mode))
-        self.autotable_render = kwargs.pop('tabular_render',
-                                           TabularRender())
+                                      JSONRender(dev_mode=self.dev_mode))
+        self.tabular_render = kwargs.pop('tabular_render', TabularRender())
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
     def render_response(self, request, context, _route):
         from collections import Sized
@@ -123,7 +125,7 @@ class BasicRender(object):
         if resp_mime == 'application/json':
             return self.json_render(context)
         elif resp_mime == 'text/html':
-            return self.autotable_render(context, _route)
+            return self.tabular_render(context, _route)
         return Response(unicode(context), mimetype="text/plain")
 
     @property
