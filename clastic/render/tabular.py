@@ -2,6 +2,7 @@
 
 import os
 import cgi
+import textwrap
 from inspect import getargspec
 
 from werkzeug.wrappers import Response
@@ -47,7 +48,7 @@ class TabularRender(object):
 
         func_doc = getattr(route.endpoint, '__doc__', '')
         if func_doc:
-            escaped_doc = escape_html(func_doc.lstrip())
+            escaped_doc = escape_html(textwrap.dedent(func_doc))
             html_doc = '<p style="white-space: pre;">%s</p>' % escaped_doc
         else:
             html_doc = '<!-- add a docstring to display a message here! -->'

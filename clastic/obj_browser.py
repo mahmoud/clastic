@@ -9,6 +9,8 @@ from werkzeug.wrappers import Response
 
 from application import Application
 
+# TODO: lintutils check on sys.modules
+
 
 class ObjectBrowserApplication(Application):
     def __init__(self, default_obj=None):
