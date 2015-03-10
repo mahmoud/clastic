@@ -87,7 +87,15 @@ class BasicRender(object):
         self.dev_mode = kwargs.pop('dev_mode', True)
         self.json_render = kwargs.pop('json_render',
                                       JSONRender(dev_mode=self.dev_mode))
-        self.tabular_render = kwargs.pop('tabular_render', TabularRender())
+        try:
+            table_type = kwargs.pop('table_type')
+        except KeyError:
+            table_type = None
+            default_tabular = TabularRender()
+        else:
+            default_tabular = TabularRender(table_type=table_type)
+
+        self.tabular_render = kwargs.pop('tabular_render', default_tabular)
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
