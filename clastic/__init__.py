@@ -25,7 +25,7 @@ from route import Route, GET, POST, PUT, DELETE, RESERVED_ARGS
 from middleware import Middleware, GetParamMiddleware
 from render import render_json, render_json_dev, render_basic
 from meta import MetaApplication
-from static import StaticApplication
+from static import StaticApplication, StaticFileRoute
 from errors import HTTPException
 
 from werkzeug.wrappers import BaseRequest, Request, BaseResponse, Response

@@ -5,7 +5,7 @@ import os
 from nose.tools import eq_
 
 from werkzeug.test import Client
-from clastic import Application, StaticApplication, Response
+from clastic import Application, StaticApplication, Response, StaticFileRoute
 
 _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,3 +29,13 @@ def test_basic_static_serve():
     yield eq_, resp.status_code, 403
     resp = c.get('/static//etc/hosts')
     yield eq_, resp.status_code, 403
+
+
+def test_basic_static_route():
+    static_app = Application([StaticFileRoute('/source_code',
+                                              _CUR_DIR + '/test_static.py')])
+
+    c = Client(static_app, Response)
+    resp = c.get('/source_code')
+    yield eq_, resp.mimetype, 'text/x-python'
+    yield eq_, resp.status_code, 200
