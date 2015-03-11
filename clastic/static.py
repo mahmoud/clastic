@@ -10,6 +10,7 @@ from datetime import datetime
 from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
 
+from route import Route
 from application import Application
 from errors import Forbidden, NotFound
 
@@ -66,6 +67,74 @@ def get_file_mtime(path, rounding=0):
     return datetime.utcfromtimestamp(unix_mtime)
 
 
+def build_file_response(path,
+                        cache_timeout=None,
+                        cached_modify_time=None,
+                        mimetype=None,
+                        default_text_mime=DEFAULT_TEXT_MIME,
+                        default_binary_mime=DEFAULT_BINARY_MIME,
+                        file_wrapper=FileWrapper,
+                        response_type=Response):
+    resp = response_type('')
+    if cache_timeout and cached_modify_time:
+        try:
+            mtime = get_file_mtime(path)
+        except (ValueError, IOError, OSError):  # TODO: winnow this down
+            raise Forbidden(is_breaking=False)
+        resp.cache_control.public = True
+        if mtime <= cached_modify_time:
+            resp.status_code = 304
+            resp.cache_control.max_age = cache_timeout
+            return resp
+
+    if not isfile(path):
+        raise NotFound(is_breaking=False)
+    try:
+        file_obj = open(path, 'rb')
+        mtime = get_file_mtime(path)
+        fsize = os.path.getsize(path)
+    except (ValueError, IOError, OSError):
+        raise Forbidden(is_breaking=False)
+    if not mimetype:
+        mimetype, encoding = mimetypes.guess_type(path)
+    if not mimetype:
+        peeked = peek_file(file_obj, 1024)
+        is_binary = is_binary_string(peeked)
+        if peeked and is_binary:
+            mimetype = default_binary_mime
+        else:
+            mimetype = default_text_mime
+    resp.response = file_wrapper(file_obj)
+    resp.content_type = mimetype
+    resp.content_length = fsize
+    resp.last_modified = mtime
+    resp.cache_control.max_age = cache_timeout
+    return resp
+
+
+class StaticFileRoute(Route):
+    def __init__(self, pattern, file_path, check_file=True,
+                 cache_timeout=DEFAULT_MAX_AGE, mimetype=None):
+        self.file_path = file_path
+        if check_file:
+            # checking the file is readable, etc.
+            open(file_path).close()
+            get_file_mtime(file_path)
+        self.cache_timeout = cache_timeout
+        self.mimetype = None
+        super(StaticFileRoute, self).__init__(pattern, self.get_file_response)
+
+    def get_file_response(self, request):
+        bfr = build_file_response
+        resp = bfr(self.file_path,
+                   cache_timeout=self.cache_timeout,
+                   cached_modify_time=request.if_modified_since,
+                   mimetype=self.mimetype,
+                   file_wrapper=request.environ.get('wsgi.file_wrapper',
+                                                    FileWrapper))
+        return resp
+
+
 class StaticApplication(Application):
     def __init__(self,
                  search_paths,
@@ -89,34 +158,17 @@ class StaticApplication(Application):
             full_path = find_file(self.search_paths, path)
             if full_path is None:
                 raise NotFound(is_breaking=False)
-            file_obj = open(full_path, 'rb')
-            mtime = get_file_mtime(full_path)
-            fsize = os.path.getsize(full_path)
         except (ValueError, IOError, OSError):
             raise Forbidden(is_breaking=False)
-        mimetype, encoding = mimetypes.guess_type(full_path)
-        if not mimetype:
-            peeked = peek_file(file_obj, 1024)
-            is_binary = is_binary_string(peeked)
-            if peeked and is_binary:
-                mimetype = self.default_binary_mime
-            else:
-                mimetype = self.default_text_mime  # TODO: binary
-
-        resp = Response('')
-        cached_mtime = request.if_modified_since
-        if self.cache_timeout:
-            resp.cache_control.public = True
-            if mtime == cached_mtime:
-                file_obj.close()
-                resp.status_code = 304
-                resp.cache_control.max_age = self.cache_timeout
-                return resp
-        file_wrapper = request.environ.get('wsgi.file_wrapper', FileWrapper)
-        resp.response = file_wrapper(file_obj)
-        resp.content_type = mimetype
-        resp.content_length = fsize
-        resp.last_modified = mtime
+        bfr = build_file_response
+        resp = bfr(full_path,
+                   cache_timeout=self.cache_timeout,
+                   cached_modify_time=request.if_modified_since,
+                   mimetype=None,
+                   default_text_mime=self.default_text_mime,
+                   default_binary_mime=self.default_binary_mime,
+                   file_wrapper=request.environ.get('wsgi.file_wrapper',
+                                                    FileWrapper))
         return resp
 
 
