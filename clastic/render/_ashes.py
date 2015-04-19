@@ -9,17 +9,24 @@ import json
 import codecs
 import pprint
 import string
+import fnmatch
 
 
 PY3 = (sys.version_info[0] == 3)
 if PY3:
-    unicode, basestring = str, str
+    unicode, string_types = str, (str, bytes)
+else:
+    string_types = (str, unicode)
 
-__version__ = '0.7.2dev'
+__version__ = '0.7.4'
 __author__ = 'Mahmoud Hashemi'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/ashes'
 __license__ = 'BSD'
+
+
+DEFAULT_EXTENSIONS = ('.dust', '.html', '.xml')
+DEFAULT_IGNORED_PATTERNS = ('.#*',)
 
 
 # need to add group for literals
@@ -1119,7 +1126,7 @@ def _coerce(value, typestr):
     coerce_type = _COERCE_MAP.get(typestr.lower())
     if not coerce_type or isinstance(value, coerce_type):
         return value
-    if isinstance(value, basestring):
+    if isinstance(value, string_types):
         try:
             value = json.loads(value)
         except (TypeError, ValueError):
@@ -1390,7 +1397,7 @@ class Stream(object):
 
 
 def is_scalar(obj):
-    return not hasattr(obj, '__iter__') or isinstance(obj, basestring)
+    return not hasattr(obj, '__iter__') or isinstance(obj, string_types)
 
 
 def is_empty(obj):
@@ -1658,9 +1665,16 @@ class Tap(object):
         return '%s(%r, %r)' % (cn, self.head, self.tail)
 
 
+def to_unicode(obj):
+    try:
+        return unicode(obj)
+    except UnicodeDecodeError:
+        return unicode(obj, encoding='utf8')
+
+
 DEFAULT_FILTERS = {
     'h': escape_html,
-    's': unicode,
+    's': to_unicode,
     'j': escape_js,
     'u': escape_uri_path,
     'uc': escape_uri_component,
@@ -1723,6 +1737,17 @@ class Template(object):
         self.render_func = self._get_render_func(optimize)
         if not keep_source:
             self.source = None
+
+    @classmethod
+    def from_path(cls, path, name=None, encoding='utf-8', **kw):
+        abs_path = os.path.abspath(path)
+        if not os.path.isfile(abs_path):
+            raise TemplateNotFound(abs_path)
+        with codecs.open(abs_path, 'r', encoding) as f:
+            source = f.read()
+        if not name:
+            name = path
+        return cls(name=name, source=source, source_file=abs_path, **kw)
 
     def render(self, model, env=None):
         env = env or self.env
@@ -1833,6 +1858,8 @@ class ParseError(AshesException):
 
 
 class BaseAshesEnv(object):
+    template_type = Template
+
     def __init__(self,
                  loaders=None,
                  helpers=None,
@@ -1908,11 +1935,25 @@ class BaseAshesEnv(object):
         self.templates[name] = template
         return
 
-    def register_source(self, name, source, **kw):
+    def register_path(self, path, name=None, **kw):
+        """\
+        Reads in, compiles, and registers a single template from a specific
+        path to a file containing the dust source code.
+        """
         kw['env'] = self
-        tmpl = Template(name, source, **kw)
-        self.register(tmpl)
-        return tmpl
+        ret = self.template_type.from_path(path=path, name=name, **kw)
+        self.register(ret)
+        return ret
+
+    def register_source(self, name, source, **kw):
+        """\
+        Compiles and registers a single template from source code
+        string. Assumes caller already decoded the source string.
+        """
+        kw['env'] = self
+        ret = self.template_type(name=name, source=source, **kw)
+        self.register(ret)
+        return ret
 
     def filter_ast(self, ast, optimize=True):
         if optimize:
@@ -1947,6 +1988,9 @@ class BaseAshesEnv(object):
             return chunk.set_error(tnf)
         return tmpl.render_chunk(chunk, context)
 
+    def __iter__(self):
+        return self.templates.itervalues()
+
 
 class AshesEnv(BaseAshesEnv):
     """
@@ -1954,6 +1998,8 @@ class AshesEnv(BaseAshesEnv):
     user-friendly options exposed.
     """
     def __init__(self, paths=None, keep_whitespace=True, *a, **kw):
+        if isinstance(paths, string_types):
+            paths = [paths]
         self.paths = list(paths or [])
         self.keep_whitespace = keep_whitespace
         self.is_strict = kw.pop('is_strict', False)
@@ -1969,27 +2015,44 @@ class AshesEnv(BaseAshesEnv):
         optimize = not self.keep_whitespace  # preferences override
         return super(AshesEnv, self).filter_ast(ast, optimize)
 
-    def load_all(self):
-        ret = []
-        for loader in self.loaders:
-            ret.extend(loader.load_all(self))
-        return ret
+
+def iter_find_files(directory, patterns, ignored=None):
+    """\
+    Finds files under a `directory`, matching `patterns` using "glob"
+    syntax (e.g., "*.txt"). It's also possible to ignore patterns with
+    the `ignored` argument, which uses the same format as `patterns.
+
+    (from osutils.py in the boltons package)
+    """
+    if isinstance(patterns, string_types):
+        patterns = [patterns]
+    pats_re = re.compile('|'.join([fnmatch.translate(p) for p in patterns]))
+
+    if not ignored:
+        ignored = []
+    elif isinstance(ignored, string_types):
+        ignored = [ignored]
+    ign_re = re.compile('|'.join([fnmatch.translate(p) for p in ignored]))
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if pats_re.match(basename):
+                if ignored and ign_re.match(basename):
+                    continue
+                filename = os.path.join(root, basename)
+                yield filename
+    return
 
 
-DEFAULT_EXTENSIONS = ('.dust', '.html', '.xml')
-
-
-def walk_ext_matches(path, exts=None):
+def walk_ext_matches(path, exts=None, ignored=None):
     if exts is None:
         exts = DEFAULT_EXTENSIONS
-    exts = list(['.' + e.lstrip('.') for e in exts])
-    matches = []
-    for root, _, filenames in os.walk(path):
-        for fn in filenames:
-            for ext in exts:
-                if fn.endswith(ext):
-                    matches.append(os.path.join(root, fn))
-    return matches
+    if ignored is None:
+        ignored = DEFAULT_IGNORED_PATTERNS
+    patterns = list(['*.' + e.lstrip('*.') for e in exts])
+
+    return sorted(iter_find_files(directory=path,
+                                  patterns=patterns,
+                                  ignored=ignored))
 
 
 class TemplatePathLoader(object):
@@ -2006,13 +2069,12 @@ class TemplatePathLoader(object):
         if not path.startswith(self.root_path):
             norm_path = os.path.join(self.root_path, norm_path)
         abs_path = os.path.abspath(norm_path)
-        if os.path.isfile(abs_path):
-            with codecs.open(abs_path, 'r', self.encoding) as f:
-                source = f.read()
-        else:
-            raise TemplateNotFound(path)
-        template = Template(path, source, abs_path, env=env)
-        return template
+        template_name = os.path.relpath(abs_path, self.root_path)
+        template_type = env.template_type
+        return template_type.from_path(name=template_name,
+                                       path=abs_path,
+                                       encoding=self.encoding,
+                                       env=env)
 
     def load_all(self, env, exts=None, **kw):
         ret = []
