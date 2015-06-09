@@ -96,7 +96,7 @@ Pushing the envelope with Response objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the previous examples, we have been returning strings from our
-endpoints, letting the trusty ``render_basic`` handle the rest If
+endpoints, letting the trusty ``render_basic`` handle the rest. If
 we want more control, then we can remove ``render_basic`` from the
 route, opting to instantiate and return our own ``Response`` object
 directly.
@@ -137,7 +137,7 @@ text ``Home, Sweet Home!``.
 The ``Response`` object gives you complete control over all HTTP
 headers, enabling you to set and delete cookies, play with page
 caching, set page encoding, and so forth. If that sort of fine-grained
-responsibility sounds daunting or tedious, you're not alone, which why
+responsibility sounds daunting or tedious, you're not alone, which is why
 the most common operations usually have convenience functions, like
 ``redirect()``, which is demonstrated in ``redirect_home()``
 above. Clastic also has no-nonsense drop-ins for cookies, HTTP
@@ -363,7 +363,7 @@ and other contrivances where unnecessary.
 Sources and built-ins
 ^^^^^^^^^^^^^^^^^^^^^
 
-The "Hello, World!" example used argument bound in from the URL, one
+The "Hello, World!" example used an argument bound in from the URL, one
 of the four sources for arguments:
 
 - **Route URL pattern**
@@ -389,8 +389,8 @@ them well.
 ``request``
    Probably the most commonly used built-in, ``request`` is the
    current ``Request`` object being handled by the Application. It has
-   the URL arguments, POST parameters, user agent, everything from the
-   WSGI environ.
+   the URL arguments, POST parameters, cookies, user agent, other HTTP
+   headers, and everything from the WSGI environ.
 
 ``next``
    ``next`` is only for use by Middleware, and represents the
@@ -518,10 +518,10 @@ in all endpoint functions would be bad design, not to mention a
 downright tedious task.
 
 One of Clastic's most defining features may well be its interpretation
-of middleware. As opposed to simple pre- and post- request hooks,
-Clastic middlewares use real function-nesting scope. Furthermore, are
-dependency-checked to minimize breakage caused by ordering or
-accidental omission.
+of middleware. As opposed to simple pre- and post-request hooks,
+Clastic middlewares use real function-nesting scope. Furthermore,
+middlewares are dependency-checked to minimize breakage caused by
+ordering or accidental omission.
 
 Flow
 ^^^^
@@ -541,8 +541,9 @@ Within each individual middleware class (e.g., "A"), there are three
 functions which Clastic will look for and call:
 
 - ``request()`` - most commonly used
-- ``endpoint()`` - kind of meh, but good to be complete
-- ``render()`` - useful for context processing
+- ``endpoint()`` - post-routing, pre-logic
+- ``render()`` - post-logic, pre-response, when applicable
+  (e.g., template context processing)
 
 Those are terse descriptions, but that's ok, because all you need to
 remember is: **"Dial 'M' for Middleware"**::
@@ -723,8 +724,8 @@ Better control around application initialization
 
 In Django, applications and middleware have no way to detect when they
 are fully loaded by the server. Django's lazy loading means middleware
-aren't even initialized until the first request. See `this Django bug
-report`_ for more information.
+aren't even initialized until the first request. For more information,
+see `this Django bug report`_ which led to corrected Django documentation.
 
 .. _this Django bug report:
    https://code.djangoproject.com/ticket/18577
