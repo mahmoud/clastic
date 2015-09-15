@@ -49,6 +49,8 @@ setup(name='clastic',
       install_requires=['Werkzeug==0.9.4', 'argparse>=1.2.1'],
       license=__license__,
       platforms='any',
+      test_suite='nose.collector',
+      tests_require=['Mako>=1.0.0', 'nose>=1.3.7'],
       classifiers=[
           'Intended Audience :: Developers',
           'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
