@@ -57,16 +57,23 @@ class TabularRender(object):
                  % (module_name, func_name, argstr, html_doc))
         return title
 
-    def __call__(self, context, _route):
+    def context_to_response(self, context, _route=None):
         content_parts = [self._html_wrapper]
         if self._html_style_content:
             content_parts.extend(['<head><style type="text/css">',
                                   self._html_style_content,
                                   '</style></head>'])
         content_parts.append('<body>')
-        title = self._html_format_ep(_route)
-        content_parts.append(title)
-        table = self.table_type.from_data(context, max_depth=self.max_depth)
+
+        if _route:
+            title = self._html_format_ep(_route)
+            content_parts.append(title)
+
+        if isinstance(context, self.table_type):
+            table = context
+        else:
+            table = self.table_type.from_data(context,
+                                              max_depth=self.max_depth)
         table._html_table_tag = self._html_table_tag
         content = table.to_html(max_depth=self.max_depth,
                                 orientation=self.orientation)
@@ -74,3 +81,5 @@ class TabularRender(object):
         content_parts.append('</body>')
         content_parts.append(self._html_wrapper_close)
         return Response('\n'.join(content_parts), mimetype='text/html')
+
+    __call__ = context_to_response
