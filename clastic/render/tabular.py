@@ -34,6 +34,7 @@ class TabularRender(object):
         self.orientation = orientation
         self.enable_title = kwargs.pop('enable_title', True)
         self.table_type = kwargs.pop('table_type', self.default_table_type)
+        self.with_metadata = kwargs.pop('with_metadata', True)
 
     def _html_format_ep(self, route):
         # TODO: callable object endpoints?
@@ -76,7 +77,8 @@ class TabularRender(object):
                                               max_depth=self.max_depth)
         table._html_table_tag = self._html_table_tag
         content = table.to_html(max_depth=self.max_depth,
-                                orientation=self.orientation)
+                                orientation=self.orientation,
+                                with_metadata=self.with_metadata)
         content_parts.append(content)
         content_parts.append('</body>')
         content_parts.append(self._html_wrapper_close)

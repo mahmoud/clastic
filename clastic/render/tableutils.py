@@ -1,50 +1,45 @@
 # -*- coding: utf-8 -*-
+"""If there is one recurring theme in ``boltons``, it is that Python
+has excellent datastructures that constitute a good foundation for
+most quick manipulations, as well as building applications. However,
+Python usage has grown much faster than builtin data structure
+power. Python has a growing need for more advanced general-purpose
+data structures which behave intuitively.
+
+The :class:`Table` class is one example. When handed one- or
+two-dimensional data, it can provide useful, if basic, text and HTML
+renditions of small to medium sized data. It also heuristically
+handles recursive data of various formats (lists, dicts, namedtuples,
+objects).
+
+For more advanced :class:`Table`-style manipulation check out the
+`pandas`_ DataFrame.
+
+.. _pandas: http://pandas.pydata.org/
+
+"""
+
+from __future__ import print_function
 
 import cgi
 import types
 from itertools import islice
 from collections import Sequence, Mapping, MutableSequence
+try:
+    string_types, integer_types = (str, unicode), (int, long)
+except Exception:
+    # Python 3 compat
+    unicode = str
+    string_types, integer_types = (str, bytes), (int,)
 
-
-_MISSING = object()
+try:
+    from typeutils import make_sentinel
+    _MISSING = make_sentinel(var_name='_MISSING')
+except ImportError:
+    _MISSING = object()
 
 """
-This Table class is meant to be simple, low-overhead, and extensible. Its
-most common use would be for translation between in-memory data
-structures and serialization formats, such as HTML and console-ready text.
-
-As such, it stores data in list-of-lists format, and _does not_ copy
-lists passed in. It also reserves the right to modify those lists in a
-"filling" process, whereby short lists are extended to the width of
-the table (usually determined by number of headers). This greatly
-reduces overhead and processing/validation that would have to occur
-otherwise.
-
-General description of headers behavior:
-
-Headers describe the columns, but are not part of the data, however,
-if the `headers` argument is omitted, Table tries to infer header
-names from the data. It is possible to have a table with no headers,
-just pass in `headers=None`.
-
-Supported inputs:
-
-* list of lists
-* dict (list/single)
-* object (list/single)
-* namedtuple (list/single)
-* TODO: sqlite return value
-* TODO: json
-
-Supported outputs:
-
-* HTML
-* Pretty text (also usable as GF Markdown)
-* TODO: CSV
-* TODO: json
-* TODO: json lines
-
-Some idle thoughts:
+Some idle feature thoughts:
 
 * shift around column order without rearranging data
 * gotta make it so you can add additional items, not just initialize with
@@ -57,30 +52,36 @@ Some idle thoughts:
 * Would be nice to support different backends (currently uses lists
   exclusively). Sometimes large datasets come in list-of-dicts and
   list-of-tuples format and it's desirable to cut down processing overhead.
+
+TODO: make iterable on rows?
 """
 
+__all__ = ['Table']
 
-def to_text(obj):
+
+def to_text(obj, maxlen=None):
     try:
         text = unicode(obj)
-    except:
+    except Exception:
         try:
             text = unicode(repr(obj))
-        except:
+        except Exception:
             text = unicode(object.__repr__(obj))
+    if maxlen and len(text) > maxlen:
+        text = text[:maxlen - 3] + '...'
+        # TODO: inverse of ljust/rjust/center
     return text
 
 
-def escape_html(obj):
-    text = to_text(obj)
+def escape_html(obj, maxlen=None):
+    text = to_text(obj, maxlen=maxlen)
     return cgi.escape(text, quote=True)
 
 
-_DNR = set([types.NoneType, types.BooleanType, types.IntType, types.LongType,
-            types.ComplexType, types.FloatType, types.StringType,
-            types.UnicodeType, types.NotImplementedType, types.SliceType,
+_DNR = set((type(None), bool, complex, float,
+            type(NotImplemented), slice,
             types.FunctionType, types.MethodType, types.BuiltinFunctionType,
-            types.GeneratorType])
+            types.GeneratorType) + string_types + integer_types)
 
 
 class UnsupportedData(TypeError):
@@ -116,10 +117,10 @@ class ObjectInputType(InputType):
     def guess_headers(self, obj):
         headers = []
         for attr in dir(obj):
-            # an object's __dict__ could have non-string keys but meh
+            # an object's __dict__ could technically have non-string keys
             try:
                 val = getattr(obj, attr)
-            except:
+            except Exception:
                 # seen on greenlet: `run` shows in dir() but raises
                 # AttributeError. Also properties misbehave.
                 continue
@@ -133,14 +134,14 @@ class ObjectInputType(InputType):
         for h in headers:
             try:
                 values.append(getattr(obj, h))
-            except:
+            except Exception:
                 values.append(None)
         return values
 
 
 # might be better to hardcode list support since it's so close to the
-#  core or might be better to make this the copy-style from_* importer
-#  and have the non-copy style be hardcoded in __init__
+# core or might be better to make this the copy-style from_* importer
+# and have the non-copy style be hardcoded in __init__
 class ListInputType(InputType):
     def check_type(self, obj):
         return isinstance(obj, MutableSequence)
@@ -184,6 +185,45 @@ class NamedTupleInputType(InputType):
 
 
 class Table(object):
+    """
+    This Table class is meant to be simple, low-overhead, and extensible. Its
+    most common use would be for translation between in-memory data
+    structures and serialization formats, such as HTML and console-ready text.
+
+    As such, it stores data in list-of-lists format, and *does not* copy
+    lists passed in. It also reserves the right to modify those lists in a
+    "filling" process, whereby short lists are extended to the width of
+    the table (usually determined by number of headers). This greatly
+    reduces overhead and processing/validation that would have to occur
+    otherwise.
+
+    General description of headers behavior:
+
+    Headers describe the columns, but are not part of the data, however,
+    if the *headers* argument is omitted, Table tries to infer header
+    names from the data. It is possible to have a table with no headers,
+    just pass in ``headers=None``.
+
+    Supported inputs:
+
+    * :class:`list` of :class:`list` objects
+    * :class:`dict` (list/single)
+    * :class:`object` (list/single)
+    * :class:`collections.namedtuple` (list/single)
+    * TODO: DB API cursor?
+    * TODO: json
+
+    Supported outputs:
+
+    * HTML
+    * Pretty text (also usable as GF Markdown)
+    * TODO: CSV
+    * TODO: json
+    * TODO: json lines
+
+    To minimize resident size, the Table data is stored as a list of lists.
+    """
+
     # order definitely matters here
     _input_types = [DictInputType(), ListInputType(),
                     NamedTupleInputType(), TupleInputType(),
@@ -192,21 +232,26 @@ class Table(object):
     _html_tr, _html_tr_close = '<tr>', '</tr>'
     _html_th, _html_th_close = '<th>', '</th>'
     _html_td, _html_td_close = '<td>', '</td>'
-    #_html_thead, _html_thead_close = '<thead>', '</thead>'
-    #_html_tfoot, _html_tfoot_close = '<tfoot>', '</tfoot>'
+    # _html_thead, _html_thead_close = '<thead>', '</thead>'
+    # _html_tfoot, _html_tfoot_close = '<tfoot>', '</tfoot>'
     _html_table_tag, _html_table_tag_close = '<table>', '</table>'
 
-    def __init__(self, data=None, headers=_MISSING):
+    def __init__(self, data=None, headers=_MISSING, metadata=None):
         if headers is _MISSING:
             headers = []
             if data:
                 headers, data = list(data[0]), islice(data, 1, None)
         self.headers = headers or []
+        self.metadata = metadata or {}
         self._data = []
         self._width = 0
+
         self.extend(data)
 
     def extend(self, data):
+        """
+        Append the given data to the end of the Table.
+        """
         if not data:
             return
         self._data.extend(data)
@@ -234,31 +279,70 @@ class Table(object):
         return
 
     @classmethod
-    def from_dict(cls, data, headers=_MISSING, max_depth=1):
+    def from_dict(cls, data, headers=_MISSING, max_depth=1, metadata=None):
+        """Create a Table from a :class:`dict`. Operates the same as
+        :meth:`from_data`, but forces interpretation of the data as a
+        Mapping.
+        """
         return cls.from_data(data=data, headers=headers,
-                             max_depth=max_depth, _data_type=DictInputType())
+                             max_depth=max_depth, _data_type=DictInputType(),
+                             metadata=metadata)
 
     @classmethod
-    def from_list(cls, data, headers=_MISSING, max_depth=1):
+    def from_list(cls, data, headers=_MISSING, max_depth=1, metadata=None):
+        """Create a Table from a :class:`list`. Operates the same as
+        :meth:`from_data`, but forces the interpretation of the data
+        as a Sequence.
+        """
         return cls.from_data(data=data, headers=headers,
-                             max_depth=max_depth, _data_type=ListInputType())
+                             max_depth=max_depth, _data_type=ListInputType(),
+                             metadata=metadata)
 
     @classmethod
-    def from_object(cls, data, headers=_MISSING, max_depth=1):
+    def from_object(cls, data, headers=_MISSING, max_depth=1, metadata=None):
+        """Create a Table from an :class:`object`. Operates the same as
+        :meth:`from_data`, but forces the interpretation of the data
+        as an object. May be useful for some :class:`dict` and
+        :class:`list` subtypes.
+        """
         return cls.from_data(data=data, headers=headers,
-                             max_depth=max_depth, _data_type=ObjectInputType())
+                             max_depth=max_depth, _data_type=ObjectInputType(),
+                             metadata=metadata)
 
     @classmethod
-    def from_data(cls, data, headers=_MISSING, max_depth=1, _data_type=None):
+    def from_data(cls, data, headers=_MISSING, max_depth=1, **kwargs):
+
+        """Create a Table from any supported data, heuristically
+        selecting how to represent the data in Table format.
+
+        Args:
+            data (object): Any object or iterable with data to be
+                imported to the Table.
+
+            headers (iterable): An iterable of headers to be matched
+                to the data. If not explicitly passed, headers will be
+                guessed for certain datatypes.
+
+            max_depth (int): The level to which nested Tables should
+                be created (default: 1).
+
+            _data_type (InputType subclass): For advanced use cases,
+                do not guess the type of the input data, use this data
+                type instead.
+        """
         # TODO: seen/cycle detection/reuse ?
         # maxdepth follows the same behavior as find command
         # i.e., it doesn't work if max_depth=0 is passed in
+        metadata = kwargs.pop('metadata', None)
+        _data_type = kwargs.pop('_data_type', None)
+
         if max_depth < 1:
-            return cls(headers=headers)  # return data instead?
+            # return data instead?
+            return cls(headers=headers, metadata=metadata)
         is_seq = isinstance(data, Sequence)
         if is_seq:
             if not data:
-                return cls(headers=headers)
+                return cls(headers=headers, metadata=metadata)
             to_check = data[0]
             if not _data_type:
                 for it in cls._input_types:
@@ -273,7 +357,7 @@ class Table(object):
             if type(data) in _DNR:
                 # hmm, got scalar data.
                 # raise an exception or make an exception, nahmsayn?
-                return Table([[data]], headers=headers)
+                return cls([[data]], headers=headers, metadata=metadata)
             to_check = data
         if not _data_type:
             for it in cls._input_types:
@@ -301,7 +385,7 @@ class Table(object):
                                                       max_depth=new_max_depth)
                     except UnsupportedData:
                         continue
-        return cls(entries, headers=headers)
+        return cls(entries, headers=headers, metadata=metadata)
 
     def __len__(self):
         return len(self._data)
@@ -317,9 +401,48 @@ class Table(object):
             return '%s(%r)' % (cn, self._data)
 
     def to_html(self, orientation=None, wrapped=True,
-                with_headers=True, with_newlines=True, max_depth=1):
+                with_headers=True, with_newlines=True,
+                with_metadata=False, max_depth=1):
+        """Render this Table to HTML. Configure the structure of Table
+        HTML by subclassing and overriding ``_html_*`` class
+        attributes.
+
+        Args:
+            orientation (str): one of 'auto', 'horizontal', or
+                'vertical' (or the first letter of any of
+                those). Default 'auto'.
+            wrapped (bool): whether or not to include the wrapping
+                '<table></table>' tags. Default ``True``, set to
+                ``False`` if appending multiple Table outputs or an
+                otherwise customized HTML wrapping tag is needed.
+            with_newlines (bool): Set to ``True`` if output should
+                include added newlines to make the HTML more
+                readable. Default ``False``.
+            with_metadata (bool/str): Set to ``True`` if output should
+                be preceded with a Table of preset metadata, if it
+                exists. Set to special value ``'bottom'`` if the
+                metadata Table HTML should come *after* the main HTML output.
+            max_depth (int): Indicate how deeply to nest HTML tables
+                before simply reverting to :func:`repr`-ing the nested
+                data.
+
+        Returns:
+            A text string of the HTML of the rendered table.
+
+        """
         lines = []
         headers = []
+        if with_metadata and self.metadata:
+            metadata_table = Table.from_data(self.metadata,
+                                             max_depth=max_depth)
+            metadata_html = metadata_table.to_html(with_headers=True,
+                                                   with_newlines=with_newlines,
+                                                   with_metadata=False,
+                                                   max_depth=max_depth)
+            if with_metadata != 'bottom':
+                lines.append(metadata_html)
+                lines.append('<br />')
+
         if with_headers and self.headers:
             headers.extend(self.headers)
             headers.extend([None] * (self._width - len(self.headers)))
@@ -338,23 +461,24 @@ class Table(object):
         else:
             raise ValueError("expected one of 'auto', 'vertical', or"
                              " 'horizontal', not %r" % orientation)
+        if with_metadata and self.metadata and with_metadata == 'bottom':
+            lines.append('<br />')
+            lines.append(metadata_html)
+
         if wrapped:
             lines.append(self._html_table_tag_close)
         sep = '\n' if with_newlines else ''
         return sep.join(lines)
 
-    def get_cell_html(self, value):
-        return escape_html(value)
-
     def _add_horizontal_html_lines(self, lines, headers, max_depth):
-        to_html = self.get_cell_html
+        esc = escape_html
         new_depth = max_depth - 1 if max_depth > 1 else max_depth
         if max_depth > 1:
             new_depth = max_depth - 1
         if headers:
             _thth = self._html_th_close + self._html_th
             lines.append(self._html_tr + self._html_th +
-                         _thth.join([to_html(h) for h in headers]) +
+                         _thth.join([esc(h) for h in headers]) +
                          self._html_th_close + self._html_tr_close)
         trtd, _tdtd, _td_tr = (self._html_tr + self._html_td,
                                self._html_td_close + self._html_td,
@@ -366,14 +490,13 @@ class Table(object):
                     if isinstance(cell, Table):
                         _fill_parts.append(cell.to_html(max_depth=new_depth))
                     else:
-                        _fill_parts.append(to_html(cell))
+                        _fill_parts.append(esc(cell))
             else:
-                _fill_parts = [to_html(c) for c in row]
+                _fill_parts = [esc(c) for c in row]
             lines.append(''.join([trtd, _tdtd.join(_fill_parts), _td_tr]))
 
     def _add_vertical_html_lines(self, lines, headers, max_depth):
-        to_html = self.get_cell_html
-
+        esc = escape_html
         new_depth = max_depth - 1 if max_depth > 1 else max_depth
         tr, th, _th = self._html_tr, self._html_th, self._html_th_close
         td, _tdtd = self._html_td, self._html_td_close + self._html_td
@@ -381,7 +504,7 @@ class Table(object):
         for i in range(self._width):
             line_parts = [tr]
             if headers:
-                line_parts.extend([th, to_html(headers[i]), _th])
+                line_parts.extend([th, esc(headers[i]), _th])
             if max_depth > 1:
                 new_depth = max_depth - 1
                 _fill_parts = []
@@ -390,55 +513,36 @@ class Table(object):
                     if isinstance(cell, Table):
                         _fill_parts.append(cell.to_html(max_depth=new_depth))
                     else:
-                        _fill_parts.append(to_html(row[i]))
+                        _fill_parts.append(esc(row[i]))
             else:
-                _fill_parts = [to_html(row[i]) for row in self._data]
+                _fill_parts = [esc(row[i]) for row in self._data]
             line_parts.extend([td, _tdtd.join(_fill_parts), _td_tr])
             lines.append(''.join(line_parts))
 
-    def to_text(self, with_headers=True):
+    def to_text(self, with_headers=True, maxlen=None):
+        """Get the Table's textual representation. Only works well
+        for Tables with non-recursive data.
+
+        Args:
+            with_headers (bool): Whether to include a header row at the top.
+            maxlen (int): Max length of data in each cell.
+        """
         # TODO: verify this works for markdown
         lines = []
         widths = []
-        headers = self.headers
+        headers = list(self.headers)
+        text_data = [[to_text(cell, maxlen=maxlen) for cell in row]
+                     for row in self._data]
         for idx in range(self._width):
-            cur_widths = [len(unicode(cur[idx])) for cur in self._data]
+            cur_widths = [len(cur) for cur in text_data]
             if with_headers:
-                cur_widths.append(len(headers[idx]))
+                cur_widths.append(len(to_text(headers[idx], maxlen=maxlen)))
             widths.append(max(cur_widths))
         if with_headers:
             lines.append(' | '.join([h.center(widths[i])
                                      for i, h in enumerate(headers)]))
             lines.append('-+-'.join(['-' * w for w in widths]))
-        for row in self._data:
-            lines.append(' | '.join([unicode(col).center(widths[j])
-                                     for j, col in enumerate(row)]))
+        for row in text_data:
+            lines.append(' | '.join([cell.center(widths[j])
+                                     for j, cell in enumerate(row)]))
         return '\n'.join(lines)
-
-
-def main():
-    global t3
-    data_dicts = [{'id': 1, 'name': 'John Doe'},
-                  {'id': 2, 'name': 'Dale Simmons'}]
-    data_lists = [['id', 'name'],
-                  [1, 'John Doe'],
-                  [2, 'Dale Simmons']]
-    t1 = Table(data_lists)
-    t2 = Table.from_dict(data_dicts[0])
-    t3 = Table.from_dict(data_dicts)
-    t3.extend([[3, 'Kurt Rose'], [4]])
-    print t1
-    print t2
-    print t2.to_html()
-    print t3
-    print t3.to_html()
-    print t3.to_text()
-
-    import re
-    t4 = Table.from_object(re.compile(''))
-    print t4.to_text()
-    import pdb;pdb.set_trace()
-
-
-if __name__ == '__main__':
-    main()
