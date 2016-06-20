@@ -2,7 +2,7 @@
 
 import os
 import cgi
-import textwrap
+from textwrap import dedent
 from inspect import getargspec
 
 from werkzeug.wrappers import Response
@@ -49,7 +49,11 @@ class TabularRender(object):
 
         func_doc = getattr(route.endpoint, '__doc__', '')
         if func_doc:
-            escaped_doc = escape_html(textwrap.dedent(func_doc))
+            # Dedentation that accounts for first line indentation difference
+            lines = func_doc.splitlines()
+            first_line, remainder = lines[0], '\n'.join(lines[1:])
+            dedented = dedent(first_line) + '\n' + dedent(remainder)
+            escaped_doc = escape_html(dedented)
             html_doc = '<p style="white-space: pre;">%s</p>' % escaped_doc
         else:
             html_doc = '<!-- add a docstring to display a message here! -->'
