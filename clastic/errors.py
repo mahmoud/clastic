@@ -101,8 +101,11 @@ class HTTPException(BaseResponse, Exception):
         super(HTTPException, self).__init__(response=self.to_text(),
                                             status=self.code,
                                             headers=headers,
-                                            mimetype=mimetype,
+                                            mimetype=DEFAULT_MIME,
                                             content_type=content_type)
+        if mimetype != DEFAULT_MIME:
+            self.adapt(mimetype)
+        return
 
     def adapt(self, mimetype=None):
         try:
