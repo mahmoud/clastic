@@ -63,6 +63,7 @@ def check_middleware(mw):
             raise TypeError("middleware functions must take argument"
                             " 'next' as the first parameter (%s.%s)"
                             % (mw.name, f_name))
+    return
 
 
 def check_middlewares(middlewares, args_dict=None):
