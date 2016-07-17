@@ -12,6 +12,8 @@ examples/cline/todo.db
 *.so
 
 # Packages
+.cache/
+.eggs/
 *.egg
 *.egg-info
 dist
