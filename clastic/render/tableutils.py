@@ -471,6 +471,11 @@ class Table(object):
         return sep.join(lines)
 
     def get_cell_html(self, value):
+        """Called on each value in an HTML table. By default it simply escapes
+        the HTML. Override this method to add additional conditions
+        and behaviors, but take care to ensure the final output is
+        HTML escaped.
+        """
         return escape_html(value)
 
     def _add_horizontal_html_lines(self, lines, headers, max_depth):
