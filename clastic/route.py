@@ -275,6 +275,7 @@ class Route(BaseRoute):
         if callable(self.render_arg):
             self._render = self.render_arg
         self._render_error = render_error
+        self._required_args = self._resolve_required_args()
 
     def execute(self, request, **kwargs):
         injectables = {'_route': self,
@@ -376,6 +377,67 @@ class Route(BaseRoute):
         self._render_error = render_error
         self._execute = _execute
 
+        self._required_args = self._resolve_required_args()
+
+    def _resolve_required_args(self, with_builtins=False):
+        """Creates a list of fully resolved endpoint requirements, working
+        backwards from the arguments in the endpoint function
+        signature.
+
+        Underlying functions have checks for cycles, etc., but most of
+        those issues will be caught before this resolution
+        happens. For instance, this method will not raise an error if
+        no middleware provides a certain argument. That check and many
+        others are done at bind time by make_middleware_chain.
+        """
+        args = {}
+
+        def add(provides):
+            for p in provides:
+                args.setdefault(p, [])
+
+        def add_func(provides, func=None):
+            func = func or (lambda: None)  # convenience for unset mw methods
+            deps, _, _, default_map = getargspec(func)
+            defaulted_deps = default_map if default_map else []
+
+            # XXX: at this point are there cases where provides can conflict?
+            for p in provides:
+                args.setdefault(p, []).extend(deps)
+
+            for ddep in defaulted_deps:
+                # if the ddep is already present, another source is
+                # providing it and the signature default won't be used
+                if ddep not in args:
+                    args[ddep] = []
+            return
+
+        url_args = self.converters.keys()
+        add(url_args)
+        add(RESERVED_ARGS)
+        add(self._resources.keys())
+
+        for mw in self._middlewares:
+            add_func(mw.provides, mw.request)
+            add_func(mw.endpoint_provides, mw.endpoint)
+            add_func(mw.render_provides, mw.render)
+
+        add_func(['__endpoint_response__'], self.endpoint)
+
+        resolved = resolve_deps(args)
+
+        ret = resolved['__endpoint_response__']
+        if not with_builtins:
+            ret = [d for d in ret if d not in RESERVED_ARGS]
+
+        return ret
+
+    def get_required_args(self):
+        return list(self._required_args)
+
+    def is_required_arg(self, arg_name):
+        return arg_name in self._required_args
+
     def get_info(self):
         ret = {}
         route = self
@@ -428,6 +490,104 @@ class NullRoute(Route):
     def bind(self, *a, **kw):
         kw['inherit_slashes'] = False
         super(NullRoute, self).bind(*a, **kw)
+
+
+def toposort(dep_map):
+    "expects a dict of {item: set([deps])}"
+    ret, dep_map = [], dict(dep_map)
+    if not dep_map:
+        return []
+    extras = set.union(*dep_map.values()) - set(dep_map)
+    dep_map.update([(k, set()) for k in extras])
+    remaining = dict(dep_map)
+    while remaining:
+        cur = set([item for item, deps in remaining.items() if not deps])
+        if not cur:
+            break
+        ret.append(cur)
+        remaining = dict([(item, deps - cur) for item, deps
+                          in remaining.items() if item not in cur])
+    if remaining:
+        raise ValueError('unresolvable dependencies: %r' % remaining)
+    return ret
+
+
+def resolve_deps(dep_map):
+    # TODO: keyfunc
+
+    # first, make a clean copy
+    dep_map = normalize_deps(dep_map)
+
+    # second, check for cycles
+    cycle = find_cycle(dep_map, prenormalize=False)
+    if cycle:
+        links_str = ', '.join(['%r->%r' % (t, d) for t, d
+                               in zip(cycle, cycle[1:])])
+        raise RuntimeError('cycle detected (%s)' % links_str)
+
+    dict_type = type(dep_map)
+    resolved_map = dict_type([(k, []) for k in dep_map])
+
+    for cur_target, cur_resolved_deps in resolved_map.items():
+        cur_deps = list(reversed(dep_map[cur_target]))
+        while cur_deps:
+            cd = cur_deps.pop()
+            if cd not in cur_resolved_deps:
+                cur_resolved_deps.append(cd)
+            cd_deps = dep_map.get(cd, [])
+            cur_deps.extend(reversed(cd_deps))
+
+    return resolved_map
+
+
+def normalize_deps(dep_map):
+    """Returns a copy of *dep_map* with no duplicate dependencies for a
+    given target, and all dependencies properly represented as targets.
+    """
+    ret = type(dep_map)()  # work with dict/OrderedDict/etc.
+
+    for k, _deps in dep_map.items():
+        cur_seen = set()
+        ret[k] = []
+        for d in _deps:
+            if d not in ret:
+                ret[d] = []
+            if d in cur_seen:
+                continue
+            ret[k].append(d)
+            cur_seen.add(d)
+
+    return ret
+
+
+def find_cycle(dep_map, prenormalize=True):
+    """Returns the first cycle it finds, or None if there aren't any.
+
+    Normalizes first, but if the dep_map is already normalized, save
+    some time with prenormalize=False.
+
+    This implementation is based off of a Guido + Norvig collab, oddly
+    enough.
+    """
+    if prenormalize:
+        dep_map = normalize_dep_map(dep_map)
+    rem_nodes = dep_map.keys()
+    while rem_nodes:
+        cur_root = rem_nodes.pop()
+        cur_path = [cur_root]
+        while cur_path:
+            cur_deps = list(dep_map[cur_path[-1]])
+            while cur_deps:
+                cd = cur_deps.pop()
+                if cd in cur_path:
+                    return cur_path + [cd]
+                if cd in rem_nodes:
+                    cur_path.append(cd)
+                    rem_nodes.remove(cd)
+                    break
+            else:
+                cur_path.pop()
+    return None
 
 
 #
