@@ -12,6 +12,19 @@ Core
 * Give render_factories a chance to return something for None inputs
 * `context` is way too general of a name for the return of the endpoint
 
+NEW
+~~~
+
+* What to do when a non-Response is returned from the endpoint stack?
+  Exception or default render?
+* SubApplication and NullRoute into __init__ (middlewares need it sometimes)
+* SignedCookieMiddleware's cookie_expiry currently does nothin
+* meta page needs current server time, present working directory
+* redirect (such as from /meta to /meta/ is dropping query params)
+* also ?format=json doesn't work on meta
+* bind-time callback for middlewares
+
+
 Contrib
 -------
 * Secure sessions
