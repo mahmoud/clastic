@@ -121,7 +121,7 @@ class StaticFileRoute(Route):
             open(file_path).close()
             get_file_mtime(file_path)
         self.cache_timeout = cache_timeout
-        self.mimetype = None
+        self.mimetype = mimetype
         super(StaticFileRoute, self).__init__(pattern, self.get_file_response)
 
     def get_file_response(self, request):
