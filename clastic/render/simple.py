@@ -102,8 +102,7 @@ class BasicRender(object):
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
-    def render_response(self, request, context, _route):
-        from collections import Sized
+    def render_response(self, context, request, _route):
         if isinstance(context, basestring):  # already serialized
             if self._guess_json(context):
                 return Response(context, mimetype="application/json")
