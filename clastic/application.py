@@ -31,7 +31,7 @@ _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
 
 def cast_to_route_factory(in_arg):
     from meta import MetaApplication
-    if isinstance(in_arg, BaseRoute):
+    if isinstance(in_arg, (BaseRoute, SubApplication)):
         return in_arg
     elif isinstance(in_arg, Sequence):
         try:
