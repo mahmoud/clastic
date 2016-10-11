@@ -177,8 +177,9 @@ class BaseApplication(object):
                 norm_path = normalize_path(url_path, route.is_branch)
                 if norm_path != url_path:
                     if route.slash_mode == S_REDIRECT:
-                        dest_url = request.url_root.rstrip('/') + norm_path
-                        return redirect(dest_url)  # TODO: error_handler
+                        parts = [request.url_root.rstrip('/'),
+                                 norm_path, '?', request.query_string]
+                        return redirect(''.join(parts))  # TODO: error_handler
                     elif route.slash_mode == S_STRICT:
                         nf_exc = err_handler.not_found_type(request=request,
                                                             application=self,
