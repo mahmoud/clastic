@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import itertools
 from collections import Sequence
 from argparse import ArgumentParser
 
@@ -17,16 +18,20 @@ from .route import (Route,
                     normalize_path,
                     check_render_error)
 
+from .utils import int2hexguid
 from .middleware import check_middlewares
 from .errors import (HTTPException,
                      MIME_SUPPORT_MAP,
                      ErrorHandler,
-                     REPLErrorHandler,
                      ContextualErrorHandler)
 from .sinter import get_arg_names
 
+
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')
+
+
+_REQ_ID_ITER = itertools.count()
 
 
 def cast_to_route_factory(in_arg):
@@ -147,6 +152,13 @@ class BaseApplication(object):
 
     def _dispatch_wsgi(self, environ, start_response):
         request = self.request_type(environ)
+        try:
+            # some request objects might not be amenable to assignment
+            request.request_id = next(_REQ_ID_ITER)
+        except Exception:
+            pass
+        else:
+            request.request_guid = int2hexguid(request.request_id)
         response = self.dispatch(request)
         return response(environ, start_response)
 
