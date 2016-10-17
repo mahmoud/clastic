@@ -1,4 +1,18 @@
 # -*- coding: utf-8 -*-
+"""The Flaw application is a minimalist tool to enable rapid
+development, even in the face of inevitable errors.
+
+Flaw is a small WSGI application, itself built on Clastic, which
+activates when the development server cannot start, due to a
+SyntaxError, or other import-time error. Flaw displays the error
+message, stack trace, and the files which are monitored.
+
+Once the error is corrected, and the monitored file is saved, Clastic
+will shut down Flaw and restart your application. This is to avoid
+having to check console output and manually restart your application
+due to typos and other common errors.
+"""
+
 
 import os
 import re
