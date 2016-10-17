@@ -7,7 +7,6 @@ Core
 * polish sub-application mounting
 * Sphinx docs
 * Pretty 4xx handlers for dev
-* Make MetaApplication instantiatable
 * Make render functions more like middlewares (to unify return/raise branching and facilitate format-multiplexed renderers)
 * Give render_factories a chance to return something for None inputs
 * `context` is way too general of a name for the return of the endpoint
@@ -19,7 +18,6 @@ NEW
   Exception or default render?
 * SubApplication and NullRoute into __init__ (middlewares need it sometimes)
 * SignedCookieMiddleware's cookie_expiry currently does nothin
-* meta page needs current server time, present working directory
 * redirect (such as from /meta to /meta/ is dropping query params)
 * also ?format=json doesn't work on meta
 * bind-time callback for middlewares

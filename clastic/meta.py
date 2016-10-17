@@ -108,6 +108,8 @@ def get_proc_info():
 # TODO: byte order, path, prefix
 def get_host_info():
     ret = {}
+    now = datetime.datetime.utcnow()
+
     ret['hostname'] = socket.gethostname()
     ret['hostfqdn'] = socket.getfqdn()
     ret['uname'] = platform.uname()
@@ -118,6 +120,7 @@ def get_host_info():
         ret['load_avgs'] = os.getloadavg()
     except AttributeError:
         pass
+    ret['utc_time'] = str(now)
     return ret
 
 
