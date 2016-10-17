@@ -18,7 +18,6 @@ NEW
   Exception or default render?
 * SubApplication and NullRoute into __init__ (middlewares need it sometimes)
 * SignedCookieMiddleware's cookie_expiry currently does nothin
-* redirect (such as from /meta to /meta/ is dropping query params)
 * also ?format=json doesn't work on meta
 * bind-time callback for middlewares
 
