@@ -53,6 +53,13 @@ _OP_ARITY_MAP = {'': False,  # whether or not an op is "multi"
                  '+': True,
                  '*': True}
 
+_OP_OPTIONALITY_MAP = {'': False,  # whether or not an op is "optional"
+                       '?': True,
+                       ':': False,
+                       '+': False,
+                       '*': True}
+
+
 TYPE_CONV_MAP = {}
 TYPE_PATT_MAP = {}
 DEFAULT_CONVS = [('int', int, _INT_PATTERN),
@@ -135,11 +142,13 @@ def _compile_path_pattern(pattern, mode=S_REWRITE):
                                  % type_name)
         try:
             multi = _OP_ARITY_MAP[op]
+            optional = _OP_OPTIONALITY_MAP[op]
         except KeyError:
             _tmpl = 'unknown arity operator %r, expected one of %r'
             raise InvalidPattern(_tmpl % (op, _OP_ARITY_MAP.keys()))
-        var_converter_map[name] = build_converter(cur_conv, multi=multi)
-
+        var_converter_map[name] = build_converter(cur_conv,
+                                                  multi=multi,
+                                                  optional=optional)
         path_seg_pattern = _SEG_TMPL.format(name=name,
                                             sep=sep,
                                             pattern=cur_patt,
