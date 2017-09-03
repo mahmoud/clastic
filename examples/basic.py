@@ -11,10 +11,12 @@ from clastic.middleware import GetParamMiddleware, SimpleContextProcessor
 from clastic.middleware.cookie import SignedCookieMiddleware
 
 
-def cookie_hello_world(cookie, name=None):
+def cookie_hello_world(cookie, name=None, expire_cookie=False):
     if name is None:
         name = cookie.get('name') or 'world'
     cookie['name'] = name
+    if expire_cookie:
+        cookie.set_expires()
     return 'Hello, %s!' % name
 
 
@@ -55,7 +57,8 @@ def fizzbuzz(limit):
 def create_decked_out_app():
     resources = {'start_time': time.time(),
                  'module_list': sys.modules.keys()}
-    middlewares = [GetParamMiddleware(['name', 'date', 'session_id', 'limit']),
+    get_param_names = ['name', 'date', 'session_id', 'limit', 'expire_cookie']
+    middlewares = [GetParamMiddleware(get_param_names),
                    SignedCookieMiddleware(),
                    SimpleContextProcessor('name')]
     routes = [('/', cookie_hello_world, render_basic),
