@@ -15,7 +15,7 @@ from common import cookie_hello_world
 
 
 def test_cookie_mw():
-    cookie_mw = SignedCookieMiddleware(data_expiry=NEVER)
+    cookie_mw = SignedCookieMiddleware(expiry=NEVER)
     _ = repr(cookie_mw)  # coverage, lol
     app = Application([('/', cookie_hello_world, render_basic),
                        ('/<name>/', cookie_hello_world, render_basic)],
@@ -35,7 +35,7 @@ def test_cookie_mw():
 
 
 def test_cookie_expire():
-    cookie_mw = SignedCookieMiddleware(data_expiry=0.1)
+    cookie_mw = SignedCookieMiddleware(expiry=0.1)
     app = Application([('/', cookie_hello_world, render_basic),
                        ('/<name>/', cookie_hello_world, render_basic)],
                       middlewares=[cookie_mw])
