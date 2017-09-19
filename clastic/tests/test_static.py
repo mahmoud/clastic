@@ -17,8 +17,6 @@ def test_basic_static_serve():
     c = Client(app, Response)
     resp = c.get('/static/test_static.py')
     yield eq_, resp.mimetype, 'text/x-python'
-    resp = c.get('/static/test_static.pyc')
-    yield eq_, resp.mimetype, 'application/x-python-code'
     resp = c.get('/static/does_not_exist.txt')
     yield eq_, resp.status_code, 404
     resp = c.get('/static/../core.py')
