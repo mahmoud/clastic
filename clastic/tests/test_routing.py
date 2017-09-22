@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from nose.tools import raises, eq_, ok_
+from pytest import raises
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
@@ -25,28 +25,28 @@ def test_new_base_route():
     # note default slashing behavior
     rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
     d = rp.match_path('/a/b/1/thing/1/2/3/4')
-    yield eq_, d, {u't': 1, u'das': [1, 2, 3, 4]}
+    assert d == {u't': 1, u'das': [1, 2, 3, 4]}
 
     d = rp.match_path('/a/b/1/thing/hi/')
-    yield eq_, d, None
+    assert d == None
 
     d = rp.match_path('/a/b/1/thing/')
-    yield eq_, d, None
+    assert d == None
 
     rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
     d = rp.match_path('/a/b/1/thing')
-    yield eq_, d, {u't': 1, u'das': []}
+    assert d == {u't': 1, u'das': []}
 
 
 def test_base_route_executes():
     br = BaseRoute('/', lambda request: request['stephen'])
     res = br.execute({'stephen': 'laporte'})
-    yield eq_, res, 'laporte'
+    assert res == 'laporte'
 
 
-@raises(InvalidEndpoint)
 def test_base_route_raises_on_no_ep():
-    BaseRoute('/a/b/<t:int>/thing/<das+int>').execute({})
+    with raises(InvalidEndpoint):
+        BaseRoute('/a/b/<t:int>/thing/<das+int>').execute({})
 
 
 def test_base_application_basics():
@@ -54,7 +54,7 @@ def test_base_application_basics():
     ba = BaseApplication([br])
     client = Client(ba, BaseResponse)
     res = client.get('/')
-    yield eq_, res.data, 'lolporte'
+    assert res.data == 'lolporte'
 
 
 def test_nonbreaking_exc():
@@ -62,8 +62,8 @@ def test_nonbreaking_exc():
                        ('/', lambda: 'so hot in here', render_basic)])
     client = Client(app, BaseResponse)
     resp = client.get('/')
-    yield eq_, resp.status_code, 200
-    yield eq_, resp.data, 'so hot in here'
+    assert resp.status_code == 200
+    assert resp.data == 'so hot in here'
 
 
 def api(api_path):
@@ -85,11 +85,11 @@ def test_create_route_order_list():
               ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = BaseApplication(routes)
     client = Client(app, BaseResponse)
-    yield eq_, client.get('/api/a').data, 'api: a'
-    yield eq_, client.get('/api/a/b').data, 'api: a/b'
+    assert client.get('/api/a').data == 'api: a'
+    assert client.get('/api/a/b').data == 'api: a/b'
 
     for i, rt in enumerate(app.routes):
-        yield eq_, rt.pattern, routes[i][0]
+        assert rt.pattern == routes[i][0]
     return
 
 
@@ -102,8 +102,8 @@ def test_create_route_order_incr():
     client = Client(app, BaseResponse)
     for r in routes:
         app.add(r)
-        yield eq_, client.get('/api/a/b').data, 'api: a/b'
-        yield eq_, app.routes[-1].pattern, r[0]
+        assert client.get('/api/a/b').data == 'api: a/b'
+        assert app.routes[-1].pattern == r[0]
     return
 
 
@@ -143,51 +143,40 @@ def test_ok_routes():
     ok_routes = no_arg_routes + arg_routes
     for cur_mode in MODES:
         for cur_patt in ok_routes:
-            try:
-                cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
-            except:
-                yield ok_, False, cur_patt
-            else:
-                yield ok_, cur_rt
+            cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
+            assert cur_rt, '%s did not match' % cur_patt
 
 
 def test_broken_routes():
     for cur_mode in MODES:
         for cur_patt in broken_routes:
-            try:
+            with raises(InvalidPattern):
                 cur_rt = Route(cur_patt, NO_OP, slash_mode=cur_mode)
-            except InvalidPattern:
-                yield ok_, True
-            else:
-                yield ok_, False, cur_rt
 
 
 def test_known_method():
     rt = Route('/', NO_OP, methods=['GET'])
-    yield ok_, rt
-    yield ok_, 'HEAD' in rt.methods
+    assert rt
+    assert 'HEAD' in rt.methods
 
 
-@raises(InvalidMethod)
 def test_unknown_method():
-    Route('/', NO_OP, methods=['lol'])
+    with raises(InvalidMethod):
+        Route('/', NO_OP, methods=['lol'])
 
 
 def test_debug_raises():
     app_nodebug = Application([('/', lambda: 1/0)], debug=False)
     client = Client(app_nodebug, BaseResponse)
-    yield eq_, client.get('/').status_code, 500
+    assert client.get('/').status_code == 500
 
     err_handler = ErrorHandler(reraise_uncaught=True)
     app_debug = Application([('/', lambda: 1/0)], error_handler=err_handler)
     client = Client(app_debug, BaseResponse)
-    try:
-        resp = client.get('/')
-    except ZeroDivisionError:
-        yield ok_, True
-    else:
-        yield ok_, False, ('%r did not raise ZeroDivisionError (got %r)'
-                           % (app_debug, resp))
+
+    with raises(ZeroDivisionError):
+        client.get('/')
+    return
 
 
 def test_slashing_behaviors():
@@ -201,15 +190,15 @@ def test_slashing_behaviors():
     cl_redirect = Client(app_redirect, BaseResponse)
     cl_rewrite = Client(app_rewrite, BaseResponse)
 
-    yield eq_, cl_strict.get('/').status_code, 200
-    yield eq_, cl_rewrite.get('/').status_code, 200
-    yield eq_, cl_redirect.get('/').status_code, 200
+    assert cl_strict.get('/').status_code == 200
+    assert cl_rewrite.get('/').status_code == 200
+    assert cl_redirect.get('/').status_code == 200
 
-    yield eq_, cl_strict.get('/goof//spoof//').status_code, 404
-    yield eq_, cl_rewrite.get('/goof//spoof//').status_code, 200
-    yield eq_, cl_redirect.get('/goof//spoof//').status_code, 302
-    yield eq_, cl_redirect.get('/goof//spoof//', follow_redirects=True).status_code, 200
+    assert cl_strict.get('/goof//spoof//').status_code == 404
+    assert cl_rewrite.get('/goof//spoof//').status_code == 200
+    assert cl_redirect.get('/goof//spoof//').status_code == 302
+    assert cl_redirect.get('/goof//spoof//', follow_redirects=True).status_code == 200
 
-    yield eq_, cl_strict.get('/dne/dne//').status_code, 404
-    yield eq_, cl_rewrite.get('/dne/dne//').status_code, 404
-    yield eq_, cl_redirect.get('/dne/dne//').status_code, 404
+    assert cl_strict.get('/dne/dne//').status_code == 404
+    assert cl_rewrite.get('/dne/dne//').status_code == 404
+    assert cl_redirect.get('/dne/dne//').status_code == 404
