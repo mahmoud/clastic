@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from nose.tools import eq_, raises
+from pytest import raises
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.middleware import Middleware, GetParamMiddleware
-from common import hello_world, hello_world_ctx, RequestProvidesName
+from clastic.tests.common import hello_world, hello_world_ctx, RequestProvidesName
 
 
 class RenderRaisesMiddleware(Middleware):
@@ -22,9 +22,9 @@ def test_blank_req_provides():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
     resp = c.get('/?name=Kurt')
-    yield eq_, resp.data, 'Hello, Kurt!'
+    assert resp.data == 'Hello, Kurt!'
 
 
 def test_req_provides():
@@ -33,9 +33,9 @@ def test_req_provides():
                       middlewares=[req_provides])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, Rajkumar!'
+    assert resp.data == 'Hello, Rajkumar!'
     resp = c.get('/?name=Kurt')
-    yield eq_, resp.data, 'Hello, Kurt!'
+    assert resp.data == 'Hello, Kurt!'
 
 
 def test_get_param_mw():
@@ -44,9 +44,9 @@ def test_get_param_mw():
                       middlewares=[get_name_mw])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
     resp = c.get('/?name=Kurt')
-    yield eq_, resp.data, 'Hello, Kurt!'
+    assert resp.data == 'Hello, Kurt!'
 
 
 def test_direct_no_render():
@@ -55,7 +55,7 @@ def test_direct_no_render():
                       middlewares=[render_raises_mw])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
 
 
 def test_render_raises():
@@ -63,12 +63,12 @@ def test_render_raises():
     app = Application([('/', hello_world_ctx)],
                       middlewares=[render_raises_mw])
     resp = Client(app, BaseResponse).get('/')
-    assert resp.status_code, 500
+    assert resp.status_code == 500
 
 
-@raises(NameError)
 def test_next_in_endpoint():
     def nexter(next, request):
         return 'this endpoint is broke'
 
-    Application([('/', nexter)])
+    with raises(NameError):
+        Application([('/', nexter)])
