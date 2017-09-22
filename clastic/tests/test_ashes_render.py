@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 import os
-from nose.tools import raises, eq_, ok_
+from pytest import raises
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
@@ -10,8 +10,7 @@ from werkzeug.wrappers import BaseResponse
 from clastic import Application
 from clastic.render import ashes
 from clastic.render import AshesRenderFactory, render_basic
-
-from common import hello_world_ctx, complex_context
+from clastic.tests.common import hello_world_ctx, complex_context
 
 _TMPL_DIR = os.path.join(os.path.dirname(__file__), '_ashes_tmpls')
 
@@ -26,20 +25,21 @@ def test_ashes():
 
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'world' in resp.data
+    assert resp.status_code == 200
+    assert 'world' in resp.data
 
     resp = c.get('/beta/Rajkumar/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'Rajkumar' in resp.data
+    assert resp.status_code, 200
+    assert 'Rajkumar' in resp.data
 
 
-@raises(ashes.TemplateNotFound)
 def test_ashes_missing_template():
     ashes_render = AshesRenderFactory(_TMPL_DIR)
     tmpl = 'missing_template.html'
-    return Application([('/', hello_world_ctx, tmpl)],
-                       render_factory=ashes_render)
+    with raises(ashes.TemplateNotFound):
+        return Application([('/', hello_world_ctx, tmpl)],
+                           render_factory=ashes_render)
+    return
 
 
 def test_ashes_mixed():
@@ -51,8 +51,8 @@ def test_ashes_mixed():
 
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'Salam' in resp.data
+    assert resp.status_code == 200
+    assert 'Salam' in resp.data
 
     resp = c.get('/json/')
-    yield eq_, resp.status_code, 200
+    assert resp.status_code == 200

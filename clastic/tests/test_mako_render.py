@@ -2,16 +2,15 @@
 
 from __future__ import unicode_literals
 import os
-from nose.tools import raises, eq_, ok_
 
+from pytest import raises
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.render.mako_templates import mako, MakoRenderFactory
 from clastic.render import render_basic
-
-from common import hello_world_ctx, complex_context
+from clastic.tests.common import hello_world_ctx, complex_context
 
 _TMPL_DIR = os.path.join(os.path.dirname(__file__), '_mako_tmpls')
 
@@ -26,20 +25,20 @@ def test_mako():
 
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'clasty' in resp.data
+    assert resp.status_code == 200
+    assert 'clasty' in resp.data
 
     resp = c.get('/beta/Rajkumar/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'clasty' in resp.data
+    assert resp.status_code == 200
+    assert 'clasty' in resp.data
 
 
-@raises(mako.exceptions.TopLevelLookupException)
 def test_mako_missing_template():
     mako_render = MakoRenderFactory(_TMPL_DIR)
     tmpl = 'missing_template.html'
-    return Application([('/', hello_world_ctx, tmpl)],
-                       render_factory=mako_render)
+    with raises(mako.exceptions.TopLevelLookupException):
+        return Application([('/', hello_world_ctx, tmpl)],
+                           render_factory=mako_render)
 
 
 def test_mako_broken_template():
@@ -49,8 +48,8 @@ def test_mako_broken_template():
                       render_factory=mako_render)
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.status_code, 500
-    yield ok_, len(resp.data) > 1024  # a longish response
+    assert resp.status_code == 500
+    assert len(resp.data) > 1024  # a longish response
 
 
 def test_mako_mixed():
@@ -62,8 +61,8 @@ def test_mako_mixed():
 
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.status_code, 200
-    yield ok_, 'clasty' in resp.data
+    assert resp.status_code == 200
+    assert 'clasty' in resp.data
 
     resp = c.get('/json/')
-    yield eq_, resp.status_code, 200
+    assert resp.status_code == 200
