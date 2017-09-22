@@ -1,15 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""
-    clastic
-    ~~~~~~~
-
-    A functional Python web framework that streamlines explicit
-    development practices while eliminating global state.
-
-    :copyright: (c) 2013 by Mahmoud Hashemi
-    :license: BSD, see LICENSE for more details.
-
+"""Clastic is a functional Python web framework that streamlines
+explicit development practices while eliminating global state.
 """
 
 import sys
@@ -17,8 +9,8 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.4.4dev'
-__contact__ = 'mahmoudrhashemi@gmail.com'
+__version__ = '0.5.0'
+__contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
 
@@ -49,8 +41,7 @@ setup(name='clastic',
       install_requires=['Werkzeug==0.9.4', 'argparse>=1.2.1'],
       license=__license__,
       platforms='any',
-      test_suite='nose.collector',
-      tests_require=['Mako>=1.0.0', 'nose>=1.3.7'],
+      tests_require=['Mako==1.0.4', 'pytest==2.9.2'],
       classifiers=[
           'Intended Audience :: Developers',
           'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
@@ -63,3 +54,21 @@ setup(name='clastic',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7', ]
       )
+
+"""
+A brief checklist for release:
+
+* tox
+* git commit (if applicable)
+* Bump setup.py version off of -dev
+* git commit -a -m "bump version for x.y.z release"
+* python setup.py sdist bdist_wheel upload
+* git commit
+* git tag -a x.y.z -m "brief summary"
+* write CHANGELOG
+* git commit
+* bump setup.py version onto n+1 dev
+* git commit
+* git push
+
+"""
