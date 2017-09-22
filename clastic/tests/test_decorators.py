@@ -9,8 +9,9 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
-from common import hello_world, RequestProvidesName
 from clastic.decorators import clastic_decorator
+
+from clastic.tests.common import hello_world, RequestProvidesName
 
 
 def store_call_count(f):
