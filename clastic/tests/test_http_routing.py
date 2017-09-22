@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from nose.tools import eq_
 
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
@@ -34,7 +33,7 @@ def test_http_method_routes():
                 resp_data = resp.data
                 # lololol yay eval()
                 route_methods = eval(resp_data) - set(['HEAD'])
-                yield eq_, set([correct_method.upper()]), route_methods
-    yield eq_, status_map[200], len(routes)
-    yield eq_, status_map.get(405), len(routes) * (len(methods) - 1)
+                assert set([correct_method.upper()]) == route_methods
+    assert status_map[200] == len(routes)
+    assert status_map.get(405) == len(routes) * (len(methods) - 1)
     return
