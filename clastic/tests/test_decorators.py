@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from nose.tools import ok_, eq_, raises
+from pytest import raises
 
 from functools import wraps
 
@@ -34,9 +34,9 @@ def test_cl_decorated():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
     resp = c.get('/?name=Kurt')
-    yield eq_, resp.data, 'Hello, Kurt!'
+    assert resp.data == 'Hello, Kurt!'
 
 
 def test_broken_decorated():
@@ -45,14 +45,16 @@ def test_broken_decorated():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
     resp = c.get('/?name=Kurt')
-    yield ok_, resp.data != 'Hello, Kurt!'
+    assert resp.data != 'Hello, Kurt!'
 
 
-@raises(TypeError)
 def test_undecoratable():
-    @clastic_decorator(store_call_count)
-    def star_endpoint(**kwargs):
-        return kwargs
-    Application([('/', star_endpoint)])
+    with raises(TypeError):
+        @clastic_decorator(store_call_count)
+        def star_endpoint(**kwargs):
+            return kwargs
+
+        Application([('/', star_endpoint)])  # technically not reached
+    return
