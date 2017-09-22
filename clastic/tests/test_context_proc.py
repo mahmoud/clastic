@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from nose.tools import eq_, raises
+from pytest import raises
 
 import json
 
@@ -10,10 +10,10 @@ from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, render_json, render_basic
 from clastic.middleware import SimpleContextProcessor, ContextProcessor
-from common import (hello_world,
-                    hello_world_str,
-                    hello_world_ctx,
-                    RequestProvidesName)
+from clastic.tests.common import (hello_world,
+                                  hello_world_str,
+                                  hello_world_ctx,
+                                  RequestProvidesName)
 
 
 def test_simple_ctx_proc():
@@ -23,8 +23,8 @@ def test_simple_ctx_proc():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     resp_data = json.loads(resp.data)
-    yield eq_, resp_data['name'], 'world'  # does not overwrite
-    yield eq_, resp_data['language'], 'en'
+    assert resp_data['name'] == 'world'  # does not overwrite
+    assert resp_data['language'] == 'en'
 
 
 def test_ctx_proc_req():
@@ -35,12 +35,12 @@ def test_ctx_proc_req():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     resp_data = json.loads(resp.data)
-    yield eq_, resp_data['name'], 'world'  # does not overwrite
-    yield eq_, resp_data['language'], 'en'
+    assert resp_data['name'] == 'world'  # does not overwrite
+    assert resp_data['language'] == 'en'
 
     resp = c.get('/?name=Alex')
     resp_data = json.loads(resp.data)
-    yield eq_, resp_data['name'], 'Alex'  # still does not overwrite
+    assert resp_data['name'] == 'Alex'  # still does not overwrite
 
 
 def test_ctx_proc_overwrite():
@@ -50,7 +50,7 @@ def test_ctx_proc_overwrite():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     resp_data = json.loads(resp.data)
-    yield eq_, resp_data['name'], 'Kurt'  # does overwrite
+    assert resp_data['name'] == 'Kurt'  # does overwrite
 
 
 def test_ctx_proc_empty():
@@ -60,7 +60,7 @@ def test_ctx_proc_empty():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     resp_data = json.loads(resp.data)
-    yield eq_, resp_data['name'], 'world'  # does overwrite
+    assert resp_data['name'] == 'world'  # does overwrite
 
 
 def test_ctx_proc_direct_resp():
@@ -69,7 +69,7 @@ def test_ctx_proc_direct_resp():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
 
 
 def test_ctx_proc_nonctx():
@@ -78,37 +78,37 @@ def test_ctx_proc_nonctx():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    yield eq_, resp.data, 'Hello, world!'
+    assert resp.data == 'Hello, world!'
 
 
-@raises(NameError)
 def test_ctx_proc_unresolved():
-    add_name = ContextProcessor(['name'])
-    Application([('/', hello_world)],
-                middlewares=[add_name])
+    with raises(NameError):
+        add_name = ContextProcessor(['name'])
+        Application([('/', hello_world)],
+                    middlewares=[add_name])
 
 
-@raises(NameError)
 def test_ctx_proc_overlap():
-    ContextProcessor(required=['name'],
-                     defaults={'name': 'Alex'})
+    with raises(NameError):
+        ContextProcessor(required=['name'],
+                         defaults={'name': 'Alex'})
 
 
-@raises(NameError)
 def test_ctx_proc_reserved():
-    ContextProcessor(required=['next'])
+    with raises(NameError):
+        ContextProcessor(required=['next'])
 
 
-@raises(TypeError)
 def test_ctx_proc_req_type():
-    ContextProcessor(required=[6])
+    with raises(TypeError):
+        ContextProcessor(required=[6])
 
 
-@raises(TypeError)
 def test_ctx_proc_default_type():
-    ContextProcessor(default={6: ''})
+    with raises(TypeError):
+        ContextProcessor(default={6: ''})
 
 
-@raises(TypeError)
 def test_ctx_proc_def_nonmap():
-    ContextProcessor(defaults=['hi', 'hello'])
+    with raises(TypeError):
+        ContextProcessor(defaults=['hi', 'hello'])
