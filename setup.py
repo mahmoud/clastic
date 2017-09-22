@@ -9,7 +9,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.5.0'
+__version__ = '0.5.1dev'
 __contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
@@ -63,7 +63,6 @@ A brief checklist for release:
 * Bump setup.py version off of -dev
 * git commit -a -m "bump version for x.y.z release"
 * python setup.py sdist bdist_wheel upload
-* git commit
 * git tag -a x.y.z -m "brief summary"
 * write CHANGELOG
 * git commit
