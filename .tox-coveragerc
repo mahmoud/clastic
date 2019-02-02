@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    clastic
+    ../clastic
+
+[paths]
+source =
+   ../clastic
+   */lib/python*/site-packages/clastic
+   */Lib/site-packages/clastic
+   */pypy/site-packages/clastic

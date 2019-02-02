@@ -8,6 +8,8 @@ from werkzeug.wrappers import BaseResponse  # TODO: remove dependency
 
 from ..sinter import make_chain, get_arg_names, _VERBOSE
 
+_INNER_NAME = 'next'
+
 
 class Middleware(object):
     unique = True
@@ -153,7 +155,8 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     ep_chain, ep_args, ep_unres = make_chain(ep_funcs,
                                              ep_provides,
                                              endpoint,
-                                             ep_avail)
+                                             ep_avail,
+                                             _INNER_NAME)
     if ep_unres:
         raise NameError("unresolved endpoint middleware arguments: %r"
                         % list(ep_unres))
@@ -165,7 +168,8 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     rn_chain, rn_args, rn_unres = make_chain(rn_funcs,
                                              rn_provides,
                                              render,
-                                             rn_avail)
+                                             rn_avail,
+                                             _INNER_NAME)
     if rn_unres:
         raise NameError("unresolved render middleware arguments: %r"
                         % list(rn_unres))
@@ -179,7 +183,8 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     req_chain, req_chain_args, req_unres = make_chain(req_funcs,
                                                       req_provides,
                                                       req_func,
-                                                      req_avail)
+                                                      req_avail,
+                                                      _INNER_NAME)
     if req_unres:
         raise NameError("unresolved request middleware arguments: %r"
                         % list(req_unres))
