@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from render import ashes
+from .render import ashes
 
 CONTEXTUAL_ENV = ashes.AshesEnv()
 

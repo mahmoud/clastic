@@ -64,7 +64,7 @@ class RequestProvidesName(Middleware):
         try:
             ret = next(request.args.get('name', self.default_name))
         except Exception as e:
-            print e
+            print(e)
             raise
         return ret
 
@@ -76,13 +76,13 @@ class DummyMiddleware(Middleware):
     def request(self, next, request):
         name = '%s (%s)' % (self.__class__.__name__, id(self))
         if self.verbose:
-            print name, '- handling', id(request)
+            print(name, '- handling', id(request))
         try:
             ret = next()
         except Exception as e:
             if self.verbose:
-                print name, '- uhoh:', repr(e)
+                print(name, '- uhoh:', repr(e))
             raise
         if self.verbose:
-            print name, '- hooray:', repr(ret)
+            print(name, '- hooray:', repr(ret))
         return ret

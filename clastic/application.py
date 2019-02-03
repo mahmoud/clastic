@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os
 import itertools
@@ -27,6 +28,13 @@ from .errors import (HTTPException,
 from .sinter import get_arg_names
 
 
+try:
+    unicode
+except NameError:
+    # py3
+    unicode = str
+
+
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')
 
@@ -35,7 +43,7 @@ _REQ_ID_ITER = itertools.count()
 
 
 def cast_to_route_factory(in_arg):
-    from meta import MetaApplication
+    from .meta import MetaApplication
     if isinstance(in_arg, (BaseRoute, SubApplication)):
         return in_arg
     elif isinstance(in_arg, Sequence):
@@ -203,7 +211,8 @@ class BaseApplication(object):
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
                     raise TypeError(msg)
-            except Exception as ret:
+            except Exception as exc:
+                ret = exc
                 if not isinstance(ret, HTTPException):
                     uncaught_params = dict(params, _route=route, _error=ret)
                     ret = err_handler.uncaught_to_response(**uncaught_params)
@@ -299,10 +308,10 @@ class Application(BaseApplication):
 
         wrapped_wsgi = self
         if use_meta:
-            from meta import MetaApplication
+            from .meta import MetaApplication
             self.add(('/_meta/', MetaApplication()))
         if use_static:
-            from static import StaticApplication
+            from .static import StaticApplication
             static_path = args.static_path or static_path or \
                 os.path.join(os.getcwd(), 'static')
             static_prefix = args.static_prefix or static_prefix

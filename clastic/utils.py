@@ -79,10 +79,16 @@ def rel_datetime(d, other=None):
         return '{0} hours ago'.format(s / 3600)
 
 
+try:
+    random_hex = os.urandom(4).hex()
+except AttributeError:
+    # py2
+    random_hex = binascii.hexlify(os.urandom(4))
+
 _GUID_SALT = '-'.join([str(os.getpid()),
                        socket.gethostname() or '<nohostname>',
                        str(time.time()),
-                       binascii.hexlify(os.urandom(4))])
+                       random_hex])
 
 
 def int2hexguid(id_int):
@@ -92,4 +98,4 @@ def int2hexguid(id_int):
     sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
     chance of a collision after 2^64 messages.
     """
-    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
+    return hashlib.sha1((_GUID_SALT + str(id_int)).encode('utf8')).hexdigest()[:24]

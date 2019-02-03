@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from gzip import GzipFile
-from StringIO import StringIO
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
 
 from .core import Middleware
 

@@ -5,10 +5,14 @@ import os
 import sys
 import socket
 import signal
-import thread
 import subprocess
 from itertools import chain
 from ast import literal_eval
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread  # py3
 
 from werkzeug._internal import _log
 from werkzeug.serving import reloader_loop, make_server

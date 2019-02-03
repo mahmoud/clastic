@@ -5,9 +5,9 @@ import cgi
 from textwrap import dedent
 from inspect import getargspec
 
+from boltons.tableutils import Table
 from werkzeug.wrappers import Response
 
-from tableutils import Table
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _CSS_PATH = _CUR_PATH + '/../_clastic_assets/common.css'

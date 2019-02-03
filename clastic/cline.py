@@ -11,9 +11,9 @@ spawned bottle, which spawned klein (Twisted's bottle-alike), from
 which Cline partially derives its name.
 """
 
-from route import Route
-from application import Application
-from render import render_basic
+from .route import Route
+from .application import Application
+from .render import render_basic
 
 
 class Cline(Application):

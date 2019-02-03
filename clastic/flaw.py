@@ -18,9 +18,9 @@ import os
 import re
 import ast
 
-from application import Application
-from static import StaticApplication
-from render import AshesRenderFactory
+from .application import Application
+from .static import StaticApplication
+from .render import AshesRenderFactory
 
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))

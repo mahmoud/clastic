@@ -6,7 +6,7 @@ from collections import defaultdict
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import BaseResponse  # TODO: remove dependency
 
-from ..sinter import make_chain, get_arg_names, _VERBOSE
+from ..sinter import make_chain, get_arg_names, _VERBOSE, PY3
 
 _INNER_NAME = 'next'
 
@@ -116,15 +116,15 @@ class DummyMiddleware(Middleware):
     def request(self, next, request):
         name = '%s (%s)' % (self.__class__.__name__, id(self))
         if self.verbose:
-            print name, '- handling', id(request)
+            print(name, '- handling', id(request))
         try:
             ret = next()
         except Exception as e:
             if self.verbose:
-                print name, '- uhoh:', repr(e)
+                print(name, '- uhoh:', repr(e))
             raise
         if self.verbose:
-            print name, '- hooray:', repr(ret)
+            print(name, '- hooray:', repr(ret))
         return ret
 
 
@@ -145,13 +145,13 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     req_avail = set(preprovided) - set(['next', 'context'])
     req_sigs = [(mw.request, mw.provides)
                 for mw in middlewares if mw.request]
-    req_funcs, req_provides = zip(*req_sigs) or ((), ())
+    req_funcs, req_provides = list(zip(*req_sigs)) or ((), ())
     req_all_provides = set(itertools.chain.from_iterable(req_provides))
 
     ep_avail = req_avail | req_all_provides
     ep_sigs = [(mw.endpoint, mw.endpoint_provides)
                for mw in middlewares if mw.endpoint]
-    ep_funcs, ep_provides = zip(*ep_sigs) or ((), ())
+    ep_funcs, ep_provides = list(zip(*ep_sigs)) or ((), ())
     ep_chain, ep_args, ep_unres = make_chain(ep_funcs,
                                              ep_provides,
                                              endpoint,
@@ -164,7 +164,7 @@ def make_middleware_chain(middlewares, endpoint, render, preprovided):
     rn_avail = ep_avail | set(['context'])
     rn_sigs = [(mw.render, mw.render_provides)
                for mw in middlewares if mw.render]
-    rn_funcs, rn_provides = zip(*rn_sigs) or ((), ())
+    rn_funcs, rn_provides = list(zip(*rn_sigs)) or ((), ())
     rn_chain, rn_args, rn_unres = make_chain(rn_funcs,
                                              rn_provides,
                                              render,
@@ -219,9 +219,12 @@ def _create_request_inner(endpoint, render, all_args,
                                       endpoint_args=ep_args_str,
                                       render_args=rn_args_str)
     if verbose:
-        print code_str  # pragma: nocover
+        print(code_str)  # pragma: nocover
     d = {'endpoint': endpoint, 'render': render, 'BaseResponse': BaseResponse}
 
-    exec compile(code_str, '<string>', 'single') in d
+    if PY3:
+        exec(code_str, d)
+    else:
+        exec("exec code in d")
 
     return d['process_request']

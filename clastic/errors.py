@@ -45,16 +45,18 @@ Possible values to support templating:
 """
 import cgi
 import sys
-import json
 import datetime
-import exceptions
+try:
+    import exceptions
+except ImportError:
+    import builtins as exceptions  # lol py3
 
 from werkzeug.utils import get_content_type
 from werkzeug.debug import DebuggedApplication
 from werkzeug.wrappers import BaseResponse
+from boltons.tbutils import ExceptionInfo, ContextualExceptionInfo
 
-import sinter
-from .tbutils import ExceptionInfo, ContextualExceptionInfo
+from . import sinter
 from .render.simple import ClasticJSONEncoder
 from ._contextual_errors import CONTEXTUAL_ENV
 
@@ -638,7 +640,7 @@ class REPLErrorHandler(ContextualErrorHandler):
     wsgi_wrapper = _REPLDebuggedApplication
 
     def uncaught_to_response(self, **kwargs):
-        print 'lolololol'
+        print('lolololol')
         raise
 
 

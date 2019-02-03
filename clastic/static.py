@@ -3,20 +3,25 @@
 import os
 import sys
 import mimetypes
-
 from os.path import isfile, join as pjoin
 from datetime import datetime
 
 from werkzeug.wsgi import FileWrapper
 from werkzeug.wrappers import Response
 
-from route import Route
-from application import Application
-from errors import Forbidden, NotFound
+from .route import Route
+from .application import Application
+from .errors import Forbidden, NotFound
 
 # TODO: check isdir and accessible on search_paths
 # TODO: default favicon.ico StaticApplication?
 # TODO: process paths
+
+try:
+    unicode = unicode
+except NameError:
+    # py3
+    unicode = str
 
 DEFAULT_MAX_AGE = 360
 DEFAULT_TEXT_MIME = 'text/plain'
@@ -24,7 +29,7 @@ DEFAULT_BINARY_MIME = 'application/octet-stream'
 
 # string.printable doesn't cut it
 _PRINTABLE = ''.join([chr(x) for x in [7, 8, 9, 10, 12, 13, 27] +
-                      range(32, 256)])
+                      list(range(32, 256))])
 
 IS_WINDOWS = sys.platform == 'win32'
 
@@ -142,7 +147,7 @@ class StaticApplication(Application):
                  cache_timeout=DEFAULT_MAX_AGE,
                  default_text_mime=DEFAULT_TEXT_MIME,
                  default_binary_mime=DEFAULT_BINARY_MIME):
-        if isinstance(search_paths, basestring):
+        if isinstance(search_paths, (unicode, bytes)):
             search_paths = [search_paths]
         self.search_paths = search_paths
         self.cache_timeout = cache_timeout
@@ -153,7 +158,7 @@ class StaticApplication(Application):
 
     def get_file_response(self, path, request):
         try:
-            if not isinstance(path, basestring):
+            if not isinstance(path, (unicode, bytes)):
                 path = '/'.join(path)
             full_path = find_file(self.search_paths, path)
             if full_path is None:

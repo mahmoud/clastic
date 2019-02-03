@@ -2,6 +2,8 @@
 
 from collections import Mapping, Iterable
 
+from boltons.iterutils import is_iterable
+
 from .core import Middleware
 
 
@@ -19,9 +21,9 @@ class GetParamMiddleware(Middleware):
         # TODO: defaults?
         if isinstance(params, Mapping):
             self.params = params
-        elif isinstance(params, basestring):
+        elif isinstance(params, unicode):
             self.params = {params: unicode}
-        elif isinstance(params, Iterable):
+        elif is_iterable(params):
             self.params = dict([(p, unicode) for p in params])
         else:
             raise TypeError('expected a string, dict, mapping, or iterable.')

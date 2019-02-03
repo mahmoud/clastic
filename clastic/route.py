@@ -3,10 +3,14 @@
 import re
 
 from .sinter import inject, get_arg_names, getargspec
-from .errors import NotFound, MethodNotAllowed
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
+try:
+    unicode = unicode
+except NameError:
+    # py3
+    unicode = str
 
 
 _REQUEST_BUILTINS = ('request', '_application', '_route', '_dispatch_state')
@@ -579,8 +583,8 @@ def find_cycle(dep_map, prenormalize=True):
     enough.
     """
     if prenormalize:
-        dep_map = normalize_dep_map(dep_map)
-    rem_nodes = dep_map.keys()
+        dep_map = normalize_deps(dep_map)
+    rem_nodes = list(dep_map.keys())
     while rem_nodes:
         cur_root = rem_nodes.pop()
         cur_path = [cur_root]

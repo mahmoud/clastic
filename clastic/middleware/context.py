@@ -5,6 +5,12 @@ from collections import Mapping
 from ..sinter import ArgSpec
 from .core import Middleware
 
+try:
+    unicode
+except NameError:
+    # py3
+    unicode = str
+
 
 class ContextProcessor(Middleware):
     def __init__(self, required=None, defaults=None, overwrite=False):
@@ -29,13 +35,13 @@ class ContextProcessor(Middleware):
         return '%s(%s)' % (cn, ', '.join(kwargs))
 
     def _check_params(self, required, defaults, overwrite):
-        if not all([isinstance(arg, basestring) for arg in required]):
-            raise TypeError('required argument names must be strings')
+        if not all([isinstance(arg, unicode) for arg in required]):
+            raise TypeError('required argument names must be decoded strings')
         if not isinstance(defaults, Mapping):
             raise TypeError('defaults expected a dict (or mapping), not: %r'
                             % defaults)
-        if not all([isinstance(arg, basestring) for arg in defaults.keys()]):
-            raise TypeError('default argument names must be strings')
+        if not all([isinstance(arg, unicode) for arg in defaults.keys()]):
+            raise TypeError('default argument names must be decoded strings')
         for reserved_arg in ('self', 'next', 'context'):
             if reserved_arg in defaults or reserved_arg in required:
                 raise NameError('attempted to use reserved argument "%s"'
@@ -49,14 +55,14 @@ class ContextProcessor(Middleware):
         def process_render_context(next, context, **kwargs):
             if not isinstance(context, Mapping):
                 return next()
-            desired_args = self.required + self.defaults.keys()
+            desired_args = self.required + list(self.defaults.keys())
             for arg in desired_args:
                 if not self.overwrite and arg in context:
                     continue
                 context[arg] = kwargs.get(arg, self.defaults.get(arg))
             return next()
 
-        _req_args = ['next', 'context'] + self.required + self.defaults.keys()
+        _req_args = ['next', 'context'] + self.required + list(self.defaults.keys())
         _def_args = dict(self.defaults)
         process_render_context._argspec = ArgSpec(args=_req_args,
                                                   varargs=None,

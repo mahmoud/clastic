@@ -2,8 +2,11 @@
 
 import cProfile
 from pstats import Stats
-from cStringIO import StringIO
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
 
 from .core import Middleware
 

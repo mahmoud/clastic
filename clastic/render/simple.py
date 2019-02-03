@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import itertools
 from json import JSONEncoder
 from collections import Mapping, Sized, Iterable
 
 from werkzeug.wrappers import Response
 
-from tabular import TabularRender
+from .tabular import TabularRender
+
+PY2 = (sys.version_info[0] == 2)
+
+try:
+    unicode
+except NameError:
+    # py3
+    unicode = str
 
 
 class ClasticJSONEncoder(JSONEncoder):
@@ -16,6 +25,8 @@ class ClasticJSONEncoder(JSONEncoder):
         kw.setdefault('ensure_ascii', True)
         kw.setdefault('indent', 2)
         kw.setdefault('sort_keys', True)
+        if not PY2:
+            kw.pop('encoding', None)
         super(ClasticJSONEncoder, self).__init__(**kw)
 
     def default(self, obj):
@@ -103,7 +114,7 @@ class BasicRender(object):
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
     def render_response(self, context, request, _route):
-        if isinstance(context, basestring):  # already serialized
+        if isinstance(context, (bytes, unicode)):  # already serialized
             if self._guess_json(context):
                 return Response(context, mimetype="application/json")
             elif '<html' in context[:168]:

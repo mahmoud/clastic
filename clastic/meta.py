@@ -33,15 +33,21 @@ except ImportError:
     except ImportError:
         sysconfig = None
 
+try:
+    unicode
+except NameError:
+    # py3
+    unicode = str
 
-from application import Application, NullRoute, RESERVED_ARGS
-from sinter import getargspec, inject
-from render import render_json, AshesRenderFactory
-from static import StaticApplication
-from utils import bytes2human, rel_datetime
 
-from middleware.url import ScriptRootMiddleware
-from middleware.context import SimpleContextProcessor
+from .application import Application, NullRoute, RESERVED_ARGS
+from .sinter import getargspec, inject
+from .render import render_json, AshesRenderFactory
+from .static import StaticApplication
+from .utils import bytes2human, rel_datetime
+
+from .middleware.url import ScriptRootMiddleware
+from .middleware.context import SimpleContextProcessor
 
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -514,7 +520,7 @@ def _process_items(all_items):
                     key = repr(item)
                 except:
                     key = 'unreprable object %s' % object.__repr__(key)
-        if isinstance(key, basestring):
+        if isinstance(key, (bytes, unicode)):
             cur['key'] = key
         else:
             try:
@@ -522,7 +528,7 @@ def _process_items(all_items):
                 cur['key_detail'] = unicode(key[1])
             except:
                 cur['key'] = unicode(key)
-        if isinstance(value, basestring):
+        if isinstance(value, (bytes, unicode)):
             cur['value'] = value
         else:
             try:

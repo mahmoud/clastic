@@ -6,8 +6,13 @@ from werkzeug.wrappers import Response
 try:
     import ashes
 except ImportError:
-    import _ashes as ashes
+    from . import _ashes as ashes
 
+try:
+    unicode, bytes = unicode, str
+except NameError:
+    # py3
+    unicode = str
 
 AshesEnv = ashes.AshesEnv
 
@@ -28,7 +33,7 @@ __all__ = ['AshesRenderFactory']
 
 class AshesRenderFactory(object):
     def __init__(self, template_paths=None, default_mime=None, **kw):
-        if isinstance(template_paths, basestring):
+        if isinstance(template_paths, (unicode, bytes)):
             template_paths = [template_paths]
 
         load_all = kw.pop('load_all', False)

@@ -2,7 +2,7 @@
 
 from functools import wraps
 
-from sinter import getargspec
+from .sinter import getargspec
 
 
 def clastic_decorator(subdecorator):

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import gc
-import sys
-import types
 
 from werkzeug.utils import redirect
 from werkzeug.wrappers import Response
 
-from application import Application
+from .application import Application
 
 # TODO: lintutils check on sys.modules
 
