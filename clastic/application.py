@@ -34,6 +34,10 @@ except NameError:
     # py3
     unicode = str
 
+    # oh god, 0.9 was supposed to have py3 support
+    import werkzeug
+    werkzeug._internal.long = int
+
 
 _meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
                  ' subtype, so instantiate it before passing it in.')

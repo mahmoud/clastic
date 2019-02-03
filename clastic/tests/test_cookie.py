@@ -22,15 +22,15 @@ def test_cookie_mw():
     ic = Client(app, BaseResponse)
     resp = ic.get('/')
     assert resp.status_code == 200
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = ic.get('/Kurt/')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
     resp = ic.get('/')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
 
     ic2 = Client(app, BaseResponse)
     resp = ic2.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
 
 
 def test_cookie_expire():
@@ -41,13 +41,13 @@ def test_cookie_expire():
     ic = Client(app, BaseResponse)
     resp = ic.get('/')
     assert resp.status_code == 200
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = ic.get('/Kurt/')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
     time.sleep(0.11)
     resp = ic.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
 
     ic2 = Client(app, BaseResponse)
     resp = ic2.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'

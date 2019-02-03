@@ -4,7 +4,7 @@ import os
 import json
 import time
 
-from werkzeug.contrib.securecookie import SecureCookie
+from .._securecookie import SecureCookie
 
 from .core import Middleware
 
@@ -16,6 +16,7 @@ DEFAULT_EXPIRY = SESSION
 
 class JSONCookie(SecureCookie):
     serialization_method = json
+    quote_base64 = False
 
     def set_expires(self, epoch_time=NOW):
         """
