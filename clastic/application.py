@@ -198,7 +198,7 @@ class BaseApplication(object):
                 if norm_path != url_path:
                     if route.slash_mode == S_REDIRECT:
                         parts = [request.url_root.rstrip('/'),
-                                 norm_path, '?', request.query_string]
+                                 norm_path, '?', request.query_string.decode('utf8')]
                         return redirect(''.join(parts))  # TODO: error_handler
                     elif route.slash_mode == S_STRICT:
                         nf_exc = err_handler.not_found_type(request=request,
