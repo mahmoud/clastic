@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-r"""
+r"""  (from werkzeug version 0.13, which fixed some py3 issues)
+
     werkzeug.contrib.securecookie
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

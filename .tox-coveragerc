@@ -3,6 +3,9 @@ branch = True
 source =
     clastic
     ../clastic
+omit =
+     */_securecookie.py*
+     */flycheck__*
 
 [paths]
 source =
