@@ -29,7 +29,7 @@ def test_app_error_render():
 
     err_resp = cl.get('/2')
     assert err_resp.status_code == 500
-    assert 'not in my house' in err_resp.data
+    assert b'not in my house' in err_resp.data
 
     err_resp = cl.get('/non-int')
     assert err_resp.status_code == 404
@@ -56,7 +56,7 @@ def test_broken_error_render():
     cl = Client(app, BaseResponse)
     err_resp = cl.get('/2')
     assert err_resp.status_code == 500
-    assert 'not in my house' in err_resp.data
+    assert b'not in my house' in err_resp.data
 
 
 def test_error_render_count():

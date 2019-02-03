@@ -95,14 +95,14 @@ def test_subapplication_basic():
     assert len(app.routes[0]._middlewares) == 1  # middleware merging
 
     resp = Client(no_name_app, BaseResponse).get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = Client(name_app, BaseResponse).get('/')
-    assert resp.data == 'Hello, Rajkumar!'
+    assert resp.data == b'Hello, Rajkumar!'
     resp = Client(app, BaseResponse).get('/')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/beta/')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/beta/foo')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
     resp = Client(app, BaseResponse).get('/larp4lyfe/')
     assert resp.status_code == 404

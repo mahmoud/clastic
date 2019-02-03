@@ -64,13 +64,13 @@ def test_jsonp_render(render_json=None):
 
     resp = c.get('/?callback=test_callback')
     assert resp.status_code == 200
-    assert resp.data.startswith('test_callback')
-    assert 'world' in resp.data
+    assert resp.data.startswith(b'test_callback')
+    assert b'world' in resp.data
 
     resp = c.get('/?callback=test_callback')
     assert resp.status_code == 200
-    assert resp.data.startswith('test_callback')
-    assert 'world' in resp.data
+    assert resp.data.startswith(b'test_callback')
+    assert b'world' in resp.data
 
 #def test_default_json_render():
 #    from clastic.render import render_json
@@ -108,7 +108,7 @@ def test_default_render():
 
     resp = c.get('/text/Noam/')  # test text
     assert resp.status_code == 200
-    assert resp.data == 'Hello, Noam!'
+    assert resp.data == b'Hello, Noam!'
 
     resp = c.get('/html/Asia/')  # test basic html
     assert resp.status_code == 200
@@ -128,4 +128,4 @@ def test_custom_table_render():
 
     resp = c.get('/?format=html')
     assert resp.status_code == 200
-    assert '<b>' in resp.data
+    assert b'<b>' in resp.data

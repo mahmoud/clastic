@@ -54,7 +54,7 @@ def test_base_application_basics():
     ba = BaseApplication([br])
     client = Client(ba, BaseResponse)
     res = client.get('/')
-    assert res.data == 'lolporte'
+    assert res.data == b'lolporte'
 
 
 def test_nonbreaking_exc():
@@ -63,7 +63,7 @@ def test_nonbreaking_exc():
     client = Client(app, BaseResponse)
     resp = client.get('/')
     assert resp.status_code == 200
-    assert resp.data == 'so hot in here'
+    assert resp.data == b'so hot in here'
 
 
 def api(api_path):
@@ -85,8 +85,8 @@ def test_create_route_order_list():
               ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = BaseApplication(routes)
     client = Client(app, BaseResponse)
-    assert client.get('/api/a').data == 'api: a'
-    assert client.get('/api/a/b').data == 'api: a/b'
+    assert client.get('/api/a').data == b'api: a'
+    assert client.get('/api/a/b').data == b'api: a/b'
 
     for i, rt in enumerate(app.routes):
         assert rt.pattern == routes[i][0]
@@ -102,7 +102,7 @@ def test_create_route_order_incr():
     client = Client(app, BaseResponse)
     for r in routes:
         app.add(r)
-        assert client.get('/api/a/b').data == 'api: a/b'
+        assert client.get('/api/a/b').data == b'api: a/b'
         assert app.routes[-1].pattern == r[0]
     return
 

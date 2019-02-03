@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from collections import Mapping, Iterable
 
 from boltons.iterutils import is_iterable
+
+try:
+    unicode
+except NameError:
+    # py3
+    unicode = str
 
 from .core import Middleware
 

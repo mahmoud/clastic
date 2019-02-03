@@ -319,8 +319,9 @@ class Application(BaseApplication):
             static_app = StaticApplication(static_path)
             self.add((static_prefix, static_app), index=0)
         if use_lint:
-            from werkzeug.contrib.lint import LintMiddleware
-            wrapped_wsgi = LintMiddleware(wrapped_wsgi)
+            # from werkzeug.contrib.lint import LintMiddleware
+            # wrapped_wsgi = LintMiddleware(wrapped_wsgi)
+            pass
         if kw.get('_jk_just_testing'):
             return True
         run_simple(address, port, wrapped_wsgi, **kw)

@@ -26,11 +26,11 @@ def test_ashes():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     assert resp.status_code == 200
-    assert 'world' in resp.data
+    assert b'world' in resp.data
 
     resp = c.get('/beta/Rajkumar/')
     assert resp.status_code, 200
-    assert 'Rajkumar' in resp.data
+    assert b'Rajkumar' in resp.data
 
 
 def test_ashes_missing_template():
@@ -52,7 +52,7 @@ def test_ashes_mixed():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     assert resp.status_code == 200
-    assert 'Salam' in resp.data
+    assert b'Salam' in resp.data
 
     resp = c.get('/json/')
     assert resp.status_code == 200

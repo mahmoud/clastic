@@ -22,9 +22,9 @@ def test_blank_req_provides():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
 
 
 def test_req_provides():
@@ -33,9 +33,9 @@ def test_req_provides():
                       middlewares=[req_provides])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, Rajkumar!'
+    assert resp.data == b'Hello, Rajkumar!'
     resp = c.get('/?name=Kurt')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
 
 
 def test_get_param_mw():
@@ -44,9 +44,9 @@ def test_get_param_mw():
                       middlewares=[get_name_mw])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
 
 
 def test_direct_no_render():
@@ -55,7 +55,7 @@ def test_direct_no_render():
                       middlewares=[render_raises_mw])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
 
 
 def test_render_raises():

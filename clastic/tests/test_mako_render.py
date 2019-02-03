@@ -26,11 +26,11 @@ def test_mako():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     assert resp.status_code == 200
-    assert 'clasty' in resp.data
+    assert b'clasty' in resp.data
 
     resp = c.get('/beta/Rajkumar/')
     assert resp.status_code == 200
-    assert 'clasty' in resp.data
+    assert b'clasty' in resp.data
 
 
 def test_mako_missing_template():
@@ -62,7 +62,7 @@ def test_mako_mixed():
     c = Client(app, BaseResponse)
     resp = c.get('/')
     assert resp.status_code == 200
-    assert 'clasty' in resp.data
+    assert b'clasty' in resp.data
 
     resp = c.get('/json/')
     assert resp.status_code == 200

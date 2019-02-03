@@ -69,7 +69,7 @@ def test_ctx_proc_direct_resp():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
 
 
 def test_ctx_proc_nonctx():
@@ -78,7 +78,7 @@ def test_ctx_proc_nonctx():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
 
 
 def test_ctx_proc_unresolved():
