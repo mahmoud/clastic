@@ -225,6 +225,6 @@ def _create_request_inner(endpoint, render, all_args,
     if PY3:
         exec(code_str, d)
     else:
-        exec("exec code in d")
+        exec("exec code_str in d")
 
     return d['process_request']

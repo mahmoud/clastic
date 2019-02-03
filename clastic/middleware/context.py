@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from collections import Mapping
 
@@ -74,5 +75,6 @@ class ContextProcessor(Middleware):
 class SimpleContextProcessor(ContextProcessor):
     def __init__(self, *args, **kwargs):
         defaults = dict([(a, None) for a in args])
-        defaults.update(kwargs)
+        defaults.update([(k.decode('utf8') if isinstance(k, bytes) else k, v)
+                         for k, v in kwargs.items()])
         super(SimpleContextProcessor, self).__init__(defaults=defaults)

@@ -35,9 +35,9 @@ def test_cl_decorated():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
-    assert resp.data == 'Hello, Kurt!'
+    assert resp.data == b'Hello, Kurt!'
 
 
 def test_broken_decorated():
@@ -46,9 +46,9 @@ def test_broken_decorated():
                       middlewares=[req_provides_blank])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    assert resp.data == 'Hello, world!'
+    assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
-    assert resp.data != 'Hello, Kurt!'
+    assert resp.data != b'Hello, Kurt!'
 
 
 def test_undecoratable():
