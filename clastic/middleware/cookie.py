@@ -3,6 +3,7 @@
 import os
 import json
 import time
+import base64
 
 from .._securecookie import SecureCookie
 
@@ -16,7 +17,13 @@ DEFAULT_EXPIRY = SESSION
 
 class JSONCookie(SecureCookie):
     serialization_method = json
-    quote_base64 = False
+
+    @classmethod
+    def quote(cls, value):
+        ret = cls.serialization_method.dumps(value)
+        ret = ret.encode('utf8')  # b64encode wants values as bytes on py3
+        ret = b''.join(base64.b64encode(ret).splitlines()).strip()
+        return ret
 
     def set_expires(self, epoch_time=NOW):
         """

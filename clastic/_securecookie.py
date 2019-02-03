@@ -224,7 +224,7 @@ class SecureCookie(ModificationTrackingDict):
         for key, value in sorted(self.items()):
             result.append(('%s=%s' % (
                 url_quote_plus(key),
-                self.quote(value)  # .decode('ascii')
+                self.quote(value).decode('ascii')
             )).encode('ascii'))
             mac.update(b'|' + result[-1])
         return b'?'.join([
