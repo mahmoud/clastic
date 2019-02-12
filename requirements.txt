@@ -1,3 +1,4 @@
+ashes>=17.0.0
 Mako==1.0.4
 MarkupSafe==0.23
 pluggy==0.5.2
@@ -6,5 +7,5 @@ pytest==2.9.2
 tox==2.8.2
 virtualenv==15.1.0
 Werkzeug==0.9.4
-boltons>=18.0.0
+boltons>=19.0.0
 coverage==4.5.2

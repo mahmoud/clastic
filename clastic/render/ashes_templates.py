@@ -1,12 +1,9 @@
-# -*- encoding:utf-8 -*-
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 from werkzeug.wrappers import Response
 
-try:
-    import ashes
-except ImportError:
-    from . import _ashes as ashes
+import ashes
 
 try:
     unicode, bytes = unicode, str
@@ -66,7 +63,7 @@ class AshesRenderFactory(object):
         return self._make_render_func(template_path, mimetype)
 
     def _make_render_func(self, template_path, mimetype=None):
-        mimetype = mimetype or self.default_mimetype
+        mimetype = mimetype or self.default_mime
 
         def ashes_render(context):
             status = 200

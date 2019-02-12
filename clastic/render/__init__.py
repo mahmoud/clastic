@@ -8,11 +8,7 @@ from .simple import (BasicRender,
 from .tabular import Table, TabularRender
 
 
-try:
-    import ashes
-except ImportError:
-    from . import _ashes as ashes
-
+import ashes
 from .ashes_templates import AshesRenderFactory
 
 
