@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals, print_function
 
 from collections import deque
 import os
@@ -14,8 +15,7 @@ try:
 except ImportError:
     import _thread as thread  # py3
 
-from werkzeug._internal import _log
-from werkzeug.serving import reloader_loop, make_server
+from ._werkzeug_serving import reloader_loop, make_server
 
 
 _MON_PREFIX = '__clastic_mon_files:'
@@ -91,7 +91,7 @@ def iter_monitor_files():
 def restart_with_reloader(error_func=None):
     to_mon = []
     while 1:
-        _log('info', ' * Clastic restarting with reloader')
+        print(' * Clastic restarting with reloader')
         args = [sys.executable] + sys.argv
         new_environ = os.environ.copy()
         new_environ['WERKZEUG_RUN_MAIN'] = 'true'
@@ -185,8 +185,7 @@ def run_simple(hostname, port, application, use_reloader=False,
         display_hostname = hostname != '*' and hostname or 'localhost'
         if ':' in display_hostname:
             display_hostname = '[%s]' % display_hostname
-        _log('info', ' * Running on %s://%s:%d/', ssl_context is None
-             and 'http' or 'https', display_hostname, port)
+        print(' * Running on %s://%s:%d/' % (ssl_context is None and 'http' or 'https', display_hostname, port))
 
     if use_reloader:
         open_test_socket(hostname, port)
