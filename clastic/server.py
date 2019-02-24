@@ -106,11 +106,14 @@ def restart_with_reloader(error_func=None):
 
         def consume_lines():
             for line in iter(child_proc.stderr.readline, ''):
-                if line.startswith(_MON_PREFIX):
-                    to_mon[:] = literal_eval(line[len(_MON_PREFIX):])
+                if not line:
+                    break
+                line_text = line.decode('utf8')
+                if line_text.startswith(_MON_PREFIX):
+                    to_mon[:] = literal_eval(line_text[len(_MON_PREFIX):])
                 else:
-                    sys.stderr.write(line)
-                    stderr_buff.append(line)
+                    sys.stderr.write(line_text)
+                    stderr_buff.append(line_text)
 
         while child_proc.poll() is None:
             consume_lines()
@@ -153,6 +156,7 @@ def run_with_reloader(main_func, extra_files=None, interval=1,
             mon_list = list(chain(iter_monitor_files(), extra_files or ()))
             sys.stderr.write('%s%r\n' % (_MON_PREFIX, mon_list))
             raise
+
     try:
         sys.exit(restart_with_reloader(error_func=error_func))
     except KeyboardInterrupt:
@@ -167,7 +171,7 @@ def run_simple(hostname, port, application, use_reloader=False,
         from werkzeug.debug import DebuggedApplication
         application = DebuggedApplication(application, use_evalex)
 
-    processes = max(processes, 1)
+    processes = 1 if processes is None else int(processes)
 
     def serve_forever():
         make_server(hostname, port, application, processes=processes,
