@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from werkzeug.test import Client
 
-from clastic import Application, render_basic, Response, MetaApplication
+from clastic import Response
 from clastic.flaw import create_app
 
 _EXAMPLE_TB = u"""\
@@ -19,4 +19,6 @@ def test_flaw_basic():
 
     cl = Client(app, Response)
 
-    assert cl.get('/').status_code == 200
+    resp = cl.get('/')
+    assert resp.status_code == 200
+    assert 'plarp' in resp.get_data(True)
