@@ -17,6 +17,11 @@ try:
 except NameError:
     basestring = str
 
+try:
+    from html import escape as html_escape
+except ImportError:
+    from cgi import escape as html_escape
+
 
 def create_app(default_obj=None):
     resources = {'default_obj': default_obj if default_obj is not None else sys}
@@ -163,11 +168,9 @@ def tolabel(obj):
 
 
 def format(html, *args, **kwargs):
-    import cgi
-
     def escape(e):
         if isinstance(e, basestring):
-            return cgi.escape(e)
+            return html_escape(e)
         return e
 
     args = [escape(e) for e in args]

@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-import cgi
 from textwrap import dedent
 from inspect import getargspec
+try:
+    from html import escape as html_escape
+except ImportError:
+    from cgi import escape as html_escape
+
 
 from boltons.tableutils import Table
 from werkzeug.wrappers import Response
@@ -13,12 +17,12 @@ _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _CSS_PATH = _CUR_PATH + '/../_clastic_assets/common.css'
 try:
     _STYLE_CONTENT = open(_CSS_PATH).read()
-except:
+except Exception:
     _STYLE_CONTENT = ''
 
 
 def escape_html(text):
-    return cgi.escape(text, True)
+    return html_escape(text, True)
 
 
 class TabularRender(object):
@@ -41,7 +45,7 @@ class TabularRender(object):
         module_name = route.endpoint.__module__
         try:
             func_name = route.endpoint.func_name
-        except:
+        except Exception:
             func_name = repr(route.endpoint)
         func_name = func_name.replace('<', '(').replace('>', ')')
         args, _, _, _ = getargspec(route.endpoint)

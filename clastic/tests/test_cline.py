@@ -13,7 +13,6 @@ def test_cline():
     @app.delete('/')
     @app.patch('/')
     @app.head('/')
-
     def hw():
         return 'hello, world'
 
