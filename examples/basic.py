@@ -10,7 +10,7 @@ from pprint import pformat
 from clastic import Application, render_basic
 from clastic.middleware import GetParamMiddleware, SimpleContextProcessor
 from clastic.middleware.cookie import SignedCookieMiddleware
-
+from clastic.contrib.obj_browser import view_obj
 
 def cookie_hello_world(cookie, name=None, expire_cookie=False):
     if name is None:
@@ -66,7 +66,8 @@ def create_decked_out_app():
               ('/debug', debug, render_basic),
               ('/fizzbuzz', fizzbuzz, render_basic),
               ('/modules', see_modules, render_basic),
-              ('/fraiser', fraiser, render_basic)]
+              ('/fraiser', fraiser, render_basic),
+              ('/obj/<obj_id?int>', view_obj)]
     return Application(routes, resources, middlewares=middlewares)
 
 
