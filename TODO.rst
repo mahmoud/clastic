@@ -1,6 +1,13 @@
 TODO
 ====
 
+v19.0
+-----
+* Put code into linecache
+* Hide interstitial frames
+* Post: work on boltons.funcutils.FunctionBuilder-based stuff to replace getargspec (warnings on py3)
+
+
 Core
 ----
 * nicer next() names
