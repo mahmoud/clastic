@@ -5,7 +5,7 @@ import json
 import time
 import base64
 
-from .._securecookie import SecureCookie
+from werkzeug.contrib.securecookie import SecureCookie, UnquoteError
 
 from .core import Middleware
 
@@ -24,6 +24,15 @@ class JSONCookie(SecureCookie):
         ret = ret.encode('utf8')  # b64encode wants values as bytes on py3
         ret = b''.join(base64.b64encode(ret).splitlines()).strip()
         return ret
+
+    @classmethod
+    def unquote(cls, value):
+        try:
+            value = base64.b64decode(value)
+            value = cls.serialization_method.loads(value.decode('utf8'))
+        except Exception as e:
+            raise UnquoteError()
+        return value
 
     def set_expires(self, epoch_time=NOW):
         """
@@ -78,7 +87,6 @@ class SignedCookieMiddleware(Middleware):
         if '_expires' in cookie:
             save_cookie_kwargs['expires'] = cookie['_expires']
         cookie.save_cookie(response, **save_cookie_kwargs)
-
         return response
 
     def _get_random(self):
