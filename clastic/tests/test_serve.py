@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals
 
 import os
@@ -24,5 +23,4 @@ def test_serve():
     cl = Client(app, Response)
 
     assert cl.get('/').status_code == 200
-    assert cl.get('/_meta/').status_code == 200
     assert cl.get('/static/test_serve.py').status_code == 200

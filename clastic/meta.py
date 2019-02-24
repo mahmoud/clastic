@@ -7,6 +7,10 @@ import socket
 import platform
 import datetime
 
+from glom import glom, T, Call, Coalesce
+from boltons.strutils import bytes2human
+from boltons.timeutils import relative_time
+
 
 IS_64BIT = sys.maxsize > 2 ** 32
 try:
@@ -20,6 +24,10 @@ try:
     import readline
 except:
     HAVE_READLINE = False
+try:
+    import getpass
+except:
+    getpass = None
 
 try:
     import resource
@@ -45,7 +53,7 @@ from .application import Application, NullRoute, RESERVED_ARGS
 from .sinter import getargspec, inject
 from .render import render_json, AshesRenderFactory
 from .static import StaticApplication
-from .utils import bytes2human, rel_datetime
+
 
 from .middleware.url import ScriptRootMiddleware
 from .middleware.context import SimpleContextProcessor
@@ -90,23 +98,18 @@ def get_proc_info():
     ret['cwd'] = os.getcwdu()
     ret['umask'] = os.umask(os.umask(2))  # have to set to get
     ret['umask_str'] = '{0:03o}'.format(ret['umask'])
-    try:
-        import getpass
-        ret['owner'] = getpass.getuser()
-    except:
-        try:
-            ret['owner'] = os.getuid()
-        except:
-            pass
-    try:
-        # unix-only
-        ret['ppid'] = os.getppid()
-        ret['pgid'] = os.getpgrp()
-        # add 0 to get current nice
-        # also, seems to return process group's nice level
-        ret['niceness'] = os.nice(0)
-    except AttributeError:
-        pass
+
+    ret['owner'] = glom(globals(), Coalesce(T['getpass'].getuser(),
+                                            T['os'].getuid()),
+                        skip_exc=Exception)
+
+    # use 0 to get current niceness, seems to return process group's nice level
+    unix_only_vals = glom(os, {'ppid': T.getppid(),
+                               'pgid': T.getpgrp(),
+                               'niceness': T.nice(0)},
+                          skip_exc=AttributeError)
+    ret.update(unix_only_vals)
+
     ret['rusage'] = get_rusage_dict()
     ret['rlimit'] = get_rlimit_dict()
     return ret
@@ -123,10 +126,9 @@ def get_host_info():
     ret['cpu_count'] = CPU_COUNT
     ret['platform'] = platform.platform()
     ret['platform_terse'] = platform.platform(terse=True)
-    try:
-        ret['load_avgs'] = os.getloadavg()
-    except AttributeError:
-        pass
+
+    ret['load_avgs'] = glom(os, T.getloadavg(), skip_exc=AttributeError)
+
     ret['utc_time'] = str(now)
     return ret
 
@@ -192,15 +194,10 @@ def get_pyvm_info():
     ret['have_ucs4'] = getattr(sys, 'maxunicode', 0) > 65536
     ret['have_readline'] = HAVE_READLINE
 
-    try:
-        ret['active_thread_count'] = len(sys._current_frames())
-    except:
-        ret['active_thread_count'] = None
-    ret['recursion_limit'] = sys.getrecursionlimit()  # TODO: max_stack_depth?
-    try:
-        ret['gc'] = get_gc_info()
-    except:
-        pass
+    ret['active_thread_count'] = glom(sys, T._current_frames().__len__(), skip_exc=Exception)
+    ret['recursion_limit'] = sys.getrecursionlimit()
+
+    ret['gc'] = glom(None, Call(get_gc_info), skip_exc=Exception)  # effectively try/except:pass
     ret['check_interval'] = sys.getcheckinterval()
     return ret
 
@@ -210,14 +207,10 @@ def get_gc_info():
     ret = {}
     ret['is_enabled'] = gc.isenabled()
     ret['thresholds'] = gc.get_threshold()
-    try:
-        ret['counts'] = gc.get_count()
-    except:
-        pass
-    try:
-        ret['obj_count'] = len(gc.get_objects())
-    except:
-        pass
+
+    ret['counts'] = glom(gc, T.get_count(), skip_exc=Exception)
+    ret['obj_count'] = glom(gc, T.get_objects().__len__(), skip_exc=Exception)
+
     return ret
 
 
@@ -331,7 +324,7 @@ class BasicPeripheral(MetaPeripheral):
     def get_context(self, _meta_application):
         start_time = _meta_application.resources['_meta_start_time']
         return {'abs_start_time': str(start_time),
-                'rel_start_time': rel_datetime(start_time)}
+                'rel_start_time': relative_time(start_time)}
 
     def get_general_items(self, context):
         return [('Start time', (context['rel_start_time'],
@@ -417,14 +410,8 @@ class SysconfigPeripheral(MetaPeripheral):
 
     def get_context(self):
         ret = {}
-        try:
-            ret['sysconfig'] = sysconfig.get_config_vars()
-        except:
-            pass
-        try:
-            ret['paths'] = sysconfig.get_paths()
-        except:
-            pass
+        ret['sysconfig'] = glom(sysconfig, T.get_config_vars(), skip_exc=Exception)
+        ret['paths'] = glom(sysconfig, T.get_paths(), skip_exc=Exception)
         return ret
 
 
