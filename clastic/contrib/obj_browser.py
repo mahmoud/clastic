@@ -17,11 +17,19 @@ try:
 except NameError:
     basestring = str
 
-def view_obj(request, obj_id=None):
+
+def create_app(default_obj=None):
+    resources = {'default_obj': default_obj if default_obj is not None else sys}
+    ret = clastic.Application([('/<obj_id?int>', view_obj)],
+                               resources=resources)
+    return ret
+
+
+def view_obj(request, default_obj, obj_id=None):
 
     if obj_id is None:
         return clastic.redirect(
-            request.path.rstrip('/') + '/{0}'.format(id(sys)))
+            request.path.rstrip('/') + '/{0}'.format(id(default_obj)))
 
     for obj in gc.get_objects():
         if id(obj) == obj_id:
@@ -129,18 +137,18 @@ def get_referree_key_obj_list(obj):
     try:
         for k in obj.keys():
             key_obj_map["[" + tolabel(k) + "]"] = obj[k]
-    except:
+    except Exception:
         pass
     # list-like things
     try:
         for i in range(len(obj)):
-            key_obj_map["[" + tolabel(i) + "]"] = obj[k]
-    except:
+            key_obj_map["[" + tolabel(i) + "]"] = obj[i]
+    except Exception:
         pass
     # object-like things
     try:
         key_obj_map.update(obj.__dict__)
-    except:
+    except Exception:
         pass
     return sorted(key_obj_map.items())
 
