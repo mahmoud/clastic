@@ -13,7 +13,6 @@ having to check console output and manually restart your application
 due to typos and other common errors.
 """
 
-
 import os
 import re
 import ast
