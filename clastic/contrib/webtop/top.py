@@ -6,6 +6,10 @@ if os.name != 'posix':
     raise ImportError('webtop only supports posix platforms')
 
 from operator import itemgetter
+from datetime import timedelta
+
+import psutil
+from boltons.strutils import bytes2human
 
 import clastic
 from clastic import Application, StaticApplication
@@ -15,36 +19,11 @@ _CLASTIC_PATH = os.path.dirname(os.path.abspath(clastic.__file__))
 _ASSET_PATH = os.path.join(_CLASTIC_PATH, '_clastic_assets')
 _CUR_PATH = os.path.dirname(__file__)
 
-import psutil
-from datetime import timedelta
-
-_SIZE_SYMBOLS = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-_SIZE_BOUNDS = [(1024 ** i, sym) for i, sym in enumerate(_SIZE_SYMBOLS)]
-_SIZE_RANGES = zip(_SIZE_BOUNDS, _SIZE_BOUNDS[1:])
 
 
-def bytes2human(nbytes, ndigits=0):
-    """
-    >>> bytes2human(128991)
-    u'126K'
-    >>> bytes2human(100001221)
-    u'95M'
-    >>> bytes2human(0, 2)
-    u'0.00B'
-    """
-    abs_bytes = abs(nbytes)
-    for (size, symbol), (next_size, next_symbol) in _SIZE_RANGES:
-        if abs_bytes <= next_size:
-            break
-    hnbytes = float(nbytes) / size
-    return '{hnbytes:.{ndigits}f}{symbol}'.format(hnbytes=hnbytes,
-                                                  ndigits=ndigits,
-                                                  symbol=symbol)
-
-
-_TOP_ATTRS = ('pid', 'username', 'get_nice', 'get_memory_info',
-              'get_memory_percent', 'get_cpu_percent',
-              'get_cpu_times', 'name', 'status')
+_TOP_ATTRS = ('pid', 'username', 'nice', 'memory_info',
+              'memory_percent', 'cpu_percent',
+              'cpu_times', 'name', 'status')
 
 
 def format_cpu_time(seconds):
@@ -111,7 +90,7 @@ def create_app():
               ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
               ('/json/', top, render_json)]
     arf = AshesRenderFactory(_CUR_PATH)
-    app = Application(routes, {}, arf)
+    app = Application(routes, render_factory=arf)
     return app
 
 

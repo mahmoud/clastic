@@ -38,7 +38,7 @@ setup(name='clastic',
       install_requires=['Werkzeug==0.14.1', 'argparse>=1.2.1', 'boltons', 'ashes', 'glom'],
       license=__license__,
       platforms='any',
-      tests_require=['Mako==1.0.4', 'pytest==4.3.0'],
+      tests_require=['Mako==1.0.4', 'pytest==4.3.0', 'psutil==5.5.1'],
       classifiers=[
           'Intended Audience :: Developers',
           'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
