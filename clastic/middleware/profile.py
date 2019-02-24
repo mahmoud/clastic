@@ -24,9 +24,10 @@ _sort_keys = {'cumulative': 'cumulative time, i.e., includes time in called func
 
 
 class SimpleProfileMiddleware(Middleware):
-    def __init__(self, sort_param_name='_prof_sort', get_param_name='_prof'):
+    def __init__(self, sort_param_name='_prof_sort', get_param_name='_prof', raise_exc=True):
         self.get_param_name = get_param_name
         self.sort_param_name = sort_param_name
+        self.raise_exc = raise_exc
 
     def request(self, next, request):
         if not request.args.get(self.get_param_name):
@@ -38,7 +39,7 @@ class SimpleProfileMiddleware(Middleware):
         profiler = cProfile.Profile()
         try:
             ret = profiler.runcall(next)
-        except:
+        except Exception:
             if self.raise_exc:
                 raise
         buff = StringIO()

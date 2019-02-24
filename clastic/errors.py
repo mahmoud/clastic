@@ -640,7 +640,6 @@ class REPLErrorHandler(ContextualErrorHandler):
     wsgi_wrapper = _REPLDebuggedApplication
 
     def uncaught_to_response(self, **kwargs):
-        print('lolololol')
         raise
 
 

@@ -3,9 +3,10 @@
 import time
 from collections import namedtuple
 
-from application import Application
-from middleware import Middleware
-from render import render_basic
+from ..application import Application
+from ..render import render_basic
+from .core import Middleware
+
 
 # TODO: what are some sane-default intervals?
 
@@ -35,7 +36,7 @@ class StatsMiddleware(Middleware):
             elapsed_time = end_time - start_time
             hit = Hit(start_time,
                       request.path,
-                      _route.rule,
+                      _route.pattern,
                       resp_status,
                       elapsed_time,
                       resp_mime_type)
@@ -112,7 +113,7 @@ def _get_stats_dict(_application):
     rt_hits = stats_mw.route_hits
     return {'resp_counts': dict([(url, len(rh)) for url, rh
                                  in stats_mw.url_hits.items()]),
-            'route_stats': dict([(rt.rule, get_route_stats(rh)) for rt, rh
+            'route_stats': dict([(rt.pattern, get_route_stats(rh)) for rt, rh
                                  in rt_hits.items() if rh])}
 
 

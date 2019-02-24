@@ -27,7 +27,7 @@ class PostDataMiddleware(Middleware):
             raise TypeError('expected a string, dict, mapping, or iterable.')
         if not all([isinstance(v, type) for v in self.params.values()]):
             raise TypeError('param mapping values must be a valid type')
-        self.provides = tuple(self.params.iterkeys())
+        self.provides = tuple(self.params.keys())
 
     def request(self, next, request):
         kwargs = {}

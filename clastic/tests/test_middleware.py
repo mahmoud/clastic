@@ -72,3 +72,29 @@ def test_next_in_endpoint():
 
     with raises(NameError):
         Application([('/', nexter)])
+
+
+def test_big_mw_stack():
+    from clastic.middleware import (client_cache,
+                                    compress,
+                                    context,
+                                    cookie,
+                                    form,
+                                    profile,
+                                    stats,
+                                    url)
+    app = Application([('/', hello_world)],
+                      middlewares=[client_cache.HTTPCacheMiddleware(),
+                                   compress.GzipMiddleware(),
+                                   context.ContextProcessor(),
+                                   context.SimpleContextProcessor(),
+                                   cookie.SignedCookieMiddleware(),
+                                   form.PostDataMiddleware({'lol': str}),
+                                   profile.SimpleProfileMiddleware(),
+                                   stats.StatsMiddleware(),
+                                   url.ScriptRootMiddleware(),
+                                   url.GetParamMiddleware({}),
+                                   ])
+    cl = Client(app, BaseResponse)
+    resp = cl.get('/')
+    assert resp.status_code == 200
