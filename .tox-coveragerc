@@ -4,7 +4,7 @@ source =
     clastic
     ../clastic
 omit =
-     */_securecookie.py*
+     */_werkzeug_serving.py*
      */flycheck__*
 
 [paths]
