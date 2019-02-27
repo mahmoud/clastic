@@ -2,13 +2,13 @@
 
 from __future__ import print_function
 
-import re
 import sys
 import types
 import inspect
 from inspect import ArgSpec
 
 from boltons.strutils import camel2under
+from boltons.funcutils import FunctionBuilder
 
 PY3 = (sys.version_info[0] == 3)
 _VERBOSE = False
@@ -36,26 +36,45 @@ def getargspec(f):
     return ret
 
 
+def get_fb(f):
+    # TODO: support partials
+    if not (inspect.isfunction(f) or inspect.ismethod(f) or \
+            inspect.isbuiltin(f)) and hasattr(f, '__call__'):
+        if isinstance(getattr(f, '_sinter_fb', None), FunctionBuilder):
+            return f._sinter_fb
+        f = f.__call__  # callable objects
+
+    if isinstance(getattr(f, '_sinter_fb', None), FunctionBuilder):
+        return f._sinter_fb  # we'll take your word for it; good luck, lil buddy.
+
+    ret = FunctionBuilder.from_func(f)
+
+    if not all([isinstance(a, str) for a in ret.args]):
+        raise TypeError('does not support anonymous tuple arguments'
+                        ' or any other strange args for that matter.')
+    if isinstance(f, types.MethodType):
+        ret.args = ret.args[1:]  # discard "self" on methods
+    return ret
+
+
 def get_arg_names(f, only_required=False):
-    arg_names, _, _, defaults = getargspec(f)
+    fb = get_fb(f)
 
-    if only_required and defaults:
-        arg_names = arg_names[:-len(defaults)]
-
-    return tuple(arg_names)
+    return fb.get_arg_names(only_required=only_required)
 
 
 def inject(f, injectables):
     __traceback_hide__ = True  # TODO
-    arg_names, _, kw_name, defaults = getargspec(f)
-    defaults = dict(reversed(list(zip(reversed(arg_names),
-                                      reversed(defaults or [])))))
-    all_kwargs = dict(defaults)
+
+    fb = get_fb(f)
+
+    all_kwargs = fb.get_defaults_dict()
     all_kwargs.update(injectables)
-    if kw_name:
+
+    if fb.varkw:
         return f(**all_kwargs)
 
-    kwargs = dict([(k, v) for k, v in all_kwargs.items() if k in arg_names])
+    kwargs = dict([(k, v) for k, v in all_kwargs.items() if k in fb.get_arg_names()])
     return f(**kwargs)
 
 

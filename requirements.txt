@@ -1,6 +1,6 @@
 ashes==17.0.0
 attrs==18.2.0
-boltons==18.0.1
+-e git+git@github.com:mahmoud/boltons.git@b2ea6f63613deb7d258432c1283b7d4471b240ef#egg=boltons  # boltons==18.0.1
 -e git+git@github.com:mahmoud/clastic.git@59088153dc65d63b11970167ec7715136f90e7e9#egg=clastic
 coverage==4.5.2
 face==0.1.0
