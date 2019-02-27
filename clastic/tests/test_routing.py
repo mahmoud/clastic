@@ -90,6 +90,7 @@ def test_create_route_order_list():
 
     for i, rt in enumerate(app.routes):
         assert rt.pattern == routes[i][0]
+
     return
 
 
@@ -103,7 +104,7 @@ def test_create_route_order_incr():
     for r in routes:
         app.add(r)
         assert client.get('/api/a/b').data == b'api: a/b'
-        assert app.routes[-1].pattern == r[0]
+        assert app.routes[-1].get_info()['url_pattern'] == r[0]
     return
 
 

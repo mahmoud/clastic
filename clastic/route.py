@@ -455,19 +455,18 @@ class Route(BaseRoute):
     def get_info(self):
         ret = {}
         route = self
-        ep_args, _, _, ep_defaults = getargspec(route.endpoint)
-        ep_defaults = dict(reversed(zip(reversed(ep_args),
-                                        reversed(ep_defaults or []))))
+        ep_fb = get_fb(route.endpoint)
+        ep_defaults = ep_fb.get_defaults_dict()
         ret['url_pattern'] = route.pattern
         ret['endpoint'] = route.endpoint
-        ret['endpoint_args'] = ep_args
+        ret['endpoint_args'] = ep_fb.args
         ret['endpoint_defaults'] = ep_defaults
         ret['render_arg'] = route.render_arg
         srcs = {}
         for arg in route.endpoint_args:
             if arg in RESERVED_ARGS:
                 srcs[arg] = 'builtin'
-            elif arg in route.arguments:
+            elif arg in route.endpoint_args:
                 srcs[arg] = 'url'
             elif arg in ep_defaults:
                 srcs[arg] = 'default'
