@@ -2,7 +2,6 @@
 
 import os
 from textwrap import dedent
-from inspect import getargspec
 try:
     from html import escape as html_escape
 except ImportError:
@@ -12,6 +11,7 @@ except ImportError:
 from boltons.tableutils import Table
 from werkzeug.wrappers import Response
 
+from ..sinter import get_fb
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _CSS_PATH = _CUR_PATH + '/../_clastic_assets/common.css'
@@ -41,15 +41,10 @@ class TabularRender(object):
         self.with_metadata = kwargs.pop('with_metadata', True)
 
     def _html_format_ep(self, route):
-        # TODO: callable object endpoints?
-        module_name = route.endpoint.__module__
-        try:
-            func_name = route.endpoint.func_name
-        except Exception:
-            func_name = repr(route.endpoint)
-        func_name = func_name.replace('<', '(').replace('>', ')')
-        args, _, _, _ = getargspec(route.endpoint)
-        argstr = ', '.join(args)
+        ep_fb = get_fb(route.endpoint, drop_self=False)
+        module_name = ep_fb.module
+        func_name = ep_fb.name.replace('<', '(').replace('>', ')')
+        argstr = ep_fb.get_invocation_str()
 
         func_doc = getattr(route.endpoint, '__doc__', '')
         if func_doc:

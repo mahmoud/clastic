@@ -2,7 +2,7 @@
 
 import re
 
-from .sinter import inject, get_arg_names, getargspec, get_fb
+from .sinter import inject, get_arg_names, get_fb
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
@@ -466,7 +466,7 @@ class Route(BaseRoute):
         for arg in route.endpoint_args:
             if arg in RESERVED_ARGS:
                 srcs[arg] = 'builtin'
-            elif arg in route.endpoint_args:
+            elif arg in route.path_args:
                 srcs[arg] = 'url'
             elif arg in ep_defaults:
                 srcs[arg] = 'default'

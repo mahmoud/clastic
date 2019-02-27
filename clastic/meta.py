@@ -50,7 +50,7 @@ except NameError:
 
 
 from .application import Application, NullRoute, RESERVED_ARGS
-from .sinter import getargspec, inject
+from .sinter import inject, get_fb
 from .render import render_json, AshesRenderFactory
 from .static import StaticApplication
 
@@ -263,9 +263,9 @@ def get_render_info(route):
 
 
 def get_route_arg_info(route):
-    r_args, _, _, r_defaults = getargspec(route.endpoint)
-    r_defaults = dict(reversed(zip(reversed(r_args),
-                                   reversed(r_defaults or []))))
+    fb = get_fb(route.endpoint)
+    r_args = fb.args
+    r_defaults = fb.get_defaults_dict()
     arg_srcs = []
     for arg in r_args:
         arg_src = {'name': arg}

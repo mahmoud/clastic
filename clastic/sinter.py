@@ -16,28 +16,7 @@ _VERBOSE = False
 _INDENT = '    '
 
 
-def getargspec(f):
-    # TODO: support partials
-    if not (inspect.isfunction(f) or inspect.ismethod(f) or \
-            inspect.isbuiltin(f)) and hasattr(f, '__call__'):
-        if isinstance(getattr(f, '_argspec', None), ArgSpec):
-            return f._argspec
-        f = f.__call__  # callable objects
-
-    if isinstance(getattr(f, '_argspec', None), ArgSpec):
-        return f._argspec  # we'll take your word for it; good luck, lil buddy.
-
-    ret = inspect.getargspec(f)
-
-    if not all([isinstance(a, str) for a in ret.args]):
-        raise TypeError('does not support anonymous tuple arguments'
-                        ' or any other strange args for that matter.')
-    if isinstance(f, types.MethodType):
-        ret = ret._replace(args=ret.args[1:])  # throw away "self"
-    return ret
-
-
-def get_fb(f):
+def get_fb(f, drop_self=True):
     # TODO: support partials
     if not (inspect.isfunction(f) or inspect.ismethod(f) or \
             inspect.isbuiltin(f)) and hasattr(f, '__call__'):
@@ -53,7 +32,7 @@ def get_fb(f):
     if not all([isinstance(a, str) for a in ret.args]):
         raise TypeError('does not support anonymous tuple arguments'
                         ' or any other strange args for that matter.')
-    if isinstance(f, types.MethodType):
+    if drop_self and isinstance(f, types.MethodType):
         ret.args = ret.args[1:]  # discard "self" on methods
     return ret
 

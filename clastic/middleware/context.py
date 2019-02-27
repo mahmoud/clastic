@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from collections import Mapping
 
-from ..sinter import ArgSpec, FunctionBuilder
+from ..sinter import FunctionBuilder
 from .core import Middleware
 
 try:
@@ -66,11 +66,6 @@ class ContextProcessor(Middleware):
         def_items = self.defaults.items()
         _req_args = ['next', 'context'] + self.required + [arg for arg, val in def_items]
         _def_vals = [val for arg, val in def_items]
-        process_render_context._argspec = ArgSpec(args=_req_args,
-                                                  varargs=None,
-                                                  keywords=None,
-                                                  defaults=_def_vals)
-
 
         fb = FunctionBuilder('process_render_context',
                              args=_req_args,
