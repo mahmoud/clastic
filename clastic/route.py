@@ -2,7 +2,7 @@
 
 import re
 
-from .sinter import inject, get_arg_names, getargspec
+from .sinter import inject, get_arg_names, getargspec, get_fb
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
@@ -411,8 +411,9 @@ class Route(BaseRoute):
 
         def add_func(provides, func=None):
             func = func or (lambda: None)  # convenience for unset mw methods
-            deps, _, _, default_map = getargspec(func)
-            defaulted_deps = default_map if default_map else []
+            fb = get_fb(func)
+            deps = fb.args
+            defaulted_deps = fb.get_defaults_dict()
 
             # XXX: at this point are there cases where provides can conflict?
             for p in provides:
