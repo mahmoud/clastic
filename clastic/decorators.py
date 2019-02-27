@@ -2,7 +2,7 @@
 
 from functools import wraps
 
-from .sinter import getargspec
+from .sinter import getargspec, get_fb
 
 
 def clastic_decorator(subdecorator):
@@ -15,11 +15,13 @@ def clastic_decorator(subdecorator):
     """
     @wraps(subdecorator)
     def sinter_compatible_decorator(f):
+        fb = get_fb(f)
         argspec = getargspec(f)
         if argspec.varargs or argspec.keywords:
             raise TypeError('clastic does not support functions with *args'
                             ' or **kwargs: %r' % f)
         ret = subdecorator(f)
         ret._argspec = argspec
+        ret._sinter_fb = fb
         return ret
     return sinter_compatible_decorator

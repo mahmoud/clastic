@@ -7,6 +7,7 @@ import types
 import inspect
 from inspect import ArgSpec
 
+from boltons import iterutils
 from boltons.strutils import camel2under
 from boltons.funcutils import FunctionBuilder
 
@@ -105,10 +106,12 @@ def chain_argspec(func_list, provides, inner_name):
     for f, p in zip(func_list, provides):
         # middlewares can default the same parameter to different values;
         # can't properly keep track of default values
-        arg_names, _, _, defaults = getargspec(f)
+        fb = get_fb(f)
+        arg_names = fb.get_arg_names()
+        defaults_dict = fb.get_defaults_dict()
 
-        def_offs = -len(defaults) if defaults else None
-        undefaulted, defaulted = arg_names[:def_offs], arg_names[def_offs:]
+        defaulted, undefaulted = iterutils.partition(arg_names, key=defaults_dict.__contains__)
+
         optional_sofar.update(defaulted)
         # keep track of defaults so that e.g. endpoint default param
         # can pick up request injected/provided param
