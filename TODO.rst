@@ -6,7 +6,6 @@ v19.0
 * Put code into linecache
 * Hide interstitial frames
 * Make obj browser pull in a static app and serve its own dang css
-* Post: work on boltons.funcutils.FunctionBuilder-based stuff to replace getargspec (warnings on py3)
 
 
 Core

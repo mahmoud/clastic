@@ -1,7 +1,7 @@
 ashes==19.2.0
 atomicwrites==1.3.0
 attrs==18.2.0
--e git+git@github.com:mahmoud/boltons.git@d075f0b04dc1a8c9d05d7b9d53ae2a3846b4ba05#egg=boltons
+boltons==19.1.0
 coverage==4.5.2
 face==0.1.0
 filelock==3.0.10
