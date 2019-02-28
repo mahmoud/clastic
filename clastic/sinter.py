@@ -5,7 +5,8 @@ from __future__ import print_function
 import sys
 import types
 import inspect
-from inspect import ArgSpec
+import hashlib
+import linecache
 
 from boltons import iterutils
 from boltons.strutils import camel2under
@@ -129,7 +130,9 @@ def build_chain_str(funcs, params, inner_name, params_sofar=None, level=0,
 
 def compile_chain(funcs, params, inner_name, verbose=_VERBOSE):
     call_str = build_chain_str(funcs, params, inner_name)
-    code = compile(call_str, '<string>', 'single')
+    code_hash = hashlib.sha1(call_str.encode('utf8')).hexdigest()[:16]
+    unique_filename = "<sinter generated %s chain %s>" % (inner_name, code_hash)
+    code = compile(call_str, unique_filename, 'single')
     if verbose:
         print(call_str)
     env = {'funcs': funcs}
@@ -137,6 +140,14 @@ def compile_chain(funcs, params, inner_name, verbose=_VERBOSE):
         exec(code, env)
     else:
         exec("exec code in env")
+
+    linecache.cache[unique_filename] = (
+        len(call_str),
+        None,
+        call_str.splitlines(True),
+        unique_filename,
+    )
+
     return env[inner_name]
 
 
