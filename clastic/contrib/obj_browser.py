@@ -9,6 +9,7 @@ from werkzeug.utils import redirect
 from werkzeug.wrappers import Response
 
 import clastic
+from clastic import META_ASSETS_APP
 
 # TODO: lintutils check on sys.modules
 
@@ -25,7 +26,8 @@ except ImportError:
 
 def create_app(default_obj=None):
     resources = {'default_obj': default_obj if default_obj is not None else sys}
-    ret = clastic.Application([('/<obj_id?int>', view_obj)],
+    ret = clastic.Application([('/<obj_id?int>', view_obj),
+                               ('/clastic_assets/', META_ASSETS_APP)],
                                resources=resources)
     return ret
 
@@ -82,7 +84,7 @@ def render_html(obj, id2url):
     to_col += '</table>'
 
     return ('<!doctype html><html><head><link rel="stylesheet" type="text/css"'
-            ' href="/_meta/clastic_assets/common.css"></head><body>{0}<table>'
+            ' href="clastic_assets/common.css"></head><body>{0}<table>'
             '<tr><td valign="top">{1}</td>'
             '<td valign="top">{2}</td><td valign="top">{3}</td></tr></table>'
             '</body></html>').format(header, from_col, info_col, to_col)

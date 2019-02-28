@@ -61,6 +61,7 @@ from .middleware.context import SimpleContextProcessor
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _ASSET_PATH = os.path.join(_CUR_PATH, '_clastic_assets')
+META_ASSETS_APP = StaticApplication(_ASSET_PATH)
 
 DEFAULT_PAGE_TITLE = 'Clastic'
 
@@ -436,7 +437,7 @@ class MetaApplication(Application):
         self._arf = AshesRenderFactory(_CUR_PATH, keep_whitespace=False)
         self._main_page_render = self._arf('meta_base.html')
         routes = [('/', self.get_main, self.render_main_page_html),
-                  ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
+                  ('/clastic_assets/', META_ASSETS_APP),
                   ('/json/', self.get_main, render_json)]
         for peri in self.peripherals:
             routes.extend(peri.get_extra_routes())

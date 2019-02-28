@@ -39,21 +39,14 @@ except NameError:
     werkzeug._internal.long = int
 
 
-_meta_exc_msg = ('as of Clastic 0.4, MetaApplication is now an Application'
-                 ' subtype, so instantiate it before passing it in.')
-
-
 _REQ_ID_ITER = itertools.count()
 
 
 def cast_to_route_factory(in_arg):
-    from .meta import MetaApplication
     if isinstance(in_arg, (BaseRoute, SubApplication)):
         return in_arg
     elif isinstance(in_arg, Sequence):
         try:
-            if in_arg[1] is MetaApplication:
-                raise ValueError(_meta_exc_msg)
             if isinstance(in_arg[1], BaseApplication):
                 return SubApplication(*in_arg)
             if callable(in_arg[1]):

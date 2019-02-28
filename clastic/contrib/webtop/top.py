@@ -1,24 +1,18 @@
 from __future__ import unicode_literals
 
 import os
-if os.name != 'posix':
-    # TODO: test on windows
-    raise ImportError('webtop only supports posix platforms')
 
 from operator import itemgetter
 from datetime import timedelta
 
-import psutil
 from boltons.strutils import bytes2human
+psutil = None
 
 import clastic
-from clastic import Application, StaticApplication
+from clastic import Application, StaticApplication, META_ASSETS_APP
 from clastic.render import render_json, AshesRenderFactory
 
-_CLASTIC_PATH = os.path.dirname(os.path.abspath(clastic.__file__))
-_ASSET_PATH = os.path.join(_CLASTIC_PATH, '_clastic_assets')
 _CUR_PATH = os.path.dirname(__file__)
-
 
 
 _TOP_ATTRS = ('pid', 'username', 'nice', 'memory_info',
@@ -47,6 +41,16 @@ def get_process_dicts():
 
 
 def top(sort_key='cpu'):
+    global psutil
+    try:
+        import psutil
+    except ImportError as ie:
+        error_msg = ('Clastic webtop requires psutil to function.'
+                     ' pip install psutil to access this page. (got: %r)'
+                     % (ie,))
+        return {'entries': [],
+                'error': error_msg}
+
     # TODO: add sort key middleware
     _key = itemgetter(sort_key)
     entries = [format_dict(pd) for pd in get_process_dicts()]
@@ -87,7 +91,7 @@ def format_dict(pd):
 
 def create_app():
     routes = [('/', top, 'top.html'),
-              ('/clastic_assets/', StaticApplication(_ASSET_PATH)),
+              ('/clastic_assets/', META_ASSETS_APP),
               ('/json/', top, render_json)]
     arf = AshesRenderFactory(_CUR_PATH)
     app = Application(routes, render_factory=arf)

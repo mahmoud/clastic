@@ -3,8 +3,6 @@ TODO
 
 v19.0
 -----
-* Put code into linecache
-* Hide interstitial frames
 * Make obj browser pull in a static app and serve its own dang css
 
 

@@ -176,6 +176,6 @@ def get_inner_func_alias(func, inner_name, func_names=None):
             head, _, tail = func_alias.rpartition('_')
             cur_count = int(tail)
             func_alias = '%s_%s' % (head, cur_count + 1)
-        except:
+        except Exception:
             func_alias = func_alias + '_2'
     return '%s_%s' % (inner_name, func_alias)

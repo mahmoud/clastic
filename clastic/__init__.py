@@ -24,7 +24,7 @@ from .route import Route, GET, POST, PUT, DELETE, RESERVED_ARGS
 
 from .middleware import Middleware, GetParamMiddleware
 from .render import render_json, render_json_dev, render_basic
-from .meta import MetaApplication
+from .meta import MetaApplication, META_ASSETS_APP
 from .static import StaticApplication, StaticFileRoute
 from .errors import HTTPException
 
