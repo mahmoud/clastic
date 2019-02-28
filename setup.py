@@ -9,7 +9,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.5.1dev'
+__version__ = '19.0.0dev'
 __contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
@@ -49,7 +49,10 @@ setup(name='clastic',
           'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries',
           'Topic :: Software Development :: Libraries :: Application Frameworks',
           'Programming Language :: Python :: 2.6',
-          'Programming Language :: Python :: 2.7', ]
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7', ]
       )
 
 """
