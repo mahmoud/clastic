@@ -1,17 +1,24 @@
-ashes==17.0.0
+ashes==19.2.0
+atomicwrites==1.3.0
 attrs==18.2.0
--e git+git@github.com:mahmoud/boltons.git@b2ea6f63613deb7d258432c1283b7d4471b240ef#egg=boltons  # boltons==18.0.1
--e git+git@github.com:mahmoud/clastic.git@59088153dc65d63b11970167ec7715136f90e7e9#egg=clastic
+-e git+git@github.com:mahmoud/boltons.git@d075f0b04dc1a8c9d05d7b9d53ae2a3846b4ba05#egg=boltons
 coverage==4.5.2
 face==0.1.0
+filelock==3.0.10
+funcsigs==1.0.2
 glom==19.2.0
 Mako==1.0.4
 MarkupSafe==0.23
+more-itertools==5.0.0
 nose==1.3.7
-pluggy==0.8.1
+pathlib2==2.3.3
+pluggy==0.9.0
 psutil==5.5.1
 py==1.8.0
 pytest==4.3.0
-tox==2.8.2
-virtualenv==15.1.0
+scandir==1.9.0
+six==1.12.0
+toml==0.10.0
+tox==3.7.0
+virtualenv==16.4.1
 Werkzeug==0.14.1

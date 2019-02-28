@@ -37,17 +37,17 @@ def test_json_render(render_json=None):
 
     resp = c.get('/')
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'world'
 
     resp = c.get('/Kurt/')
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Kurt'
 
     resp = c.get('/beta/Rajkumar/')
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Rajkumar'
     assert resp_data['date']
     assert len(resp_data) > 4
@@ -91,17 +91,17 @@ def test_default_render():
 
     resp = c.get('/')  # test simple json with endpoint default
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'world'
 
     resp = c.get('/Kurt/')  # test simple json with url param
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Kurt'
 
     resp = c.get('/beta/Rajkumar/')  # test fancy json
     assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Rajkumar'
     assert resp_data['date']
     assert len(resp_data) > 4

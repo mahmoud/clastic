@@ -22,7 +22,7 @@ def test_simple_ctx_proc():
                       middlewares=[add_name_lang])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'world'  # does not overwrite
     assert resp_data['language'] == 'en'
 
@@ -34,12 +34,12 @@ def test_ctx_proc_req():
                       middlewares=[req_provides_name, add_name_lang])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'world'  # does not overwrite
     assert resp_data['language'] == 'en'
 
     resp = c.get('/?name=Alex')
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Alex'  # still does not overwrite
 
 
@@ -49,7 +49,7 @@ def test_ctx_proc_overwrite():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'Kurt'  # does overwrite
 
 
@@ -59,7 +59,7 @@ def test_ctx_proc_empty():
                       middlewares=[add_name])
     c = Client(app, BaseResponse)
     resp = c.get('/')
-    resp_data = json.loads(resp.data)
+    resp_data = json.loads(resp.get_data(True))
     assert resp_data['name'] == 'world'  # does overwrite
 
 
@@ -106,7 +106,7 @@ def test_ctx_proc_req_type():
 
 def test_ctx_proc_default_type():
     with raises(TypeError):
-        ContextProcessor(default={6: ''})
+        ContextProcessor(defaults={6: ''})
 
 
 def test_ctx_proc_def_nonmap():
