@@ -3,6 +3,9 @@
 import time
 from collections import namedtuple
 
+from boltons.statsutils import Stats
+from boltons.iterutils import bucketize
+
 from ..application import Application
 from ..render import render_basic
 from .core import Middleware
@@ -46,61 +49,15 @@ class StatsMiddleware(Middleware):
         return resp
 
 
-from math import floor, ceil
-import itertools
-
-
-def hits_minutes_ago(hit_list, minutes=None):
-    if minutes is None:
-        minutes = 0
-    start_time = time.time() - (minutes * 60)
-    return itertools.dropwhile(lambda h: h.start_time < start_time, hit_list)
-
-
-def hits_by_status(hit_list):
+def _get_route_stats(rt_hits):
     ret = {}
-    for hit in hit_list:
-        try:
-            ret[hit.status_code].append(hit)
-        except KeyError:
-            ret[hit.status_code] = [hit]
-    return ret
-
-
-def percentile(unsorted_data, ptile=50):
-    if ptile > 100:
-        raise ValueError("it's percentile, not something-else-tile")
-    if not unsorted_data:
-        return 0.0  # TODO: hrm, lazy
-    data = sorted(unsorted_data)
-    idx = (float(ptile) / 100) * len(data)
-    idx_f, idx_c = int(floor(idx)), min(int(ceil(idx)), len(data) - 1)
-    return (data[idx_f] + data[idx_c]) / 2.0
-
-
-def mean(vals):
-    if vals:
-        return sum(vals, 0.0) / len(vals)
-    else:
-        return 0.0
-
-
-def float_round(n):
-    return n - (n % 2 ** -6)
-
-
-def get_route_stats(rt_hits):
-    ret = {}
-    hbs = hits_by_status(rt_hits)
-    for status, hits in hbs.items():
+    hits_by_status = bucketize(rt_hits, 'status_code')
+    for status, hits in hits_by_status.items():
         ret[status] = cur = {}
         durs = [round(h.elapsed_time * 1000, 2) for h in hits]
-        cur['min'] = min(durs)
-        cur['max'] = max(durs)
-        cur['mean'] = mean(durs)
-        cur['count'] = len(durs)
-        cur['median'] = percentile(durs, 50)
-        cur['ninefive'] = percentile(durs, 95)
+        stats = Stats(durs, use_copy=False)
+        desc_dict = stats.describe(quantiles=[0.25, 0.5, 0.75, 0.95, 0.99], format="dict")
+        cur.update(desc_dict)
     return ret
 
 
@@ -113,17 +70,13 @@ def _get_stats_dict(_application):
     rt_hits = stats_mw.route_hits
     return {'resp_counts': dict([(url, len(rh)) for url, rh
                                  in stats_mw.url_hits.items()]),
-            'route_stats': dict([(rt.pattern, get_route_stats(rh)) for rt, rh
+            'route_stats': dict([(rt.pattern, _get_route_stats(rh)) for rt, rh
                                  in rt_hits.items() if rh])}
 
 
-def _create_app():
+if __name__ == '__main__':
     routes = [('/', _get_stats_dict, render_basic)]
     mws = [StatsMiddleware()]
     app = Application(routes, middlewares=mws)
-    return app
 
-
-if __name__ == '__main__':
-    sapp = _create_app()
-    sapp.serve()
+    app.serve()
