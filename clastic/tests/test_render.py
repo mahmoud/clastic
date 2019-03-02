@@ -7,7 +7,7 @@ import json
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from clastic import Application
+from clastic import Application, Redirector
 from clastic.render import (JSONRender,
                             JSONPRender,
                             render_basic,
@@ -129,3 +129,14 @@ def test_custom_table_render():
     resp = c.get('/?format=html')
     assert resp.status_code == 200
     assert b'<b>' in resp.data
+
+
+def test_redirector():
+    redirect_other = Redirector('/other')
+    app = Application([('/', redirect_other)])
+    c = Client(app, BaseResponse)
+    resp = c.get('/')
+    assert resp.status_code == 301
+    assert resp.headers['Location'] == 'http://localhost/other'
+
+    repr(redirect_other)

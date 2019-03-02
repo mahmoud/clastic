@@ -6,7 +6,8 @@
 </head>
 <body>
   <h1>Top</h1>
-  {?error}{error}{/error}
+  {?error}<p><b>{error}</b></p>
+  {:else}
 <pre>
   <table>
     <tr>
@@ -35,5 +36,6 @@
     {/entries}
   </table>
 </pre>
+{/error}
 </body>
 </html>

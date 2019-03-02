@@ -27,6 +27,7 @@ from .render import render_json, render_json_dev, render_basic
 from .meta import MetaApplication, META_ASSETS_APP
 from .static import StaticApplication, StaticFileRoute
 from .errors import HTTPException
+from .utils import Redirector
 
 from werkzeug.wrappers import BaseRequest, Request, BaseResponse, Response
 from werkzeug.utils import redirect, append_slash_redirect
