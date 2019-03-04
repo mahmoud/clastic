@@ -2,20 +2,9 @@
 
 from gzip import GzipFile
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
+from boltons.strutils import gzip_bytes
 
 from .core import Middleware
-
-
-def compress(data, level=6):
-    out = StringIO()
-    f = GzipFile(fileobj=out, mode='wb', compresslevel=level)
-    f.write(data)
-    f.close()
-    return out.getvalue()
 
 
 class GzipMiddleware(Middleware):
@@ -29,20 +18,20 @@ class GzipMiddleware(Middleware):
         if resp.content_encoding or not request.accept_encodings['gzip']:
             return resp
 
-        if 'msie' in request.user_agent.browser:
+        # https://connect.microsoft.com/IE/feedback/details/1795907/content-encoding-gzip-in-response-header-is-missing-on-ie11
+        if 'msie' in (request.user_agent.browser or ''):
             if not (resp.content_type.startswith('text/') or
                     'javascript' in resp.content_type):
                 return resp
 
         if resp.is_streamed:
             return resp  # TODO
-        else:
-            comp_content = compress(resp.data, self.compress_level)
-            if len(comp_content) >= len(resp.data):
-                return resp
-            resp.response = [comp_content]
-            resp.content_length = len(comp_content)
 
+        comp_content = gzip_bytes(resp.data, self.compress_level)
+        if len(comp_content) >= len(resp.data):
+            return resp
+        resp.response = [comp_content]
+        resp.content_length = len(comp_content)
         resp.content_encoding = 'gzip'
         # TODO: regenerate etag?
         return resp

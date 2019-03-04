@@ -98,3 +98,17 @@ def test_big_mw_stack():
     cl = Client(app, BaseResponse)
     resp = cl.get('/')
     assert resp.status_code == 200
+
+
+def test_gzip_mw():
+    from clastic.middleware import compress
+
+    app = Application([('/<name>', hello_world)], middlewares=[compress.GzipMiddleware()])
+    cl = Client(app, BaseResponse)
+    resp = cl.get('/' + 'a' * 2000)
+    assert resp.status_code == 200
+    assert len(resp.get_data()) > 2000
+
+    resp = cl.get('/' + 'a' * 2000, headers={'Accept-Encoding': 'gzip'})
+    assert resp.status_code == 200
+    assert len(resp.get_data()) < 200
