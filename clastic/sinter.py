@@ -59,20 +59,22 @@ def inject(f, injectables):
     return f(**kwargs)
 
 
-def get_func_name(obj, with_module=False):
-    if not callable(obj):
-        raise TypeError('expected a callable object')
-    ret = []
-    if with_module and obj.__module__:
-        ret.append(obj.__module__)
+def get_callable_labels(obj):
+    ctx_parts = []
     if isinstance(obj, types.MethodType):
-        ret.append(obj.im_class.__name__)
-        obj = obj.im_func
-    func_name = getattr(obj, 'func_name', None)
-    if not func_name:
-        func_name = repr(obj)
-    ret.append(func_name)
-    return '.'.join(ret)
+        # bit of 2/3 messiness below
+        im_self = getattr(obj, 'im_self', getattr(obj, '__self__', None))
+        if im_self:
+            ctx_parts.append(im_self.__class__.__name__)
+        obj = getattr(obj, 'im_func', getattr(obj, '__func__', None))
+
+    fb = get_fb(obj)
+    if fb.module:
+        ctx_parts.insert(0, fb.module)
+
+
+    return '.'.join(ctx_parts), fb.name, fb.get_invocation_str()
+
 
 
 # TODO: turn the following into an object (keeps inner_name easier to
@@ -163,19 +165,3 @@ def make_chain(funcs, provides, final_func, preprovided, inner_name):
     chain = compile_chain(funcs + [final_func],
                           [args] + provides, inner_name)
     return chain, set(args), set(unresolved)
-
-
-def get_inner_func_alias(func, inner_name, func_names=None):
-    if func_names is None:
-        func_names = set()
-    func_name = get_func_name(func)
-    func_alias = camel2under(func_name.replace('.', '__'))
-    func_alias = func_alias.replace('middleware', 'mw')
-    while func_alias in func_names:
-        try:
-            head, _, tail = func_alias.rpartition('_')
-            cur_count = int(tail)
-            func_alias = '%s_%s' % (head, cur_count + 1)
-        except Exception:
-            func_alias = func_alias + '_2'
-    return '%s_%s' % (inner_name, func_alias)

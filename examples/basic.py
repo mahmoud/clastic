@@ -40,22 +40,23 @@ def fraiser():
     raise ValueError('what am i supposed do with these tossed errors?')
 
 
-def fizzbuzz(limit):
-    """\
-    Use ?limit=n to set the limit. See http://rosettacode.org/wiki/FizzBuzz for more info.
-    """
-    ret = []
-    limit = limit or 15
-    for i in xrange(1, int(limit) + 1):
-        if i % 15 == 0:
-            ret.append("FizzBuzz")
-        elif i % 3 == 0:
-            ret.append("Fizz")
-        elif i % 5 == 0:
-            ret.append("Buzz")
-        else:
-            ret.append(str(i))
-    return ret
+class FizzBuzzer(object):
+    def fizzbuzz(self, limit):
+        """\
+        Use ?limit=n to set the limit. See https://rosettacode.org/wiki/FizzBuzz for more info.
+        """
+        ret = []
+        limit = limit or 15
+        for i in range(1, int(limit) + 1):
+            if i % 15 == 0:
+                ret.append("FizzBuzz")
+            elif i % 3 == 0:
+                ret.append("Fizz")
+            elif i % 5 == 0:
+                ret.append("Buzz")
+            else:
+                ret.append(str(i))
+        return {'data': ret}
 
 
 def create_decked_out_app():
@@ -67,7 +68,7 @@ def create_decked_out_app():
                    SimpleContextProcessor('name')]
     routes = [('/', cookie_hello_world, render_basic),
               ('/debug', debug, render_basic),
-              ('/fizzbuzz', fizzbuzz, render_basic),
+              ('/fizzbuzz', FizzBuzzer().fizzbuzz, render_basic),
               ('/modules', see_modules, render_basic),
               ('/fraiser', fraiser, render_basic),
               ('/obj/', create_obj_browser_app()),

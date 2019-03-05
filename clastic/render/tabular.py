@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os
+import re
 from textwrap import dedent
 try:
     from html import escape as html_escape
@@ -9,9 +11,10 @@ except ImportError:
 
 
 from boltons.tableutils import Table
+from boltons.urlutils import find_all_links
 from werkzeug.wrappers import Response
 
-from ..sinter import get_fb
+from ..sinter import get_callable_labels
 
 _CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 _CSS_PATH = _CUR_PATH + '/../_clastic_assets/common.css'
@@ -23,6 +26,50 @@ except Exception:
 
 def escape_html(text):
     return html_escape(text, True)
+
+
+# URL parsing regex (based on RFC 3986 Appendix B, with modifications)
+_URL_RE = re.compile(r'^((?P<scheme>[^:/?#]+):)?'
+                     r'((?P<_netloc_sep>//)(?P<authority>[^/?#]*))?'
+                     r'(?P<path>[^?#]*)'
+                     r'(\?(?P<query>[^#]*))?'
+                     r'(#(?P<fragment>.*))?')
+
+# heuristic url re
+_FIND_ALL_URL_RE = re.compile(r"""\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()<>]|&amp;|&quot;)*(?:[^!"#$%'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)""")
+
+
+def linkify(text, default_scheme='https', schemes=()):
+    "heuristically find and replace links with html hyperlinks"
+    prev_end, start, end = 0, None, None
+    ret = []
+    _add = ret.append
+
+    for match in _FIND_ALL_URL_RE.finditer(text):
+        start, end = match.start(1), match.end(1)
+        if prev_end < start:
+            _add(text[prev_end:start])
+        prev_end = end
+
+        cur_url_text = match.group(0)
+        url_match = _URL_RE.match(cur_url_text)
+        if not url_match or not url_match.group('scheme'):
+            if not default_scheme:
+                _add(text[start:end])
+                continue
+            cur_url_text = default_scheme + '://' + cur_url_text
+        elif schemes and url_match.group('scheme') not in schemes:
+            _add(text[start:end])
+            continue
+
+        cur_url_anchor = '<a href="{0}">{0}</a>'.format(cur_url_text)
+        _add(cur_url_anchor)
+
+    tail = text[prev_end:]
+    if tail:
+        _add(tail)
+
+    return u''.join(ret)
 
 
 class TabularRender(object):
@@ -41,10 +88,8 @@ class TabularRender(object):
         self.with_metadata = kwargs.pop('with_metadata', True)
 
     def _html_format_ep(self, route):
-        ep_fb = get_fb(route.endpoint, drop_self=False)
-        module_name = ep_fb.module
-        func_name = ep_fb.name.replace('<', '(').replace('>', ')')
-        argstr = ep_fb.get_invocation_str()
+        ctx_label, func_name, argstr = get_callable_labels(route.endpoint)
+        func_name = func_name.replace('<', '(').replace('>', ')')
 
         func_doc = getattr(route.endpoint, '__doc__', '')
         if func_doc:
@@ -52,13 +97,13 @@ class TabularRender(object):
             lines = func_doc.splitlines()
             first_line, remainder = lines[0], '\n'.join(lines[1:])
             dedented = dedent(first_line) + '\n' + dedent(remainder)
-            escaped_doc = escape_html(dedented)
+            escaped_doc = linkify(escape_html(dedented))
             html_doc = '<p style="white-space: pre;">%s</p>' % escaped_doc
         else:
             html_doc = '<!-- add a docstring to display a message here! -->'
 
         title = ('<h2><small><sub>%s</sub></small><br/>%s(%s)</h2>%s'
-                 % (module_name, func_name, argstr, html_doc))
+                 % (ctx_label, func_name, argstr, html_doc))
         return title
 
     def context_to_response(self, context, _route=None):

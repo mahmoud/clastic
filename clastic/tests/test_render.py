@@ -116,6 +116,18 @@ def test_default_render():
 
 
 def test_custom_table_render():
+    def hello_world_ctx(name=None):
+        """
+        This docstring will be visible in the rendered response.
+
+        Links like https://example.com and www.example.com will be linkified automatically.
+        """
+        if name is None:
+            name = 'world'
+        greeting = 'Hello, %s!' % name
+        return {'name': name,
+                'greeting': greeting}
+
     class BoldHTMLTable(Table):
         def get_cell_html(self, value):
             std_html = super(BoldHTMLTable, self).get_cell_html(value)
@@ -128,7 +140,9 @@ def test_custom_table_render():
 
     resp = c.get('/?format=html')
     assert resp.status_code == 200
-    assert b'<b>' in resp.data
+    resp_data = resp.get_data(True)
+    assert '<b>' in resp_data
+    assert '<a href="https://example.com">' in resp_data
 
 
 def test_redirector():
