@@ -132,25 +132,28 @@ def build_chain_str(funcs, params, inner_name, params_sofar=None, level=0,
 
 def compile_chain(funcs, params, inner_name, verbose=_VERBOSE):
     call_str = build_chain_str(funcs, params, inner_name)
-    code_hash = hashlib.sha1(call_str.encode('utf8')).hexdigest()[:16]
-    unique_filename = "<sinter generated %s chain %s>" % (inner_name, code_hash)
-    code = compile(call_str, unique_filename, 'single')
+    return compile_code(call_str, inner_name, {'funcs': funcs}, verbose=verbose)
+
+
+def compile_code(code_str, name, env=None, verbose=_VERBOSE):
+    code_hash = hashlib.sha1(code_str.encode('utf8')).hexdigest()[:16]
+    unique_filename = "<sinter generated %s %s>" % (name, code_hash)
+    code = compile(code_str, unique_filename, 'single')
     if verbose:
-        print(call_str)
-    env = {'funcs': funcs}
+        print(code_str)
     if PY3:
         exec(code, env)
     else:
         exec("exec code in env")
 
     linecache.cache[unique_filename] = (
-        len(call_str),
+        len(code_str),
         None,
-        call_str.splitlines(True),
+        code_str.splitlines(True),
         unique_filename,
     )
+    return env[name]
 
-    return env[inner_name]
 
 
 def make_chain(funcs, provides, final_func, preprovided, inner_name):

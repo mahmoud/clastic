@@ -6,7 +6,7 @@ from collections import defaultdict
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import BaseResponse  # TODO: remove dependency
 
-from ..sinter import make_chain, get_arg_names, _VERBOSE, PY3
+from ..sinter import make_chain, get_arg_names, PY3, compile_code
 
 _INNER_NAME = 'next'
 
@@ -209,8 +209,7 @@ def _named_arg_str(args):
 
 
 def _create_request_inner(endpoint, render, all_args,
-                          endpoint_args, render_args,
-                          verbose=_VERBOSE):
+                          endpoint_args, render_args):
     all_args_str = ','.join(all_args)
     ep_args_str = _named_arg_str(endpoint_args)
     rn_args_str = _named_arg_str(render_args)
@@ -218,13 +217,6 @@ def _create_request_inner(endpoint, render, all_args,
     code_str = _REQ_INNER_TMPL.format(all_args=all_args_str,
                                       endpoint_args=ep_args_str,
                                       render_args=rn_args_str)
-    if verbose:
-        print(code_str)  # pragma: nocover
-    d = {'endpoint': endpoint, 'render': render, 'BaseResponse': BaseResponse}
+    env = {'endpoint': endpoint, 'render': render, 'BaseResponse': BaseResponse}
 
-    if PY3:
-        exec(code_str, d)
-    else:
-        exec("exec code_str in d")
-
-    return d['process_request']
+    return compile_code(code_str, name='process_request', env=env)
