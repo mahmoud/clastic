@@ -83,18 +83,19 @@ def test_big_mw_stack():
                                     profile,
                                     stats,
                                     url)
+    middlewares = [client_cache.HTTPCacheMiddleware(),
+                   compress.GzipMiddleware(),
+                   context.ContextProcessor(),
+                   context.SimpleContextProcessor(),
+                   cookie.SignedCookieMiddleware(),
+                   form.PostDataMiddleware({'lol': str}),
+                   profile.SimpleProfileMiddleware(),
+                   stats.StatsMiddleware(),
+                   url.ScriptRootMiddleware(),
+                   url.GetParamMiddleware({})]
+    [repr(mw) for mw in middlewares]
     app = Application([('/', hello_world)],
-                      middlewares=[client_cache.HTTPCacheMiddleware(),
-                                   compress.GzipMiddleware(),
-                                   context.ContextProcessor(),
-                                   context.SimpleContextProcessor(),
-                                   cookie.SignedCookieMiddleware(),
-                                   form.PostDataMiddleware({'lol': str}),
-                                   profile.SimpleProfileMiddleware(),
-                                   stats.StatsMiddleware(),
-                                   url.ScriptRootMiddleware(),
-                                   url.GetParamMiddleware({}),
-                                   ])
+                      middlewares=middlewares)
     cl = Client(app, BaseResponse)
     resp = cl.get('/')
     assert resp.status_code == 200
