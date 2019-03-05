@@ -48,9 +48,11 @@ import datetime
 try:
     import exceptions
     from cgi import escape as html_escape
+    PY_VERSION = 2
 except ImportError:
     import builtins as exceptions  # lol py3
     from html import escape as html_escape
+    PY_VERSION = 3
 
 from werkzeug.utils import get_content_type
 from werkzeug.debug import DebuggedApplication
@@ -58,13 +60,12 @@ from werkzeug.wrappers import BaseResponse
 from boltons.tbutils import ExceptionInfo, ContextualExceptionInfo
 from glom import glom, T
 
-from . import sinter
 from .render.simple import ClasticJSONEncoder
 from ._contextual_errors import CONTEXTUAL_ENV
 
 
 ERROR_CODE_MAP = None
-STDLIB_EXC_URL = 'http://docs.python.org/2/library/exceptions.html#exceptions.'
+STDLIB_EXC_URL = 'http://docs.python.org/%s/library/exceptions.html#exceptions.' % PY_VERSION
 
 
 def _module_init():
