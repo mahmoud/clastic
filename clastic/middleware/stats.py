@@ -71,6 +71,12 @@ class Reservoir(object):
     def to_list(self):
         return list(self)
 
+    def resize(self, new_size):
+        self._cap = new_size
+        if new_size >= len(self._data):
+            return
+        self._data = self._data[:new_size]
+
 
 Hit = namedtuple('Hit', 'start_time url pattern status_code '
                  ' duration content_type')
