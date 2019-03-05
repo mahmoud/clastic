@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import cProfile
 from pstats import Stats
@@ -6,7 +7,7 @@ from pstats import Stats
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import BytesIO as StringIO
+    from io import StringIO
 
 from .core import Middleware
 
@@ -42,8 +43,10 @@ class SimpleProfileMiddleware(Middleware):
         except Exception:
             if self.raise_exc:
                 raise
+
         buff = StringIO()
-        stats = Stats(profiler, stream=buff).sort_stats(sort_param).print_stats()
+        Stats(profiler, stream=buff).sort_stats(sort_param).print_stats()
         body = _prof_tmpl % buff.getvalue()
         ret.set_data(body)
+
         return ret

@@ -113,3 +113,17 @@ def test_gzip_mw():
     resp = cl.get('/' + 'a' * 2000, headers={'Accept-Encoding': 'gzip'})
     assert resp.status_code == 200
     assert len(resp.get_data()) < 200
+
+
+def test_profile_mw():
+    from clastic.middleware import profile
+
+    app = Application([('/<name?>', hello_world)], middlewares=[profile.SimpleProfileMiddleware()])
+    cl = Client(app, BaseResponse)
+    resp = cl.get('/')
+    assert resp.status_code == 200
+
+    resp = cl.get('/?_prof=true')
+    assert resp.status_code == 200
+    resp_data = resp.get_data(True)
+    assert 'function calls in 0.000 seconds' in resp_data
