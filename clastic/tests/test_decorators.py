@@ -5,9 +5,6 @@ from pytest import raises
 
 from functools import wraps
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application
 from clastic.decorators import clastic_decorator
 
@@ -33,7 +30,7 @@ def test_cl_decorated():
     req_provides_blank = RequestProvidesName()
     app = Application([('/', hello_world_ok)],
                       middlewares=[req_provides_blank])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
@@ -44,7 +41,7 @@ def test_broken_decorated():
     req_provides_blank = RequestProvidesName()
     app = Application([('/', hello_world_no)],
                       middlewares=[req_provides_blank])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')

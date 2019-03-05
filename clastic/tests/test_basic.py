@@ -3,8 +3,6 @@
 from __future__ import unicode_literals
 from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 from clastic.application import Application
 
@@ -32,7 +30,7 @@ def test_single_mw_basic():
     assert dumdum in app.middlewares
     assert dumdum in app.routes[0]._middlewares
 
-    resp = Client(app, BaseResponse).get('/')
+    resp = app.get_local_client().get('/')
     assert resp.status_code == 200
 
 
@@ -44,7 +42,7 @@ def test_duplicate_noarg_mw():
         assert app
         assert len(app.routes[0]._middlewares) == mw_count
 
-        resp = Client(app, BaseResponse).get('/')
+        resp = app.get_local_client().get('/')
         assert resp.status_code == 200
     return
 
@@ -94,15 +92,17 @@ def test_subapplication_basic():
     assert len(set([r.pattern for r in app.routes])) == 3
     assert len(app.routes[0]._middlewares) == 1  # middleware merging
 
-    resp = Client(no_name_app, BaseResponse).get('/')
+    resp = no_name_app.get_local_client().get('/')
     assert resp.data == b'Hello, world!'
-    resp = Client(name_app, BaseResponse).get('/')
+    resp = name_app.get_local_client().get('/')
     assert resp.data == b'Hello, Rajkumar!'
-    resp = Client(app, BaseResponse).get('/')
+
+    app_client = app.get_local_client()
+    resp = app_client.get('/')
     assert resp.data == b'Hello, Kurt!'
-    resp = Client(app, BaseResponse).get('/beta/')
+    resp = app_client.get('/beta/')
     assert resp.data == b'Hello, Kurt!'
-    resp = Client(app, BaseResponse).get('/beta/foo')
+    resp = app_client.get('/beta/foo')
     assert resp.data == b'Hello, Kurt!'
-    resp = Client(app, BaseResponse).get('/larp4lyfe/')
+    resp = app_client.get('/larp4lyfe/')
     assert resp.status_code == 404

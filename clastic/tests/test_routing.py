@@ -3,10 +3,7 @@
 from __future__ import unicode_literals
 from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
-from clastic import Application, render_basic
+from clastic import Application, render_basic, Response
 from clastic.application import Application
 
 from clastic.route import BaseRoute, Route
@@ -18,7 +15,7 @@ from clastic.errors import NotFound, ErrorHandler
 
 
 MODES = (S_STRICT, S_REWRITE, S_REDIRECT)
-NO_OP = lambda: BaseResponse()
+NO_OP = lambda: Response()
 
 
 def test_new_base_route():
@@ -50,9 +47,9 @@ def test_base_route_raises_on_no_ep():
 
 
 def test_base_application_basics():
-    br = BaseRoute('/', lambda request: BaseResponse('lolporte'))
+    br = BaseRoute('/', lambda request: Response('lolporte'))
     ba = Application([br])
-    client = Client(ba, BaseResponse)
+    client = ba.get_local_client()
     res = client.get('/')
     assert res.data == b'lolporte'
 
@@ -60,7 +57,7 @@ def test_base_application_basics():
 def test_nonbreaking_exc():
     app = Application([('/', lambda: NotFound(is_breaking=False)),
                        ('/', lambda: 'so hot in here', render_basic)])
-    client = Client(app, BaseResponse)
+    client = app.get_local_client()
     resp = client.get('/')
     assert resp.status_code == 200
     assert resp.data == b'so hot in here'
@@ -84,7 +81,7 @@ def test_create_route_order_list():
               ('/<one>/<two>', two_segments, render_basic),
               ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = Application(routes)
-    client = Client(app, BaseResponse)
+    client = app.get_local_client()
     assert client.get('/api/a').data == b'api: a'
     assert client.get('/api/a/b').data == b'api: a/b'
 
@@ -100,7 +97,7 @@ def test_create_route_order_incr():
               ('/<one>/<two>', two_segments, render_basic),
               ('/<one>/<two>/<three>', three_segments, render_basic)]
     app = Application()
-    client = Client(app, BaseResponse)
+    client = app.get_local_client()
     for r in routes:
         app.add(r)
         assert client.get('/api/a/b').data == b'api: a/b'
@@ -168,12 +165,12 @@ def test_unknown_method():
 
 def test_debug_raises():
     app_nodebug = Application([('/', lambda: 1/0)], debug=False)
-    client = Client(app_nodebug, BaseResponse)
+    client = app_nodebug.get_local_client()
     assert client.get('/').status_code == 500
 
     err_handler = ErrorHandler(reraise_uncaught=True)
     app_debug = Application([('/', lambda: 1/0)], error_handler=err_handler)
-    client = Client(app_debug, BaseResponse)
+    client = app_debug.get_local_client()
 
     with raises(ZeroDivisionError):
         client.get('/')
@@ -187,9 +184,9 @@ def test_slashing_behaviors():
     app_redirect = Application(routes, slash_mode=S_REDIRECT)
     app_rewrite = Application(routes, slash_mode=S_REWRITE)
 
-    cl_strict = Client(app_strict, BaseResponse)
-    cl_redirect = Client(app_redirect, BaseResponse)
-    cl_rewrite = Client(app_rewrite, BaseResponse)
+    cl_strict = app_strict.get_local_client()
+    cl_redirect = app_redirect.get_local_client()
+    cl_rewrite = app_rewrite.get_local_client()
 
     assert cl_strict.get('/').status_code == 200
     assert cl_rewrite.get('/').status_code == 200

@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals
+
 import os
 import json
-
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, Redirector
 from clastic.render import (JSONRender,
@@ -33,7 +30,7 @@ def test_json_render(render_json=None):
 
     assert callable(app.routes[0]._execute)
     assert callable(app.routes[0]._render)
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
 
     resp = c.get('/')
     assert resp.status_code == 200
@@ -60,7 +57,7 @@ def test_jsonp_render(render_json=None):
                        ('/<name>/', hello_world_ctx, render_json),
                        ('/beta/<name>/', complex_context, render_json)])
 
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
 
     resp = c.get('/?callback=test_callback')
     assert resp.status_code == 200
@@ -71,11 +68,6 @@ def test_jsonp_render(render_json=None):
     assert resp.status_code == 200
     assert resp.data.startswith(b'test_callback')
     assert b'world' in resp.data
-
-#def test_default_json_render():
-#    from clastic.render import render_json
-#    for t in test_json_render(render_json):
-#        yield t
 
 
 def test_default_render():
@@ -87,7 +79,7 @@ def test_default_render():
 
     assert callable(app.routes[0]._execute)
     assert callable(app.routes[0]._render)
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
 
     resp = c.get('/')  # test simple json with endpoint default
     assert resp.status_code == 200
@@ -136,7 +128,7 @@ def test_custom_table_render():
     custom_tr = TabularRender(table_type=BoldHTMLTable)
     custom_render = BasicRender(tabular_render=custom_tr)
     app = Application([('/', hello_world_ctx, custom_render)])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
 
     resp = c.get('/?format=html')
     assert resp.status_code == 200
@@ -148,7 +140,7 @@ def test_custom_table_render():
 def test_redirector():
     redirect_other = Redirector('/other')
     app = Application([('/', redirect_other)])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 301
     assert resp.headers['Location'] == 'http://localhost/other'

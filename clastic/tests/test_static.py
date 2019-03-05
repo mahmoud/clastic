@@ -3,8 +3,7 @@
 from __future__ import unicode_literals
 import os
 
-from werkzeug.test import Client
-from clastic import Application, StaticApplication, Response, StaticFileRoute
+from clastic import Application, StaticApplication, StaticFileRoute
 
 _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,7 +12,7 @@ def test_basic_static_serve():
     static_app = StaticApplication(_CUR_DIR)
     app = Application([('/static/', static_app)])
 
-    c = Client(app, Response)
+    c = app.get_local_client()
     resp = c.get('/static/test_static.py')
     assert resp.mimetype == 'text/x-python'
     resp = c.get('/static/does_not_exist.txt')
@@ -32,7 +31,7 @@ def test_basic_static_route():
     static_app = Application([StaticFileRoute('/source_code',
                                               _CUR_DIR + '/test_static.py')])
 
-    c = Client(static_app, Response)
+    c = static_app.get_local_client()
     resp = c.get('/source_code')
     assert resp.mimetype == 'text/x-python'
     assert resp.status_code == 200

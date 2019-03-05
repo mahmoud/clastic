@@ -1,21 +1,18 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals
-import json
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
+import json
 
 from clastic import Application
 from clastic.middleware.stats import StatsMiddleware, create_stats_app
-from clastic.tests.common import hello_world, hello_world_ctx, RequestProvidesName
+from clastic.tests.common import hello_world
 
 
 def test_stats_mw():
     app = Application([('/', hello_world),
                        ('/stats', create_stats_app())],
                       middlewares=[StatsMiddleware()])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     c.get('/')
     c.get('/')
 

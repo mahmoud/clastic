@@ -3,8 +3,6 @@ from __future__ import unicode_literals
 
 import os
 
-from werkzeug.test import Client
-
 from clastic import Application, render_basic, Response
 from clastic.middleware.cookie import SignedCookieMiddleware
 from clastic.tests.common import cookie_hello_world
@@ -20,7 +18,7 @@ def test_serve():
                       middlewares=[cookie_mw])
 
     assert app.serve(_jk_just_testing=True, static_path=_CUR_DIR)
-    cl = Client(app, Response)
+    cl = app.get_local_client()
 
     assert cl.get('/').status_code == 200
     assert cl.get('/static/test_serve.py').status_code == 200

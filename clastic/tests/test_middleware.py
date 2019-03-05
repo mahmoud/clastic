@@ -3,9 +3,6 @@
 from __future__ import unicode_literals
 from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application
 from clastic.middleware import Middleware, GetParamMiddleware
 from clastic.tests.common import hello_world, hello_world_ctx, RequestProvidesName
@@ -20,7 +17,7 @@ def test_blank_req_provides():
     req_provides_blank = RequestProvidesName()
     app = Application([('/', hello_world)],
                       middlewares=[req_provides_blank])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
@@ -31,7 +28,7 @@ def test_req_provides():
     req_provides = RequestProvidesName('Rajkumar')
     app = Application([('/', hello_world)],
                       middlewares=[req_provides])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, Rajkumar!'
     resp = c.get('/?name=Kurt')
@@ -42,7 +39,7 @@ def test_get_param_mw():
     get_name_mw = GetParamMiddleware(['name', 'date'])
     app = Application([('/', hello_world)],
                       middlewares=[get_name_mw])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, world!'
     resp = c.get('/?name=Kurt')
@@ -53,7 +50,7 @@ def test_direct_no_render():
     render_raises_mw = RenderRaisesMiddleware()
     app = Application([('/', hello_world)],
                       middlewares=[render_raises_mw])
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.data == b'Hello, world!'
 
@@ -62,7 +59,7 @@ def test_render_raises():
     render_raises_mw = RenderRaisesMiddleware()
     app = Application([('/', hello_world_ctx)],
                       middlewares=[render_raises_mw])
-    resp = Client(app, BaseResponse).get('/')
+    resp = app.get_local_client().get('/')
     assert resp.status_code == 500
 
 
@@ -96,7 +93,7 @@ def test_big_mw_stack():
     [repr(mw) for mw in middlewares]
     app = Application([('/', hello_world)],
                       middlewares=middlewares)
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     resp = cl.get('/')
     assert resp.status_code == 200
 
@@ -105,7 +102,7 @@ def test_gzip_mw():
     from clastic.middleware import compress
 
     app = Application([('/<name>', hello_world)], middlewares=[compress.GzipMiddleware()])
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     resp = cl.get('/' + 'a' * 2000)
     assert resp.status_code == 200
     assert len(resp.get_data()) > 2000
@@ -119,7 +116,7 @@ def test_profile_mw():
     from clastic.middleware import profile
 
     app = Application([('/<name?>', hello_world)], middlewares=[profile.SimpleProfileMiddleware()])
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     resp = cl.get('/')
     assert resp.status_code == 200
 

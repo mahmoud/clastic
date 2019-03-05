@@ -4,9 +4,7 @@ from __future__ import unicode_literals
 import sys
 
 import pytest
-from werkzeug.test import Client
 
-from clastic import Response
 from clastic.contrib.obj_browser import create_app
 
 
@@ -17,7 +15,7 @@ _IS_PYPY = '__pypy__' in sys.builtin_module_names
 def test_flaw_basic():
     app = create_app()
 
-    cl = Client(app, Response)
+    cl = app.get_local_client()
 
     resp = cl.get('/')
     assert resp.status_code == 302  # take me to the default

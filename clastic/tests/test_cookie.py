@@ -4,9 +4,6 @@ from __future__ import unicode_literals
 
 import time
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application, render_basic
 from clastic.middleware.cookie import SignedCookieMiddleware, NEVER
 
@@ -19,7 +16,7 @@ def test_cookie_mw():
     app = Application([('/', cookie_hello_world, render_basic),
                        ('/<name>/', cookie_hello_world, render_basic)],
                       middlewares=[cookie_mw])
-    ic = Client(app, BaseResponse)
+    ic = app.get_local_client()
     resp = ic.get('/')
     assert resp.status_code == 200
     assert resp.data == b'Hello, world!'
@@ -28,7 +25,7 @@ def test_cookie_mw():
     resp = ic.get('/')
     assert resp.data == b'Hello, Kurt!'
 
-    ic2 = Client(app, BaseResponse)
+    ic2 = app.get_local_client()
     resp = ic2.get('/')
     assert resp.data == b'Hello, world!'
 
@@ -38,7 +35,7 @@ def test_cookie_expire():
     app = Application([('/', cookie_hello_world, render_basic),
                        ('/<name>/', cookie_hello_world, render_basic)],
                       middlewares=[cookie_mw])
-    ic = Client(app, BaseResponse)
+    ic = app.get_local_client()
     resp = ic.get('/')
     assert resp.status_code == 200
     assert resp.data == b'Hello, world!'
@@ -48,6 +45,6 @@ def test_cookie_expire():
     resp = ic.get('/')
     assert resp.data == b'Hello, world!'
 
-    ic2 = Client(app, BaseResponse)
+    ic2 = app.get_local_client()
     resp = ic2.get('/')
     assert resp.data == b'Hello, world!'

@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from werkzeug.test import Client
-
-from clastic import Response
 from clastic.flaw import create_app
 
 _EXAMPLE_TB = u"""\
@@ -17,7 +14,7 @@ NameError: name 'plarp' is not defined
 def test_flaw_basic():
     app = create_app(_EXAMPLE_TB, [__file__])
 
-    cl = Client(app, Response)
+    cl = app.get_local_client()
 
     resp = cl.get('/')
     assert resp.status_code == 200

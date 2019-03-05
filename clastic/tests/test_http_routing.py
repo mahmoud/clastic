@@ -2,9 +2,6 @@
 
 from __future__ import unicode_literals
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application, render_basic
 from clastic.route import GET, POST, PUT, DELETE
 
@@ -16,7 +13,7 @@ def test_http_method_routes():
               PUT('/put', ep, render_basic),
               DELETE('/delete', ep, render_basic)]
     app = Application(routes)
-    client = Client(app, BaseResponse)
+    client = app.get_local_client()
     methods = ('get', 'post', 'put', 'delete')
     status_map = {}
     for correct_method in methods:

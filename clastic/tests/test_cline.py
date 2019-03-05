@@ -1,7 +1,6 @@
 
-from werkzeug.test import Client
+from __future__ import unicode_literals
 
-from clastic import Response
 from clastic.cline import Cline
 
 def test_cline():
@@ -16,6 +15,6 @@ def test_cline():
     def hw():
         return 'hello, world'
 
-    cl = Client(app, Response)
+    cl = app.get_local_client()
     resp = cl.get('/')
     assert 'hello' in resp.get_data(True)

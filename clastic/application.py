@@ -6,6 +6,7 @@ import itertools
 from collections import Sequence
 from argparse import ArgumentParser
 
+from werkzeug import test as werkzeug_test
 from werkzeug.utils import redirect
 from werkzeug.wrappers import Request, Response, BaseResponse
 
@@ -221,6 +222,9 @@ class Application(object):
             except Exception:
                 ret = default_render_error(**error_params)
         return ret
+
+    def get_local_client(self):
+        return werkzeug_test.Client(self, Response)
 
     def serve(self,
               address='0.0.0.0',

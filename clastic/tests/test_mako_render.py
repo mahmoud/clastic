@@ -4,8 +4,6 @@ from __future__ import unicode_literals
 import os
 
 from pytest import raises
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 from clastic import Application
 from clastic.render.mako_templates import mako, MakoRenderFactory
@@ -23,7 +21,7 @@ def test_mako():
                        ('/beta/<name>/', complex_context, tmpl)],
                       render_factory=mako_render)
 
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 200
     assert b'clasty' in resp.data
@@ -46,7 +44,7 @@ def test_mako_broken_template():
     tmpl = 'broken_template_1.html'
     app = Application([('/', hello_world_ctx, tmpl)],
                       render_factory=mako_render)
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 500
     assert len(resp.data) > 1024  # a longish response
@@ -59,7 +57,7 @@ def test_mako_mixed():
                        ('/json/', hello_world_ctx, render_basic)],
                       render_factory=mako_render)
 
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 200
     assert b'clasty' in resp.data

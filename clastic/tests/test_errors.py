@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals
-from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
-from clastic import Application, Route, render_basic, GET
-from clastic.errors import BadGateway, ErrorHandler
+from clastic import Application, render_basic, GET
 
 def _raiser():
     raise RuntimeError()
@@ -15,7 +10,7 @@ def _raiser():
 
 def test_nondebug_server_errors():
     app = Application([('/', _raiser, render_basic)], debug=False)
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     resps = []
     resps.append(cl.get('/', headers={'Accept': 'text/plain'}))
     resps.append(cl.get('/', headers={'Accept': 'text/html'}))
@@ -27,7 +22,7 @@ def test_nondebug_server_errors():
 
 def test_debug_server_errors():
     app = Application([GET('/', _raiser, render_basic)], debug=True)
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
 
     resps = []
     resps.append(cl.get('/', headers={'Accept': 'text/plain'}))
@@ -40,7 +35,7 @@ def test_debug_server_errors():
 
 def test_debug_notfound_errors():
     app = Application([('/', _raiser, render_basic)], debug=True)
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     nf_url = '/nf'
 
     resps = []
@@ -54,7 +49,7 @@ def test_debug_notfound_errors():
 
 def test_nondebug_notfound_errors():
     app = Application([('/', _raiser, render_basic)], debug=True)
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     nf_url = '/nf'
 
     resps = []

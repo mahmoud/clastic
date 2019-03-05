@@ -3,9 +3,6 @@
 from __future__ import unicode_literals
 from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application, Route, render_basic
 from clastic.errors import BadGateway, ErrorHandler
 
@@ -24,7 +21,7 @@ def test_app_error_render():
     app = Application([rt])
     # assert rt._render_error is render_error_basic
 
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     assert cl.get('/1').status_code == 200
 
     err_resp = cl.get('/2')
@@ -53,7 +50,7 @@ def test_broken_error_render():
 
     rt = Route('/<number:int>', odd_endpoint, render_basic)
     app = Application([rt], error_handler=BrokenErrorHandler())
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
     err_resp = cl.get('/2')
     assert err_resp.status_code == 500
     assert b'not in my house' in err_resp.data
@@ -74,7 +71,7 @@ def test_error_render_count():
     error_list = []
     rsrc = {'error_list': error_list}
     app = Application([rt], rsrc, error_handler=AccumErrorHandler())
-    cl = Client(app, BaseResponse)
+    cl = app.get_local_client()
 
     err_resp = cl.get('/39')
     assert err_resp.status_code == 200

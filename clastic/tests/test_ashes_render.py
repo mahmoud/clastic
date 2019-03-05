@@ -4,9 +4,6 @@ from __future__ import unicode_literals
 import os
 from pytest import raises
 
-from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
-
 from clastic import Application
 from clastic.render import ashes
 from clastic.render import AshesRenderFactory, render_basic
@@ -23,7 +20,7 @@ def test_ashes():
                        ('/beta/<name>/', complex_context, tmpl)],
                       render_factory=ashes_render)
 
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 200
     assert b'world' in resp.data
@@ -49,7 +46,7 @@ def test_ashes_mixed():
                        ('/json/', hello_world_ctx, render_basic)],
                       render_factory=ashes_render)
 
-    c = Client(app, BaseResponse)
+    c = app.get_local_client()
     resp = c.get('/')
     assert resp.status_code == 200
     assert b'Salam' in resp.data
