@@ -8,8 +8,10 @@ from collections import namedtuple, defaultdict
 from boltons.statsutils import Stats
 from boltons.iterutils import bucketize
 
+from ..route import POST
 from ..application import Application
 from ..render import render_basic
+from ..errors import NotImplemented
 from .core import Middleware
 
 
@@ -88,7 +90,11 @@ class RouteStatReservoir(Reservoir):
 
 class StatsMiddleware(Middleware):
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.route_hits = defaultdict(lambda: defaultdict(RouteStatReservoir))
+        self.last_reset = datetime.datetime.utcnow()
 
     def request(self, next, request, _route):
         start_time = time.time()
@@ -128,25 +134,40 @@ def _get_route_stats(rt_hits):
     return ret
 
 
+def _get_stats_mw(_application):
+    try:
+        stats_mw = [mw for mw in _application.middlewares
+                    if isinstance(mw, StatsMiddleware)][0]
+    except IndexError:
+        raise NotImplemented("StatsMiddleware not installed on app %r" % _application)
+    return stats_mw
+
+
 def get_stats_dict(_application):
     """This endpoint provides a summary view of endppoint performance,
     broken down by URL pattern and status code or exception.
 
     Add ?format=json to the URL to get machine-readable data.
     """
-    try:
-        stats_mw = [mw for mw in _application.middlewares
-                    if isinstance(mw, StatsMiddleware)][0]
-    except IndexError:
-        return {'error': "StatsMiddleware doesn't seem to be installed"}
+    stats_mw = _get_stats_mw(_application)
     rt_hits = stats_mw.route_hits
     utcnow = datetime.datetime.utcnow().isoformat()
     return {'route_stats': dict([(rt.pattern, _get_route_stats(rh)) for rt, rh
                                  in rt_hits.items() if rh]),
+            'start_time_utc': stats_mw.last_reset.isoformat(),
             'cur_time_utc': utcnow}
 
 
+def get_and_reset_stats_dict(_application):
+    ret = get_stats_dict(_application)
+    stats_mw = _get_stats_mw(_application)
+    stats_mw.reset()
+    ret['reset'] = True
+    return ret
+
+
 def create_stats_app():
-    routes = [('/', get_stats_dict, render_basic)]
+    routes = [('/', get_stats_dict, render_basic),
+              POST('/reset', get_and_reset_stats_dict, render_basic)]
     app = Application(routes)
     return app

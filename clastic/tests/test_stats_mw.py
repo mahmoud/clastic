@@ -19,3 +19,12 @@ def test_stats_mw():
     resp = c.get('/stats/')
     data = json.loads(resp.get_data(True))
     assert data['route_stats']['/']['200']['count'] == 2
+
+    resp = c.post('/stats/reset')
+    data = json.loads(resp.get_data(True))
+    assert data['route_stats']['/']['200']['count'] == 2
+    assert data['reset'] == True
+
+    resp = c.get('/stats/')
+    data = json.loads(resp.get_data(True))
+    assert data['route_stats'].get('/') is None
