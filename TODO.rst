@@ -3,6 +3,7 @@ TODO
 
 v19.0
 -----
+* Make version info programmatically available
 * Make obj browser pull in a static app and serve its own dang css
 
 

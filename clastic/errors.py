@@ -43,18 +43,20 @@ Possible values to support templating:
 * Allowed methods
 
 """
-import cgi
 import sys
 import datetime
 try:
     import exceptions
+    from cgi import escape as html_escape
 except ImportError:
     import builtins as exceptions  # lol py3
+    from html import escape as html_escape
 
 from werkzeug.utils import get_content_type
 from werkzeug.debug import DebuggedApplication
 from werkzeug.wrappers import BaseResponse
 from boltons.tbutils import ExceptionInfo, ContextualExceptionInfo
+from glom import glom, T
 
 from . import sinter
 from .render.simple import ClasticJSONEncoder
@@ -138,9 +140,9 @@ class HTTPException(BaseResponse, Exception):
                 ret[k] = ''
                 continue
             try:
-                ret[k] = cgi.escape(v, True)
+                ret[k] = html_escape(v, True)
             except Exception as e:
-                ret[k] = cgi.escape(repr(v), True)
+                ret[k] = html_escape(repr(v), True)
         return ret
 
     def to_json(self, indent=2, sort_keys=True, skipkeys=True):
@@ -410,15 +412,12 @@ class InternalServerError(HTTPException):
                 exc_type_name = self.exc_info.exc_type
                 exc_type = getattr(exceptions, exc_type_name)
                 self.error_type = STDLIB_EXC_URL + exc_type.__name__
-            except:
+            except Exception:
                 pass
 
     def to_dict(self):
         ret = super(InternalServerError, self).to_dict()
-        try:
-            ret['exc_info'] = self.exc_info.to_dict()
-        except:
-            ret['exc_info'] = None
+        ret['exc_info'] = glom(self, T.exc_info.to_dict(), skip_exc=Exception)
         return ret
 
 
@@ -528,19 +527,15 @@ class ContextualInternalServerError(InternalServerError):
                      frame['func_name'] == 'inject':
                     frame['is_hidden'] = True
             frame['id'] = i
-            try:
-                pre_start_lineno = frame['pre_lines'][0]['lineno']
-            except IndexError:
-                pre_start_lineno = 1
+            pre_start_lineno = glom(frame, T['pre_lines'][0]['lineno'], default=1)
             frame['pre_start_lineno'] = pre_start_lineno
             frame['post_start_lineno'] = frame['lineno'] + 1
-        try:
-            last_frame = exc_tb['frames'][-1]
-        except:
-            last_frame = None
+
+        last_frame = glom(exc_tb, T['frames'][-1], default=None)
+
 
         eid = {'is_email': False,
-               'clastic_version_info': '0.4.1dev',  # TODO
+               'clastic_version_info': '19.0.0',  # TODO
                'exc_type': exc_info.exc_type,
                'exc_value': exc_info.exc_msg,
                'exc_tb': exc_tb,

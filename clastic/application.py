@@ -218,7 +218,7 @@ class Application(object):
             error_params = dict(params, _error=ret)
             try:
                 ret = ret.source_route.render_error(**error_params)
-            except:
+            except Exception:
                 ret = default_render_error(**error_params)
         return ret
 
@@ -300,7 +300,6 @@ class SubApplication(object):
         self.inherit_slashes = inherit_slashes
 
     def iter_routes(self):
-        # TODO: if `self.app` is `application` don't re-embed?
         for routes in self.app.iter_routes():
             for rt in routes.iter_routes():
                 if isinstance(rt, NullRoute):
@@ -311,6 +310,7 @@ class SubApplication(object):
                     yld.slash_mode = self.app.slash_mode
                 yld._compile()
                 yield yld
+        return
 
 
 def create_dev_server_parser():

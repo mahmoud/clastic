@@ -13,6 +13,8 @@ from clastic.middleware.cookie import SignedCookieMiddleware
 from clastic.contrib.obj_browser import create_app as create_obj_browser_app
 from clastic.contrib.webtop.top import create_app as create_webtop_app
 
+from clastic.errors import REPLErrorHandler
+
 def cookie_hello_world(cookie, name=None, expire_cookie=False):
     if name is None:
         name = cookie.get('name') or 'world'
@@ -70,7 +72,7 @@ def create_decked_out_app():
               ('/fraiser', fraiser, render_basic),
               ('/obj/', create_obj_browser_app()),
               ('/webtop/', create_webtop_app())]
-    return Application(routes, resources, middlewares=middlewares)
+    return Application(routes, resources, middlewares=middlewares, error_handler=REPLErrorHandler())
 
 
 if __name__ == '__main__':
