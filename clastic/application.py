@@ -47,7 +47,7 @@ def cast_to_route_factory(in_arg):
         return in_arg
     elif isinstance(in_arg, Sequence):
         try:
-            if isinstance(in_arg[1], BaseApplication):
+            if isinstance(in_arg[1], Application):
                 return SubApplication(*in_arg)
             if callable(in_arg[1]):
                 return Route(*in_arg)
@@ -77,7 +77,7 @@ def check_valid_wsgi(wsgi_callable):
                         (wsgi_callable, wc_args))
 
 
-class BaseApplication(object):
+class Application(object):
     request_type = Request
     response_type = Response
     default_error_handler_type = ErrorHandler
@@ -94,13 +94,8 @@ class BaseApplication(object):
         if resource_conflicts:
             raise NameError('resource names conflict with builtins: %r' %
                             resource_conflicts)
-        try:
-            self.middlewares = list(middlewares or [])
-        except TypeError:
-            # TODO: tmp message until 0.6 or so
-            raise TypeError('expected an iterable for middlewares (as of '
-                            'Clastic 0.4, middlewares and render_factory '
-                            'swapped argument position)')
+
+        self.middlewares = list(middlewares or [])
         check_middlewares(self.middlewares)
         self.render_factory = render_factory
 
@@ -231,50 +226,6 @@ class BaseApplication(object):
                 ret = default_render_error(**error_params)
         return ret
 
-
-class DispatchState(object):
-    def __init__(self):
-        self.exceptions = []
-        self.allowed_methods = set()
-        self.attempted_routes = []
-
-    def add_route(self, route):
-        self.attempted_routes.append(route)
-
-    def add_exception(self, exception):
-        self.exceptions.append(exception)
-
-    def update_methods(self, methods):
-        if methods:
-            self.allowed_methods.update(methods)
-
-    def __repr__(self):
-        args = (self.__class__.__name__, self.exceptions, self.allowed_methods)
-        return '<%s exceptions=%r allowed_methods=%r>' % args
-
-
-class SubApplication(object):
-    def __init__(self, prefix, app, rebind_render=False, inherit_slashes=True):
-        self.prefix = prefix.rstrip('/')
-        self.app = app
-        self.rebind_render = rebind_render
-        self.inherit_slashes = inherit_slashes
-
-    def iter_routes(self):
-        # TODO: if `self.app` is `application` don't re-embed?
-        for routes in self.app.iter_routes():
-            for rt in routes.iter_routes():
-                if isinstance(rt, NullRoute):
-                    continue
-                yld = rt.empty()
-                yld.pattern = self.prefix + rt.pattern
-                if self.inherit_slashes:
-                    yld.slash_mode = self.app.slash_mode
-                yld._compile()
-                yield yld
-
-
-class Application(BaseApplication):
     def serve(self,
               address='0.0.0.0',
               port=5000,
@@ -322,6 +273,48 @@ class Application(BaseApplication):
         if kw.get('_jk_just_testing'):
             return True
         run_simple(address, port, wrapped_wsgi, **kw)
+
+
+class DispatchState(object):
+    def __init__(self):
+        self.exceptions = []
+        self.allowed_methods = set()
+        self.attempted_routes = []
+
+    def add_route(self, route):
+        self.attempted_routes.append(route)
+
+    def add_exception(self, exception):
+        self.exceptions.append(exception)
+
+    def update_methods(self, methods):
+        if methods:
+            self.allowed_methods.update(methods)
+
+    def __repr__(self):
+        args = (self.__class__.__name__, self.exceptions, self.allowed_methods)
+        return '<%s exceptions=%r allowed_methods=%r>' % args
+
+
+class SubApplication(object):
+    def __init__(self, prefix, app, rebind_render=False, inherit_slashes=True):
+        self.prefix = prefix.rstrip('/')
+        self.app = app
+        self.rebind_render = rebind_render
+        self.inherit_slashes = inherit_slashes
+
+    def iter_routes(self):
+        # TODO: if `self.app` is `application` don't re-embed?
+        for routes in self.app.iter_routes():
+            for rt in routes.iter_routes():
+                if isinstance(rt, NullRoute):
+                    continue
+                yld = rt.empty()
+                yld.pattern = self.prefix + rt.pattern
+                if self.inherit_slashes:
+                    yld.slash_mode = self.app.slash_mode
+                yld._compile()
+                yield yld
 
 
 def create_dev_server_parser():

@@ -7,7 +7,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
 from clastic import Application, render_basic
-from clastic.application import BaseApplication
+from clastic.application import Application
 
 from clastic.route import BaseRoute, Route
 from clastic.route import (InvalidEndpoint,
@@ -51,7 +51,7 @@ def test_base_route_raises_on_no_ep():
 
 def test_base_application_basics():
     br = BaseRoute('/', lambda request: BaseResponse('lolporte'))
-    ba = BaseApplication([br])
+    ba = Application([br])
     client = Client(ba, BaseResponse)
     res = client.get('/')
     assert res.data == b'lolporte'
@@ -83,7 +83,7 @@ def test_create_route_order_list():
     routes = [('/api/<api_path+>', api, render_basic),
               ('/<one>/<two>', two_segments, render_basic),
               ('/<one>/<two>/<three>', three_segments, render_basic)]
-    app = BaseApplication(routes)
+    app = Application(routes)
     client = Client(app, BaseResponse)
     assert client.get('/api/a').data == b'api: a'
     assert client.get('/api/a/b').data == b'api: a/b'
@@ -99,7 +99,7 @@ def test_create_route_order_incr():
     routes = [('/api/<api_path+>', api, render_basic),
               ('/<one>/<two>', two_segments, render_basic),
               ('/<one>/<two>/<three>', three_segments, render_basic)]
-    app = BaseApplication()
+    app = Application()
     client = Client(app, BaseResponse)
     for r in routes:
         app.add(r)
