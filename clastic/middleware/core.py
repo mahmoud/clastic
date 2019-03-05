@@ -4,7 +4,7 @@ import itertools
 from collections import defaultdict
 
 from werkzeug.utils import cached_property
-from werkzeug.wrappers import BaseResponse  # TODO: remove dependency
+from werkzeug.wrappers import BaseResponse
 
 from ..sinter import make_chain, get_arg_names, PY3, compile_code
 

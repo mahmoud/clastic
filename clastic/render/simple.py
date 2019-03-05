@@ -183,12 +183,3 @@ class BasicRender(object):
 render_json = JSONRender()
 render_json_dev = JSONRender(dev_mode=True)
 render_basic = BasicRender()
-
-
-#TODO: deprecate
-
-
-DefaultRender = BasicRender
-json_response = render_json
-dev_json_response = render_json_dev
-default_response = render_basic
