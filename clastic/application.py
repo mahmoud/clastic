@@ -34,10 +34,6 @@ except NameError:
     # py3
     unicode = str
 
-    # oh god, 0.9 was supposed to have py3 support
-    import werkzeug
-    werkzeug._internal.long = int
-
 
 _REQ_ID_ITER = itertools.count()
 
