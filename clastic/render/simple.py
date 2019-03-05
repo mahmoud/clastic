@@ -33,27 +33,19 @@ class ClasticJSONEncoder(JSONEncoder):
         if isinstance(obj, Mapping):
             try:
                 return dict(obj)
-            except:
+            except Exception:
                 pass
         if isinstance(obj, Sized) and isinstance(obj, Iterable):
             try:
                 return list(obj)
-            except:
+            except Exception:
                 pass
         if callable(getattr(obj, 'to_dict', None)):
             return obj.to_dict()
 
         if self.dev_mode:
-            return repr(obj)  # TODO: blargh
-            if isinstance(obj, type) or callable(obj):
-                return unicode(repr(obj))
-            try:
-                return dict([(k, v) for k, v in obj.__dict__.items()
-                             if not k.startswith('__')])
-            except AttributeError:
-                return unicode(repr(obj))
-        else:
-            raise TypeError('cannot serialize to JSON: %r' % obj)
+            return repr(obj)
+        raise TypeError('cannot serialize to JSON: %r' % obj)
 
 
 class JSONRender(object):
@@ -84,7 +76,6 @@ class JSONPRender(JSONRender):
         if not cb_name:
             return super(JSONPRender, self).__call__(context)
         json_iter = self.json_encoder.iterencode(context)
-        # TODO: this is probably not v performant
         resp_iter = itertools.chain([cb_name, '('], json_iter, [');'])
         resp = Response(resp_iter, mimetype="application/javascript")
         resp.mimetype_params['charset'] = self.encoding
