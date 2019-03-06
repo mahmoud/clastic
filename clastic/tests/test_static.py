@@ -23,8 +23,13 @@ def test_basic_static_serve():
     assert resp.status_code == 200
     resp = c.get('/static/_ashes_tmpls/../../core.py')
     assert resp.status_code == 403
+
+    # check that we don't navigate to root
     resp = c.get('/static//etc/hosts')
-    assert resp.status_code == 403
+    if os.path.exists('/etc/hosts'):
+        assert resp.status_code == 403
+    else:
+        assert resp.status_code == 404  # mostly windows
 
 
 def test_basic_static_route():
