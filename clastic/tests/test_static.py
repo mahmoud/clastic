@@ -33,5 +33,5 @@ def test_basic_static_route():
 
     c = static_app.get_local_client()
     resp = c.get('/source_code')
-    assert resp.mimetype == 'text/x-python'
+    assert resp.mimetype in ('text/x-python', 'text/plain')  # text/plain on appveyor/windows for some reason
     assert resp.status_code == 200

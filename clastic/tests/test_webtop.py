@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
+
 from clastic.contrib.webtop.top import create_app
 
 
@@ -9,4 +11,5 @@ def test_webtop_basic():
     cl = app.get_local_client()
 
     resp = cl.get('/')
-    assert 'python' in resp.get_data(True)
+
+    assert str(os.getpid()) in resp.get_data(True)

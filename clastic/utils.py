@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os
 import time
@@ -20,7 +21,6 @@ class Redirector(object):
     Meant to be used as an endpoint, or a render step after a POST.
     """
     def __init__(self, location, code=301):
-        # TODO: make location a lamda
         self.location = location
         self.code = code
 

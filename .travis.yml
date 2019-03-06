@@ -7,9 +7,7 @@ cache: pip
 python:
   # Standard release https://docs.travis-ci.com/user/languages
   # /python#choosing-python-versions-to-test-against
-  - "2.6"  # EOLed 5 years ago. https://www.python.org/dev/peps/pep-0361/#release-lifespan
   - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
 
