@@ -77,6 +77,11 @@ class Reservoir(object):
             return
         self._data = self._data[:new_size]
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return ('<%s cap=%r, data_count=%r, total_count=%r>'
+                % (cn, self._cap, len(self._data), self._total_count))
+
 
 Hit = namedtuple('Hit', 'start_time url pattern status_code '
                  ' duration content_type')
