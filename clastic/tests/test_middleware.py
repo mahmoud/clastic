@@ -123,4 +123,4 @@ def test_profile_mw():
     resp = cl.get('/?_prof=true')
     assert resp.status_code == 200
     resp_data = resp.get_data(True)
-    assert 'function calls in 0.000 seconds' in resp_data
+    assert 'function calls in 0.00' in resp_data  # e.g., 46 function calls in 0.000 seconds but that's variable/flaky

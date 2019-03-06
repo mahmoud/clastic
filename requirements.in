@@ -1,0 +1,12 @@
+ashes
+boltons
+coverage
+face
+glom
+Mako
+more-itertools<6.0.0  # >=6.0 breaks py27/pypy
+pip-tools
+psutil
+pytest
+tox
+Werkzeug
