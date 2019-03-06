@@ -29,6 +29,7 @@ test_script:
   - "%PYTHON%/Scripts/tox -e %TOX_ENV%"
 
 after_test:
+  - "%PYTHON%/Scripts/tox -e coverage-report"
   - "%PYTHON%/python setup.py bdist_wheel"
   - ps: "ls dist"
 
