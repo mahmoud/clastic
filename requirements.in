@@ -10,3 +10,4 @@ psutil
 pytest
 tox
 Werkzeug
+virtualenv>=16.4.3  # open(mode='rU') warnings
