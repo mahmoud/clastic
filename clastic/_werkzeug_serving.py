@@ -48,17 +48,24 @@ import time
 import signal
 import subprocess
 
-try:
-    import thread
-except ImportError:
-    import _thread as thread
 
 try:
-    from SocketServer import ThreadingMixIn, ForkingMixIn
+    import thread
+    from SocketServer import ThreadingMixIn
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 except ImportError:
-    from socketserver import ThreadingMixIn, ForkingMixIn
+    import _thread as thread
+    from socketserver import ThreadingMixIn
     from http.server import HTTPServer, BaseHTTPRequestHandler
+
+
+try:
+    from SocketServer import ForkingMixIn
+except ImportError:
+    try:
+        from socketserver import ForkingMixIn
+    except ImportError:
+        ForkingMixIn = None  # windows
 
 import werkzeug
 from werkzeug._internal import _log
@@ -459,15 +466,16 @@ class ThreadedWSGIServer(ThreadingMixIn, BaseWSGIServer):
     multithread = True
 
 
-class ForkingWSGIServer(ForkingMixIn, BaseWSGIServer):
-    """A WSGI server that does forking."""
-    multiprocess = True
+if ForkingMixIn:
+    class ForkingWSGIServer(ForkingMixIn, BaseWSGIServer):
+        """A WSGI server that does forking."""
+        multiprocess = True
 
-    def __init__(self, host, port, app, processes=40, handler=None,
-                 passthrough_errors=False, ssl_context=None):
-        BaseWSGIServer.__init__(self, host, port, app, handler,
-                                passthrough_errors, ssl_context)
-        self.max_children = processes
+        def __init__(self, host, port, app, processes=40, handler=None,
+                     passthrough_errors=False, ssl_context=None):
+            BaseWSGIServer.__init__(self, host, port, app, handler,
+                                    passthrough_errors, ssl_context)
+            self.max_children = processes
 
 
 def make_server(host, port, app=None, threaded=False, processes=1,
