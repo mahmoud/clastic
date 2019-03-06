@@ -14,7 +14,7 @@ def test_basic_static_serve():
 
     c = app.get_local_client()
     resp = c.get('/static/test_static.py')
-    assert resp.mimetype == 'text/x-python'
+    assert resp.mimetype in ('text/x-python', 'text/plain')  # text/plain on appveyor/windows for some reason
     resp = c.get('/static/does_not_exist.txt')
     assert resp.status_code == 404
     resp = c.get('/static/../core.py')
