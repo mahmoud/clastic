@@ -60,6 +60,7 @@ from werkzeug.wrappers import BaseResponse
 from boltons.tbutils import ExceptionInfo, ContextualExceptionInfo
 from glom import glom, T
 
+from . import _version
 from .render.simple import ClasticJSONEncoder
 from ._contextual_errors import CONTEXTUAL_ENV
 
@@ -536,7 +537,7 @@ class ContextualInternalServerError(InternalServerError):
 
 
         eid = {'is_email': False,
-               'clastic_version_info': '19.0.0',  # TODO
+               'clastic_version': _version.__version__,
                'exc_type': exc_info.exc_type,
                'exc_value': exc_info.exc_msg,
                'exc_tb': exc_tb,

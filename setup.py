@@ -4,15 +4,22 @@
 explicit development practices while eliminating global state.
 """
 
+import os
+import imp
 import sys
 from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '19.0.0dev'
 __contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
+
+CUR_PATH = os.path.abspath(os.path.dirname(__file__))
+_version_mod_path = os.path.join(CUR_PATH, 'clastic', '_version.py')
+_version_mod = imp.load_source('_version', _version_mod_path)
+__version__ = _version_mod.__version__
+
 
 desc = ('A functional Python web framework that streamlines'
         ' explicit development practices while eliminating'
@@ -41,6 +48,7 @@ setup(name='clastic',
       tests_require=['Mako==1.0.7', 'pytest==4.3.0', 'psutil==5.5.1'],
       classifiers=[
           'Intended Audience :: Developers',
+          'Development Status :: 5 - Production/Stable',
           'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
           'Topic :: Internet :: WWW/HTTP :: WSGI',
           'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',

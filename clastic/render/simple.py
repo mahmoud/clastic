@@ -40,12 +40,13 @@ class ClasticJSONEncoder(JSONEncoder):
                 return list(obj)
             except Exception:
                 pass
-        if callable(getattr(obj, 'to_dict', None)):
-            return obj.to_dict()
-        if callable(getattr(obj, 'asdict', None)):
-            return obj.asdict()
-        if callable(getattr(obj, 'isoformat', None)):
-            return obj.isoformat()
+        if not isinstance(obj, type):
+            if callable(getattr(obj, 'to_dict', None)):
+                return obj.to_dict()
+            if callable(getattr(obj, 'asdict', None)):
+                return obj.asdict()
+            if callable(getattr(obj, 'isoformat', None)):
+                return obj.isoformat()
 
         if self.dev_mode:
             return repr(obj)
