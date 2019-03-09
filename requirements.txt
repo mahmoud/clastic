@@ -8,6 +8,7 @@ ashes==19.2.0
 atomicwrites==1.3.0       # via pytest
 attrs==19.1.0             # via glom, pytest
 boltons==19.1.0
+chameleon==3.6
 click==7.0                # via pip-tools
 coverage==4.5.2
 face==0.1.0

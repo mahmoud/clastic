@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <head>
+      <title>Clastic testin'</title>
+  </head>
+  <body tal:define="pprint import:pprint">
+  <h2>A super basic test template</h2>
+  <p>Locals:</p>
+  <pre>${pprint.pformat(locals())}</pre>
+  <p>Globals:</p>
+  <pre>${pprint.pformat(globals())}</pre>
+  <hr>
+  <h4>Keep it clasty.</h4>
+  </body>
+</html>
