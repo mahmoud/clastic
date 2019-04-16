@@ -50,6 +50,7 @@ try:
     from cgi import escape as html_escape
     PY_VERSION = 2
 except ImportError:
+    unicode = str
     import builtins as exceptions  # lol py3
     from html import escape as html_escape
     PY_VERSION = 3
@@ -192,6 +193,17 @@ class HTTPException(BaseResponse, Exception):
     def __repr__(self):
         cn = self.__class__.__name__
         return '%s(message=%r)' % (cn, getattr(self, 'message', ''))
+
+    def __str__(self):
+        if not self.detail:
+            ret = self.message
+        elif isinstance(self.detail, unicode):
+            ret = self.detail
+            if len(ret) > 512:
+                ret = ret[:256] + '...' + ret[-253:]
+        else:
+            ret = repr(self.detail)
+        return ret
 
 
 class BadRequest(HTTPException):
