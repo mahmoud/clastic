@@ -199,10 +199,11 @@ class HTTPException(BaseResponse, Exception):
             ret = self.message
         elif isinstance(self.detail, unicode):
             ret = self.detail
-            if len(ret) > 512:
-                ret = ret[:256] + '...' + ret[-253:]
         else:
             ret = repr(self.detail)
+        if len(ret) > 512:
+            ret = ret[:256] + '...' + ret[-253:]
+
         return ret
 
 
