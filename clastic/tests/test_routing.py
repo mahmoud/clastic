@@ -6,7 +6,7 @@ from pytest import raises
 from clastic import Application, render_basic, Response
 from clastic.application import Application
 
-from clastic.route import BaseRoute, Route
+from clastic.route import Route
 from clastic.route import (InvalidEndpoint,
                            InvalidPattern,
                            InvalidMethod)
@@ -20,7 +20,7 @@ NO_OP = lambda: Response()
 
 def test_new_base_route():
     # note default slashing behavior
-    rp = BaseRoute('/a/b/<t:int>/thing/<das+int>')
+    rp = Route('/a/b/<t:int>/thing/<das+int>', NO_OP)
     d = rp.match_path('/a/b/1/thing/1/2/3/4')
     assert d == {u't': 1, u'das': [1, 2, 3, 4]}
 
@@ -30,24 +30,19 @@ def test_new_base_route():
     d = rp.match_path('/a/b/1/thing/')
     assert d == None
 
-    rp = BaseRoute('/a/b/<t:int>/thing/<das*int>', methods=['GET'])
+    rp = Route('/a/b/<t:int>/thing/<das*int>', NO_OP, methods=['GET'])
     d = rp.match_path('/a/b/1/thing')
     assert d == {u't': 1, u'das': []}
 
 
 def test_base_route_executes():
-    br = BaseRoute('/', lambda request: request['stephen'])
+    br = Route('/', lambda request: request['stephen'])
     res = br.execute({'stephen': 'laporte'})
     assert res == 'laporte'
 
 
-def test_base_route_raises_on_no_ep():
-    with raises(InvalidEndpoint):
-        BaseRoute('/a/b/<t:int>/thing/<das+int>').execute({})
-
-
 def test_base_application_basics():
-    br = BaseRoute('/', lambda request: Response('lolporte'))
+    br = Route('/', lambda request: Response('lolporte'))
     ba = Application([br])
     client = ba.get_local_client()
     res = client.get('/')

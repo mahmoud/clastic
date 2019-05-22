@@ -178,16 +178,48 @@ def normalize_path(path, is_branch):
     return '/'.join(ret)
 
 
-class BaseRoute(object):
-    def __init__(self, pattern, endpoint=None, methods=None, **kwargs):
+def _noop_render(context):
+    return context
+
+
+def check_render_error(render_error, resources):
+    re_avail_args = set(_REQUEST_BUILTINS) | set(resources)
+    re_avail_args.add('_error')
+
+    re_args = set(get_arg_names(render_error))
+    missing_args = sorted(re_args - re_avail_args)
+    if missing_args:
+        raise NameError('unresolved render_error() arguments: %r'
+                        % missing_args)
+    return True
+
+
+class Route(object):
+    def __init__(self, pattern, endpoint, render=None,
+                 render_error=None, **kwargs):
+        self._middlewares = list(kwargs.pop('middlewares', []))
+        self._resources = dict(kwargs.pop('resources', []))
+
         self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
+        methods = kwargs.pop('methods', None)
+        self.methods = methods and set([m.upper() for m in methods])
         if kwargs:
             raise TypeError('unexpected keyword args: %r' % kwargs.keys())
         self.pattern = pattern
         self.endpoint = endpoint
         self._execute = endpoint
-        self.methods = methods and set([m.upper() for m in methods])
         self._compile()
+
+        self._bound_apps = []
+        self.endpoint_args = get_arg_names(endpoint)
+
+        self._render = None
+        self._render_factory = None
+        self.render_arg = render
+        if callable(self.render_arg):
+            self._render = self.render_arg
+        self._render_error = render_error
+        self._required_args = self._resolve_required_args()
 
     def _compile(self):
         # maybe: if not getattr(self, 'regex', None) or \
@@ -206,6 +238,9 @@ class BaseRoute(object):
     @property
     def is_branch(self):
         return self.pattern.endswith('/')
+
+    def iter_routes(self):
+        yield self
 
     def match_path(self, path):
         ret = {}
@@ -227,73 +262,9 @@ class BaseRoute(object):
         return True
 
     def execute(self, request, **kwargs):
-        if not self._execute:
-            raise InvalidEndpoint('no endpoint function set on %r' % self)
-        kwargs['_route'] = self
-        kwargs['request'] = request
-        return inject(self._execute, kwargs)
-
-    def iter_routes(self):
-        yield self
-
-    def bind(self, application, *a, **kw):
-        "BaseRoutes do not bind, but normal Routes do."
-        return
-
-    def __repr__(self):
-        cn = self.__class__.__name__
-        ep = self.endpoint
-        try:
-            ep_name = '%s.%s' % (ep.__module__, ep.func_name)
-        except:
-            ep_name = repr(ep)
-        args = (cn, self.pattern, ep_name)
-        tmpl = '<%s pattern=%r endpoint=%s>'
-        if self.methods:
-            tmpl = '<%s pattern=%r endpoint=%s methods=%r>'
-            args += (self.methods,)
-        return tmpl % args
-
-
-def _noop_render(context):
-    return context
-
-
-def check_render_error(render_error, resources):
-    re_avail_args = set(_REQUEST_BUILTINS) | set(resources)
-    re_avail_args.add('_error')
-
-    re_args = set(get_arg_names(render_error))
-    missing_args = sorted(re_args - re_avail_args)
-    if missing_args:
-        raise NameError('unresolved render_error() arguments: %r'
-                        % missing_args)
-    return True
-
-
-class Route(BaseRoute):
-    def __init__(self, pattern, endpoint, render=None,
-                 render_error=None, **kwargs):
-        self._middlewares = list(kwargs.pop('middlewares', []))
-        self._resources = dict(kwargs.pop('resources', []))
-        super(Route, self).__init__(pattern, endpoint, **kwargs)
-
-        self._bound_apps = []
-        self.endpoint_args = get_arg_names(endpoint)
-
-        self._execute = None
-        self._render = None
-        self._render_factory = None
-        self.render_arg = render
-        if callable(self.render_arg):
-            self._render = self.render_arg
-        self._render_error = render_error
-        self._required_args = self._resolve_required_args()
-
-    def execute(self, request, **kwargs):
         injectables = {'_route': self,
                        'request': request,
-                       '_application': self._bound_apps[-1]}
+                       '_application': self._bound_apps[-1] if self._bound_apps else None}
         injectables.update(self._resources)
         injectables.update(kwargs)
         return inject(self._execute, injectables)
@@ -478,6 +449,20 @@ class Route(BaseRoute):
             # TODO: trace to application if middleware/resource
         ret['sources'] = srcs
         return ret
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        ep = self.endpoint
+        try:
+            ep_name = '%s.%s' % (ep.__module__, ep.func_name)
+        except:
+            ep_name = repr(ep)
+        args = (cn, self.pattern, ep_name)
+        tmpl = '<%s pattern=%r endpoint=%s>'
+        if self.methods:
+            tmpl = '<%s pattern=%r endpoint=%s methods=%r>'
+            args += (self.methods,)
+        return tmpl % args
 
 
 class NullRoute(Route):

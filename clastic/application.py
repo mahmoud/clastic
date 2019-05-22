@@ -12,7 +12,6 @@ from werkzeug.wrappers import Request, Response, BaseResponse
 
 from .server import run_simple
 from .route import (Route,
-                    BaseRoute,
                     NullRoute,
                     S_STRICT,
                     S_REDIRECT,
@@ -40,7 +39,7 @@ _REQ_ID_ITER = itertools.count()
 
 
 def cast_to_route_factory(in_arg):
-    if isinstance(in_arg, (BaseRoute, SubApplication)):
+    if isinstance(in_arg, (Route, SubApplication)):
         return in_arg
     elif isinstance(in_arg, Sequence):
         try:
