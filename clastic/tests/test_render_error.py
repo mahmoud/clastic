@@ -16,10 +16,8 @@ def odd_endpoint(number):
 def test_app_error_render():
 
     rt = Route('/<number:int>', odd_endpoint, render_basic)
-    assert rt._render_error is None
 
     app = Application([rt])
-    # assert rt._render_error is render_error_basic
 
     cl = app.get_local_client()
     assert cl.get('/1').status_code == 200

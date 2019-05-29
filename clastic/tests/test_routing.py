@@ -20,7 +20,8 @@ NO_OP = lambda: Response()
 
 def test_new_base_route():
     # note default slashing behavior
-    rp = Route('/a/b/<t:int>/thing/<das+int>', NO_OP)
+    ub_rp = Route('/a/b/<t:int>/thing/<das+int>', NO_OP)
+    rp = ub_rp.bind(Application())
     d = rp.match_path('/a/b/1/thing/1/2/3/4')
     assert d == {u't': 1, u'das': [1, 2, 3, 4]}
 
@@ -30,13 +31,14 @@ def test_new_base_route():
     d = rp.match_path('/a/b/1/thing/')
     assert d == None
 
-    rp = Route('/a/b/<t:int>/thing/<das*int>', NO_OP, methods=['GET'])
+    ub_rp = Route('/a/b/<t:int>/thing/<das*int>', NO_OP, methods=['GET'])
+    rp = ub_rp.bind(Application())
     d = rp.match_path('/a/b/1/thing')
     assert d == {u't': 1, u'das': []}
 
 
 def test_base_route_executes():
-    br = Route('/', lambda request: request['stephen'])
+    br = Route('/', lambda request: request['stephen']).bind(Application())
     res = br.execute({'stephen': 'laporte'})
     assert res == 'laporte'
 
@@ -95,7 +97,7 @@ def test_create_route_order_incr():
     client = app.get_local_client()
     for r in routes:
         app.add(r)
-        assert client.get('/api/a/b').data == b'api: a/b'
+        assert client.get('/api/a').data == b'api: a/b'
         assert app.routes[-1].get_info()['url_pattern'] == r[0]
     return
 

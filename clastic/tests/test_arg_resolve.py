@@ -92,8 +92,8 @@ def test_resolution_basic():
         return {}
 
     route = Route('/<url_arg>/', endpoint_func, middlewares=mws)
-
-    assert route.is_required_arg('a') is True
+    bound_route = route.bind(Application())
+    assert bound_route.is_required_arg('a') is True
 
 
 ### BASIC END
@@ -105,7 +105,7 @@ def test_resolution_null():
         pass
 
     route = Route('/', endpoint_func)
-
-    assert len(route.get_required_args()) == 0
+    bound_route = route.bind(Application())
+    assert len(bound_route.get_required_args()) == 0
 
 ### NULL END

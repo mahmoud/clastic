@@ -99,8 +99,7 @@ class Application(object):
 
         routes = routes or []
         self.routes = []
-        self._null_route = NullRoute()
-        self._null_route.bind(self)
+        self._null_route = NullRoute().bind(self)
         for entry in routes:
             self.add(entry)
 
@@ -134,17 +133,22 @@ class Application(object):
         for rt in self.routes:
             yield rt
 
-    def add(self, entry, index=None, rebind_render=True, inherit_slashes=True):
+    def add(self, entry, index=None, **kwargs):
         if index is None:
             index = len(self.routes)
         rf = cast_to_route_factory(entry)
-        rebind_render = getattr(rf, 'rebind_render', rebind_render)
-        kwargs = {'rebind_render': rebind_render,
-                  'inherit_slashes': inherit_slashes}
-        for route in rf.iter_routes():
-            route.bind(self, **kwargs)
-            self.routes.insert(index, route)
+
+        kwargs.setdefault('rebind_render', getattr(rf, 'rebind_render', True))
+        kwargs.setdefault('inherit_slashes', getattr(rf, 'rebind_render', True))
+
+        if callable(getattr(rf, 'bind_all', None)):
+            bound_routes = rf.bind_all(self, **kwargs)
+        else:
+            bound_routes = [rf.bind(self, **kwargs)]
+        for br in bound_routes:
+            self.routes.insert(index, br)
             index += 1
+        return
 
     def _dispatch_wsgi(self, environ, start_response):
         request = self.request_type(environ)
@@ -302,17 +306,28 @@ class SubApplication(object):
         self.rebind_render = rebind_render
         self.inherit_slashes = inherit_slashes
 
+    def bind_all(self, app, **kwargs):
+        # app is the new app to bind to, self.app is the subapp we're
+        # going to pull routes from. could
+        ret = []
+
+        kwargs['prefix'] = self.prefix
+        kwargs.setdefault('rebind_render', self.rebind_render)
+        kwargs.setdefault('inherit_slashes', self.inherit_slashes)
+
+        for rt in self.app.routes:
+            if isinstance(rt, NullRoute):
+                continue
+            bound_rt = rt.bind(app, **kwargs)
+            ret.append(bound_rt)
+
+        return ret
+
     def iter_routes(self):
-        for routes in self.app.iter_routes():
-            for rt in routes.iter_routes():
-                if isinstance(rt, NullRoute):
-                    continue
-                yld = rt.empty()
-                yld.pattern = self.prefix + rt.pattern
-                if self.inherit_slashes:
-                    yld.slash_mode = self.app.slash_mode
-                yld._compile()
-                yield yld
+        for rt in self.app.iter_routes():
+            if isinstance(rt, NullRoute):
+                continue
+            yield rt
         return
 
 

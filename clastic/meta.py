@@ -275,10 +275,10 @@ def get_route_arg_info(route):
             source = 'builtin'
         elif arg in route.path_args:
             source = 'url'
-        elif arg in route._resources:
+        elif arg in route.resources:
             source = 'resources'
         else:
-            for mw in route._middlewares:
+            for mw in route.middlewares:
                 if arg in mw.provides:
                     source = 'middleware'
                     break
