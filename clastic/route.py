@@ -437,16 +437,6 @@ class Route(object):
     def iter_routes(self):
         yield self
 
-    def empty(self):  # TODO
-        ret = type(self)(pattern=self.pattern,
-                         endpoint=self.endpoint,
-                         render=self.render,
-                         render_error=self.render_error,
-                         resources=self.resources,
-                         slash_mode=self.slash_mode,
-                         methods=self.methods)
-        return ret
-
     def bind(self, app, **kwargs):
         return BoundRoute(self, app, **kwargs)
 
@@ -455,7 +445,7 @@ class Route(object):
         ep = self.endpoint
         try:
             ep_name = '%s.%s' % (ep.__module__, ep.func_name)
-        except:
+        except Exception:
             ep_name = repr(ep)
         args = (cn, self.pattern, ep_name)
         tmpl = '<%s pattern=%r endpoint=%s>'
