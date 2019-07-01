@@ -139,7 +139,7 @@ class Application(object):
         rf = cast_to_route_factory(entry)
 
         kwargs.setdefault('rebind_render', getattr(rf, 'rebind_render', True))
-        kwargs.setdefault('inherit_slashes', getattr(rf, 'rebind_render', True))
+        kwargs.setdefault('inherit_slashes', getattr(rf, 'inherit_slashes', True))
 
         if callable(getattr(rf, 'bind_all', None)):
             bound_routes = rf.bind_all(self, **kwargs)
