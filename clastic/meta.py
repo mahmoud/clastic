@@ -195,7 +195,7 @@ def get_pyvm_info():
     ret['have_ucs4'] = getattr(sys, 'maxunicode', 0) > 65536
     ret['have_readline'] = HAVE_READLINE
 
-    ret['active_thread_count'] = glom(sys, T._current_frames().__len__(), skip_exc=Exception)
+    ret['active_thread_count'] = glom(sys, (T._current_frames(), len), skip_exc=Exception)
     ret['recursion_limit'] = sys.getrecursionlimit()
 
     ret['gc'] = glom(None, Call(get_gc_info), skip_exc=Exception)  # effectively try/except:pass
@@ -210,7 +210,7 @@ def get_gc_info():
     ret['thresholds'] = gc.get_threshold()
 
     ret['counts'] = glom(gc, T.get_count(), skip_exc=Exception)
-    ret['obj_count'] = glom(gc, T.get_objects().__len__(), skip_exc=Exception)
+    ret['obj_count'] = glom(gc, (T.get_objects(), len), skip_exc=Exception)
 
     return ret
 
@@ -242,7 +242,7 @@ def get_endpoint_info(route):
     try:
         ret['name'] = route.endpoint.func_name
         ret['module_name'] = route.endpoint.__module__
-    except:
+    except AttributeError:
         ret['name'] = repr(route.endpoint)
     return ret
 
@@ -250,8 +250,8 @@ def get_endpoint_info(route):
 def get_render_info(route):
     ret = {'type': None}
     render_arg = route.render_arg
-    if route._render_factory and not callable(render_arg):
-        ret['type'] = route._render_factory.__class__.__name__
+    if route.render_factory and not callable(render_arg):
+        ret['type'] = route.render_factory.__class__.__name__
         ret['arg'] = render_arg
     elif render_arg is None:
         ret['arg'] = None

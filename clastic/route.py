@@ -2,6 +2,8 @@
 
 import re
 
+from boltons.iterutils import first
+
 from .sinter import inject, get_arg_names, get_fb
 from .middleware import (check_middlewares,
                          merge_middlewares,
@@ -196,6 +198,8 @@ def check_render_error(render_error, resources):
 
 class BoundRoute(object):
     def __init__(self, route, app, **kwargs):
+        # TODO: maybe two constructors, one for initial binding, one for rebinding?
+
         # keep a reference to the unbound version
         self.unbound_route = unbound_route = getattr(route, 'unbound_route', route)
         self.bound_apps = getattr(route, 'bound_apps', []) + [app]
@@ -222,27 +226,34 @@ class BoundRoute(object):
         app_mws = getattr(app, 'middlewares', [])
         self.middlewares = tuple(merge_middlewares(getattr(route, 'middlewares', []), app_mws))
 
-        # rebind_render is basically a way of making the generated
-        # render function sticky to the first application which can
-        # fulfill it. but it might mean rebinding bound routes or
-        # something.
-        self._render_factory = app.render_factory if rebind_render else getattr(route, '_render_factory', None)
+        # rebind_render=True is basically a way of making the
+        # generated render function sticky to the most-recently bound
+        # application which can fulfill it.
+        bind_render = rebind_render or route.render is _noop_render or not callable(route.render)
 
-        if callable(unbound_route.render):  # TODO rebind?
+        render_factory_list = [getattr(ba, 'render_factory', None) for ba in self.bound_apps]
+        render_factory = first(reversed(render_factory_list), key=callable)
+
+        if callable(unbound_route.render):
+            # explicit callable renders always take precedence
             render = unbound_route.render
-        elif callable(app.render_factory) and unbound_route.render is not None:
-            render = app.render_factory(route.render)
+            render_factory = None
+        elif bind_render and render_factory and unbound_route.render is not None:
+            render = render_factory(unbound_route.render)
         else:
-            render = _noop_render
-        self._render = render
+            # default to carrying through values from the route
+            render = route.render if callable(route.render) else _noop_render
+            render_factory = getattr(route, 'render_factory', None)
+        self.render_factory = render_factory
+        self.render = render
 
         if rebind_render_error:
             render_error = getattr(app.error_handler, 'render_error', None)
         else:
-            render_error = unbound_route.render_error
+            render_error = route.render_error
         if callable(render_error):
             check_render_error(render_error, self.resources)
-        self._render_error = render_error
+        self.render_error = render_error
 
         src_provides_map = {'url': set(self.converters),
                             'builtins': set(RESERVED_ARGS),
@@ -258,7 +269,7 @@ class BoundRoute(object):
         return BoundRoute(self, app, **kwargs)
 
     def iter_routes(self):
-        yield self  # .route  # yield the unbound route?
+        yield self
 
     @property
     def endpoint(self):
@@ -267,6 +278,10 @@ class BoundRoute(object):
     @property
     def is_branch(self):
         return self.unbound_route.is_branch
+
+    @property
+    def render_arg(self):
+        return self.unbound_route.render
 
     def match_path(self, path):
         ret = {}
@@ -356,7 +371,7 @@ class BoundRoute(object):
         return inject(self._execute, injectables)  # TODO
 
     def render_error(self, request, _error, **kwargs):
-        if not callable(self._render_error):
+        if not callable(self.render_error):
             raise TypeError('render_error not set or not callable')
         injectables = {'_route': self,
                        '_error': _error,
@@ -364,7 +379,7 @@ class BoundRoute(object):
                        '_application': self.bound_apps[-1]}
         injectables.update(self.resources)  # TODO
         injectables.update(kwargs)
-        return inject(self._render_error, injectables)
+        return inject(self.render_error, injectables)
 
     def get_info(self):
         ret = {}

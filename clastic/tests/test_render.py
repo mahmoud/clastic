@@ -29,7 +29,7 @@ def test_json_render(render_json=None):
                        ('/beta/<name>/', complex_context, render_json)])
 
     assert callable(app.routes[0]._execute)
-    assert callable(app.routes[0]._render)
+    assert callable(app.routes[0].render)
     c = app.get_local_client()
 
     resp = c.get('/')
@@ -78,7 +78,7 @@ def test_default_render():
                        ('/beta/<name>/', complex_context, render_basic)])
 
     assert callable(app.routes[0]._execute)
-    assert callable(app.routes[0]._render)
+    assert callable(app.routes[0].render)
     c = app.get_local_client()
 
     resp = c.get('/')  # test simple json with endpoint default

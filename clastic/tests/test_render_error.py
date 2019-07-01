@@ -84,8 +84,6 @@ def test_error_render_count():
     assert len(error_list) == 1
 
     err_resp = cl.get('/6/badgateway')
-    #if err_resp.status_code != 502:
-    #    import pdb;pdb.set_trace()
     assert err_resp.status_code == 502
     assert len(error_list) == 2
 
