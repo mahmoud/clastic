@@ -206,7 +206,6 @@ class Application(object):
                         dispatch_state.add_exception(nf_exc)
                         continue
             try:
-                print(params)
                 ret = route.execute(**params)
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
