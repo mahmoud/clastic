@@ -19,7 +19,7 @@ def test_create_hw_application():
     app = Application([route])
     assert app.routes
     assert callable(app.routes[0]._execute)
-    assert app.routes[0]._bound_apps[0] is app
+    assert app.routes[0].bound_apps[-1] is app
 
 
 def test_single_mw_basic():
@@ -27,8 +27,9 @@ def test_single_mw_basic():
     app = Application([('/', hello_world)],
                       resources={},
                       middlewares=[dumdum])
+    assert repr(app)
     assert dumdum in app.middlewares
-    assert dumdum in app.routes[0]._middlewares
+    assert dumdum in app.routes[0].middlewares
 
     resp = app.get_local_client().get('/')
     assert resp.status_code == 200
@@ -40,7 +41,7 @@ def test_duplicate_noarg_mw():
         app = Application([('/', hello_world)],
                           middlewares=mw)
         assert app
-        assert len(app.routes[0]._middlewares) == mw_count
+        assert len(app.routes[0].middlewares) == mw_count
 
         resp = app.get_local_client().get('/')
         assert resp.status_code == 200
@@ -90,7 +91,7 @@ def test_subapplication_basic():
     assert check_patts(merged_name_app_patts, name_app_patts)
 
     assert len(set([r.pattern for r in app.routes])) == 3
-    assert len(app.routes[0]._middlewares) == 1  # middleware merging
+    assert len(app.routes[0].middlewares) == 1  # middleware merging
 
     resp = no_name_app.get_local_client().get('/')
     assert resp.data == b'Hello, world!'

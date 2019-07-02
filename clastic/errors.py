@@ -498,7 +498,7 @@ class ErrorHandler(object):
         """
         self.reraise_uncaught = kwargs.get('reraise_uncaught')
 
-    def render_error(self, request, _error, **kwargs):
+    def render_error(self, request, _error):
         best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
         _error.adapt(best_match)
         return _error

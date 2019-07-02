@@ -2,6 +2,8 @@
 
 import re
 
+from boltons.iterutils import first
+
 from .sinter import inject, get_arg_names, get_fb
 from .middleware import (check_middlewares,
                          merge_middlewares,
@@ -102,16 +104,6 @@ def build_converter(converter, optional=False, multi=False):
     return single_converter
 
 
-def collapse_token(text, token=None, sub=None):
-    "Collapses whitespace to spaces by default"
-    if token is None:
-        sub = sub or ' '
-        return ' '.join(text.split())
-    else:
-        sub = sub or token
-        return sub.join([s for s in text.split(token) if s])
-
-
 def _compile_path_pattern(pattern, mode=S_REWRITE):
     processed = []
     var_converter_map = {}
@@ -178,34 +170,108 @@ def normalize_path(path, is_branch):
     return '/'.join(ret)
 
 
-class BaseRoute(object):
-    def __init__(self, pattern, endpoint=None, methods=None, **kwargs):
-        self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
+def _noop_render(context):
+    return context
+
+
+def check_render_error(render_error, resources):
+    re_avail_args = set(_REQUEST_BUILTINS) | set(resources)
+    re_avail_args.add('_error')
+
+    re_args = set(get_arg_names(render_error))
+    missing_args = sorted(re_args - re_avail_args)
+    if missing_args:
+        raise NameError('unresolved render_error() arguments: %r'
+                        % missing_args)
+    return True
+
+
+class BoundRoute(object):
+    def __init__(self, route, app, **kwargs):
+        # TODO: maybe two constructors, one for initial binding, one for rebinding?
+
+        # keep a reference to the unbound version
+        self.unbound_route = unbound_route = getattr(route, 'unbound_route', route)
+        self.bound_apps = getattr(route, 'bound_apps', []) + [app]
+
+        prefix = kwargs.pop('prefix', '')
+        rebind_render = kwargs.pop('rebind_render', True)
+        inherit_slashes = kwargs.pop('inherit_slashes', True)
+        rebind_render_error = kwargs.pop('rebind_render_error', True)
         if kwargs:
             raise TypeError('unexpected keyword args: %r' % kwargs.keys())
-        self.pattern = pattern
-        self.endpoint = endpoint
-        self._execute = endpoint
-        self.methods = methods and set([m.upper() for m in methods])
-        self._compile()
 
-    def _compile(self):
-        # maybe: if not getattr(self, 'regex', None) or \
-        #          self.regex.pattern != self.pattern:
+        self.pattern = prefix + route.pattern
+        self.slash_mode = app.slash_mode if inherit_slashes else route.slash_mode
+        self.methods = route.methods
+
         self.regex, self.converters = _compile_path_pattern(self.pattern,
                                                             self.slash_mode)
         self.path_args = self.converters.keys()
-        if self.methods:
-            unknown_methods = list(self.methods - HTTP_METHODS)
-            if unknown_methods:
-                raise InvalidMethod('unrecognized HTTP method(s): %r'
-                                    % unknown_methods)
-            if 'GET' in self.methods:
-                self.methods.add('HEAD')
+        self.endpoint_args = get_arg_names(unbound_route.endpoint)
+
+        app_resources = getattr(app, 'resources', {})
+        self.resources = dict(app_resources)
+        self.resources.update(getattr(route, 'resources', {}))
+        app_mws = getattr(app, 'middlewares', [])
+        self.middlewares = tuple(merge_middlewares(getattr(route, 'middlewares', []), app_mws))
+
+        # rebind_render=True is basically a way of making the
+        # generated render function sticky to the most-recently bound
+        # application which can fulfill it.
+        bind_render = rebind_render or route.render is _noop_render or not callable(route.render)
+
+        render_factory_list = [getattr(ba, 'render_factory', None) for ba in self.bound_apps]
+        render_factory = first(reversed(render_factory_list), key=callable)
+
+        if callable(unbound_route.render):
+            # explicit callable renders always take precedence
+            render = unbound_route.render
+            render_factory = None
+        elif bind_render and render_factory and unbound_route.render is not None:
+            render = render_factory(unbound_route.render)
+        else:
+            # default to carrying through values from the route
+            render = route.render if callable(route.render) else _noop_render
+            render_factory = getattr(route, 'render_factory', None)
+        self.render_factory = render_factory
+        self.render = render
+
+        if rebind_render_error:
+            render_error = getattr(app.error_handler, 'render_error', None)
+        else:
+            render_error = route.render_error
+        if callable(render_error):
+            check_render_error(render_error, self.resources)
+        self.render_error = render_error
+
+        src_provides_map = {'url': set(self.converters),
+                            'builtins': set(RESERVED_ARGS),
+                            'resources': set(self.resources)}
+        check_middlewares(self.middlewares, src_provides_map)
+        provided = set.union(*src_provides_map.values())
+
+        self._execute = make_middleware_chain(self.middlewares, unbound_route.endpoint, render, provided)
+
+        self._required_args = self._resolve_required_args()
+
+    def bind(self, app, **kwargs):
+        return BoundRoute(self, app, **kwargs)
+
+    def iter_routes(self):
+        yield self
+
+    @property
+    def endpoint(self):
+        return self.unbound_route.endpoint
 
     @property
     def is_branch(self):
-        return self.pattern.endswith('/')
+        return self.unbound_route.is_branch
+
+    @property
+    def render_arg(self):
+        return self.unbound_route.render
 
     def match_path(self, path):
         ret = {}
@@ -225,172 +291,6 @@ class BaseRoute(object):
             if method.upper() not in self.methods:
                 return False
         return True
-
-    def execute(self, request, **kwargs):
-        if not self._execute:
-            raise InvalidEndpoint('no endpoint function set on %r' % self)
-        kwargs['_route'] = self
-        kwargs['request'] = request
-        return inject(self._execute, kwargs)
-
-    def iter_routes(self):
-        yield self
-
-    def bind(self, application, *a, **kw):
-        "BaseRoutes do not bind, but normal Routes do."
-        return
-
-    def __repr__(self):
-        cn = self.__class__.__name__
-        ep = self.endpoint
-        try:
-            ep_name = '%s.%s' % (ep.__module__, ep.func_name)
-        except:
-            ep_name = repr(ep)
-        args = (cn, self.pattern, ep_name)
-        tmpl = '<%s pattern=%r endpoint=%s>'
-        if self.methods:
-            tmpl = '<%s pattern=%r endpoint=%s methods=%r>'
-            args += (self.methods,)
-        return tmpl % args
-
-
-def _noop_render(context):
-    return context
-
-
-def check_render_error(render_error, resources):
-    re_avail_args = set(_REQUEST_BUILTINS) | set(resources)
-    re_avail_args.add('_error')
-
-    re_args = set(get_arg_names(render_error))
-    missing_args = sorted(re_args - re_avail_args)
-    if missing_args:
-        raise NameError('unresolved render_error() arguments: %r'
-                        % missing_args)
-    return True
-
-
-class Route(BaseRoute):
-    def __init__(self, pattern, endpoint, render=None,
-                 render_error=None, **kwargs):
-        self._middlewares = list(kwargs.pop('middlewares', []))
-        self._resources = dict(kwargs.pop('resources', []))
-        super(Route, self).__init__(pattern, endpoint, **kwargs)
-
-        self._bound_apps = []
-        self.endpoint_args = get_arg_names(endpoint)
-
-        self._execute = None
-        self._render = None
-        self._render_factory = None
-        self.render_arg = render
-        if callable(self.render_arg):
-            self._render = self.render_arg
-        self._render_error = render_error
-        self._required_args = self._resolve_required_args()
-
-    def execute(self, request, **kwargs):
-        injectables = {'_route': self,
-                       'request': request,
-                       '_application': self._bound_apps[-1]}
-        injectables.update(self._resources)
-        injectables.update(kwargs)
-        return inject(self._execute, injectables)
-
-    def render_error(self, request, _error, **kwargs):
-        if not callable(self._render_error):
-            raise TypeError('render_error not set or not callable')
-        injectables = {'_route': self,
-                       '_error': _error,
-                       'request': request,
-                       '_application': self._bound_apps[-1]}
-        injectables.update(self._resources)
-        injectables.update(kwargs)
-        return inject(self._render_error, injectables)
-
-    def empty(self):
-        # more like a copy
-        self_type = type(self)
-        ret = self_type(self.pattern, self.endpoint, self.render_arg)
-        ret.__dict__.update(self.__dict__)
-        ret._middlewares = list(self._middlewares)
-        ret._resources = dict(self._resources)
-        ret._bound_apps = list(self._bound_apps)
-        return ret
-
-    def bind(self, app, **kwargs):
-        rebind_render = kwargs.pop('rebind_render', True)
-        inherit_slashes = kwargs.pop('inherit_slashes', True)
-        rebind_render_error = kwargs.pop('rebind_render_error', True)
-        if kwargs:
-            raise TypeError('unexpected keyword args: %r' % kwargs.keys())
-
-        resources = getattr(app, 'resources', {})
-        middlewares = getattr(app, 'middlewares', [])
-        if rebind_render:
-            render_factory = getattr(app, 'render_factory', None)
-        else:
-            render_factory = self._render_factory
-        if rebind_render_error:
-            render_error = getattr(app.error_handler, 'render_error', None)
-        else:
-            render_error = self._render_error
-
-        merged_mw = merge_middlewares(self._middlewares, middlewares)
-
-        params = {'app': app,
-                  'resources': dict(self._resources, **resources),
-                  'middlewares': merged_mw,
-                  'render_factory': render_factory,
-                  'render_error': render_error}
-
-        # test a copy of the route before making any changes, for extra safety
-        r_copy = self.empty()
-        if inherit_slashes:
-            r_copy.slash_mode = app.slash_mode
-        r_copy._bind_args(**params)
-        r_copy._compile()
-        # if none of the above raised an exception, we're golden
-
-        if inherit_slashes:
-            self.slash_mode = app.slash_mode
-        self._bind_args(**params)
-        self._compile()
-        self._bound_apps += (app,)
-        return self
-
-    def _bind_args(self, app, resources, middlewares,
-                   render_factory, render_error):
-        url_args = set(self.converters.keys())
-        builtin_args = set(RESERVED_ARGS)
-        resource_args = set(resources.keys())
-
-        tmp_avail_args = {'url': url_args,
-                          'builtins': builtin_args,
-                          'resources': resource_args}
-        check_middlewares(middlewares, tmp_avail_args)
-        provided = resource_args | builtin_args | url_args
-        if callable(render_factory) and self.render_arg is not None \
-                and not callable(self.render_arg):
-            _render = render_factory(self.render_arg)
-        elif callable(self._render):
-            _render = self._render
-        else:
-            _render = _noop_render
-        _execute = make_middleware_chain(middlewares, self.endpoint, _render, provided)
-
-        if callable(render_error):
-            check_render_error(render_error, resources)
-
-        self._resources.update(resources)
-        self._middlewares = middlewares
-        self._render_factory = render_factory
-        self._render = _render
-        self._render_error = render_error
-        self._execute = _execute
-
-        self._required_args = self._resolve_required_args()
 
     def _resolve_required_args(self, with_builtins=False):
         """Creates a list of fully resolved endpoint requirements, working
@@ -429,14 +329,14 @@ class Route(BaseRoute):
         url_args = self.converters.keys()
         add(url_args)
         add(RESERVED_ARGS)
-        add(self._resources.keys())
+        add(self.resources.keys())
 
-        for mw in self._middlewares:
+        for mw in self.middlewares:
             add_func(mw.provides, mw.request)
             add_func(mw.endpoint_provides, mw.endpoint)
             add_func(mw.render_provides, mw.render)
 
-        add_func(['__endpoint_response__'], self.endpoint)
+        add_func(['__endpoint_response__'], self.unbound_route.endpoint)
 
         resolved = resolve_deps(args)
 
@@ -452,32 +352,85 @@ class Route(BaseRoute):
     def is_required_arg(self, arg_name):
         return arg_name in self._required_args
 
-    def get_info(self):
-        ret = {}
-        route = self
-        ep_fb = get_fb(route.endpoint)
-        ep_defaults = ep_fb.get_defaults_dict()
-        ret['url_pattern'] = route.pattern
-        ret['endpoint'] = route.endpoint
-        ret['endpoint_args'] = ep_fb.args
-        ret['endpoint_defaults'] = ep_defaults
-        ret['render_arg'] = route.render_arg
-        srcs = {}
-        for arg in route.endpoint_args:
-            if arg in RESERVED_ARGS:
-                srcs[arg] = 'builtin'
-            elif arg in route.path_args:
-                srcs[arg] = 'url'
-            elif arg in ep_defaults:
-                srcs[arg] = 'default'
-            for mw in route._middlewares:
-                if arg in mw.provides:
-                    srcs[arg] = mw
-            if arg in route._resources:
-                srcs[arg] = 'resources'
-            # TODO: trace to application if middleware/resource
-        ret['sources'] = srcs
-        return ret
+    def execute(self, request, **kwargs):
+        injectables = {'_route': self,
+                       'request': request,
+                       '_application': self.bound_apps[-1]}
+        injectables.update(self.resources)
+        injectables.update(kwargs)
+        return inject(self._execute, injectables)
+
+    def execute_error(self, request, _error, **kwargs):
+        if not callable(self.render_error):
+            raise TypeError('render_error not set or not callable')
+        injectables = {'_route': self,
+                       '_error': _error,
+                       'request': request,
+                       '_application': self.bound_apps[-1]}
+        injectables.update(self.resources)
+        injectables.update(kwargs)
+        return inject(self.render_error, injectables)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '<%s route=%r bound_app=%r>' % (cn, self.unbound_route, self.bound_apps[-1])
+
+
+class Route(object):
+    def __init__(self, pattern, endpoint, render=None,
+                 render_error=None, **kwargs):
+        self.middlewares = list(kwargs.pop('middlewares', []))
+        self.resources = dict(kwargs.pop('resources', []))
+
+        self.slash_mode = kwargs.pop('slash_mode', S_REDIRECT)
+        methods = kwargs.pop('methods', None)
+
+        if kwargs:
+            raise TypeError('unexpected keyword args: %r' % kwargs.keys())
+
+        self.methods = methods and set([m.upper() for m in methods])
+        if self.methods:
+            unknown_methods = list(self.methods - HTTP_METHODS)
+            if unknown_methods:
+                raise InvalidMethod('unrecognized HTTP method(s): %r'
+                                    % unknown_methods)
+            if 'GET' in self.methods:
+                self.methods.add('HEAD')
+
+        _compile_path_pattern(pattern, self.slash_mode)  # checking pattern
+        self.pattern = pattern
+
+        if not callable(endpoint):
+            raise TypeError('expected endpoint to be a function or method, not: %r' % endpoint)
+        self.endpoint = endpoint
+        self.render_error = render_error
+        if callable(render_error):
+            check_render_error(render_error, self.resources)
+        self.render = render
+
+    @property
+    def is_branch(self):
+        return self.pattern.endswith('/')
+
+    def iter_routes(self):
+        yield self
+
+    def bind(self, app, **kwargs):
+        return BoundRoute(self, app, **kwargs)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        ep = self.endpoint
+        try:
+            ep_name = '%s.%s' % (ep.__module__, ep.func_name)
+        except Exception:
+            ep_name = repr(ep)
+        args = (cn, self.pattern, ep_name)
+        tmpl = '<%s pattern=%r endpoint=%s>'
+        if self.methods:
+            tmpl = '<%s pattern=%r endpoint=%s methods=%r>'
+            args += (self.methods,)
+        return tmpl % args
 
 
 class NullRoute(Route):
@@ -502,27 +455,7 @@ class NullRoute(Route):
 
     def bind(self, *a, **kw):
         kw['inherit_slashes'] = False
-        super(NullRoute, self).bind(*a, **kw)
-
-
-def toposort(dep_map):
-    "expects a dict of {item: set([deps])}"
-    ret, dep_map = [], dict(dep_map)
-    if not dep_map:
-        return []
-    extras = set.union(*dep_map.values()) - set(dep_map)
-    dep_map.update([(k, set()) for k in extras])
-    remaining = dict(dep_map)
-    while remaining:
-        cur = set([item for item, deps in remaining.items() if not deps])
-        if not cur:
-            break
-        ret.append(cur)
-        remaining = dict([(item, deps - cur) for item, deps
-                          in remaining.items() if item not in cur])
-    if remaining:
-        raise ValueError('unresolvable dependencies: %r' % remaining)
-    return ret
+        return super(NullRoute, self).bind(*a, **kw)
 
 
 def resolve_deps(dep_map):

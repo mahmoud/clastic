@@ -5,7 +5,7 @@ source =
     ../clastic
 omit =
      */_werkzeug_serving.py*
-     */flycheck__*
+     */flycheck_*
 
 [paths]
 source =

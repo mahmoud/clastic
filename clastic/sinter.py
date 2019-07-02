@@ -45,7 +45,7 @@ def get_arg_names(f, only_required=False):
 
 
 def inject(f, injectables):
-    __traceback_hide__ = True  # TODO
+    __traceback_hide__ = True
 
     fb = get_fb(f)
 
