@@ -99,7 +99,6 @@ def test_create_route_order_incr():
         app.add(r)
         assert client.get('/api/a').data == b'api: a'
         assert client.get('/api/a/b/').data == b'api: a/b'
-        assert app.routes[-1].get_info()['url_pattern'] == r[0]
     return
 
 

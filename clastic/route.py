@@ -104,16 +104,6 @@ def build_converter(converter, optional=False, multi=False):
     return single_converter
 
 
-def collapse_token(text, token=None, sub=None):
-    "Collapses whitespace to spaces by default"
-    if token is None:
-        sub = sub or ' '
-        return ' '.join(text.split())
-    else:
-        sub = sub or token
-        return sub.join([s for s in text.split(token) if s])
-
-
 def _compile_path_pattern(pattern, mode=S_REWRITE):
     processed = []
     var_converter_map = {}
@@ -368,45 +358,18 @@ class BoundRoute(object):
                        '_application': self.bound_apps[-1]}
         injectables.update(self.resources)
         injectables.update(kwargs)
-        return inject(self._execute, injectables)  # TODO
+        return inject(self._execute, injectables)
 
-    def render_error(self, request, _error, **kwargs):
+    def execute_error(self, request, _error, **kwargs):
         if not callable(self.render_error):
             raise TypeError('render_error not set or not callable')
         injectables = {'_route': self,
                        '_error': _error,
                        'request': request,
                        '_application': self.bound_apps[-1]}
-        injectables.update(self.resources)  # TODO
+        injectables.update(self.resources)
         injectables.update(kwargs)
         return inject(self.render_error, injectables)
-
-    def get_info(self):
-        ret = {}
-        route = self
-        ep_fb = get_fb(route.endpoint)
-        ep_defaults = ep_fb.get_defaults_dict()
-        ret['url_pattern'] = route.pattern
-        ret['endpoint'] = route.endpoint
-        ret['endpoint_args'] = ep_fb.args
-        ret['endpoint_defaults'] = ep_defaults
-        ret['render_arg'] = route.unbound_route.render
-        srcs = {}
-        for arg in route.endpoint_args:
-            if arg in RESERVED_ARGS:
-                srcs[arg] = 'builtin'
-            elif arg in route.path_args:
-                srcs[arg] = 'url'
-            elif arg in ep_defaults:
-                srcs[arg] = 'default'
-            for mw in route.middlewares:
-                if arg in mw.provides:
-                    srcs[arg] = mw
-            if arg in route.resources:
-                srcs[arg] = 'resources'
-            # TODO: trace to application if middleware/resource
-        ret['sources'] = srcs
-        return ret
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -493,26 +456,6 @@ class NullRoute(Route):
     def bind(self, *a, **kw):
         kw['inherit_slashes'] = False
         return super(NullRoute, self).bind(*a, **kw)
-
-
-def toposort(dep_map):
-    "expects a dict of {item: set([deps])}"
-    ret, dep_map = [], dict(dep_map)
-    if not dep_map:
-        return []
-    extras = set.union(*dep_map.values()) - set(dep_map)
-    dep_map.update([(k, set()) for k in extras])
-    remaining = dict(dep_map)
-    while remaining:
-        cur = set([item for item, deps in remaining.items() if not deps])
-        if not cur:
-            break
-        ret.append(cur)
-        remaining = dict([(item, deps - cur) for item, deps
-                          in remaining.items() if item not in cur])
-    if remaining:
-        raise ValueError('unresolvable dependencies: %r' % remaining)
-    return ret
 
 
 def resolve_deps(dep_map):

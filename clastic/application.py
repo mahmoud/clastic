@@ -25,7 +25,7 @@ from .errors import (HTTPException,
                      MIME_SUPPORT_MAP,
                      ErrorHandler,
                      ContextualErrorHandler)
-from .sinter import get_arg_names
+from .sinter import get_arg_names, inject
 
 
 try:
@@ -206,6 +206,7 @@ class Application(object):
                         dispatch_state.add_exception(nf_exc)
                         continue
             try:
+                print(params)
                 ret = route.execute(**params)
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
@@ -228,7 +229,7 @@ class Application(object):
         if isinstance(ret, HTTPException):
             error_params = dict(params, _error=ret)
             try:
-                ret = ret.source_route.render_error(**error_params)
+                ret = ret.source_route.execute_error(**error_params)
             except Exception:
                 ret = default_render_error(**error_params)
         return ret

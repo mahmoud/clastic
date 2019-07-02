@@ -47,6 +47,7 @@ def test_ashes():
     assert wrap_app2.routes[0].render_factory is ashes_render2
     assert wrap_app2.routes[1].render_factory is ashes_render
 
+
 def test_ashes_missing_template():
     ashes_render = AshesRenderFactory(_TMPL_DIR)
     tmpl = 'missing_template.html'
