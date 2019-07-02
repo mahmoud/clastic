@@ -133,6 +133,13 @@ class Application(object):
         for rt in self.routes:
             yield rt
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        ret = ('<%s routes_count=%s resources_keys=%r middlewares=%r render_factory=%r slash_mode=%r debug=%r>'
+               % (cn, len(self.routes), list(self.resources.keys()), self.middlewares,
+                  self.render_factory, self.slash_mode, self.debug))
+        return ret
+
     def add(self, entry, index=None, **kwargs):
         if index is None:
             index = len(self.routes)

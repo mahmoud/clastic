@@ -27,6 +27,7 @@ def test_single_mw_basic():
     app = Application([('/', hello_world)],
                       resources={},
                       middlewares=[dumdum])
+    assert repr(app)
     assert dumdum in app.middlewares
     assert dumdum in app.routes[0].middlewares
 
