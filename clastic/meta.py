@@ -199,7 +199,9 @@ def get_pyvm_info():
     ret['recursion_limit'] = sys.getrecursionlimit()
 
     ret['gc'] = glom(None, Call(get_gc_info), skip_exc=Exception)  # effectively try/except:pass
-    ret['check_interval'] = sys.getcheckinterval()
+
+    get_interval = getattr(sys, 'getswitchinterval', sys.getcheckinterval)
+    ret['check_interval'] = get_interval()
     return ret
 
 

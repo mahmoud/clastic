@@ -5,7 +5,7 @@ import json
 import time
 import base64
 
-from werkzeug.contrib.securecookie import SecureCookie, UnquoteError
+from secure_cookie.cookie import SecureCookie, UnquoteError
 
 from .core import Middleware
 

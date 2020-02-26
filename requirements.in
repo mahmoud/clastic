@@ -7,8 +7,9 @@ glom
 Mako
 more-itertools<6.0.0  # >=6.0 breaks py27/pypy
 pip-tools
-psutil
-pytest
+psutil==5.6.0
+pytest<5.0.0
+secure-cookie  # werkzeug goes 1.0 but adds an 0ver dep that's been in prod since 2007
 tox
 Werkzeug
 virtualenv>=16.4.3  # open(mode='rU') warnings
