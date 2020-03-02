@@ -120,6 +120,7 @@ def build_file_response(path,
 class StaticFileRoute(Route):
     def __init__(self, pattern, file_path, check_file=True,
                  cache_timeout=DEFAULT_MAX_AGE, mimetype=None):
+        super(StaticFileRoute, self).__init__(pattern, self.get_file_response)
         self.file_path = file_path
         if check_file:
             # checking the file is readable, etc.
@@ -127,7 +128,6 @@ class StaticFileRoute(Route):
             get_file_mtime(file_path)
         self.cache_timeout = cache_timeout
         self.mimetype = mimetype
-        super(StaticFileRoute, self).__init__(pattern, self.get_file_response)
 
     def get_file_response(self, request):
         bfr = build_file_response
