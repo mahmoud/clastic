@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+
+import json
+import itertools
+
+import attr
 from pytest import raises
 
-from clastic import Application
+from clastic import Application, render_basic
 from clastic.middleware import Middleware, GetParamMiddleware
 from clastic.tests.common import hello_world, hello_world_ctx, RequestProvidesName
+
+
+_CTR = itertools.count()
 
 
 class RenderRaisesMiddleware(Middleware):
@@ -124,3 +132,68 @@ def test_profile_mw():
     assert resp.status_code == 200
     resp_data = resp.get_data(True)
     assert 'function calls in 0.00' in resp_data  # e.g., 46 function calls in 0.000 seconds but that's variable/flaky
+
+
+def test_wsgi_mw():
+    @attr.s(frozen=True)
+    class HeaderAddMW(object):
+        header_name = attr.ib()
+        header_val = attr.ib()
+
+        def __call__(self, wsgi_app):  # TODO: should the wsgi wrapper have any access to the middleware?
+            class HeaderAddWrapped(object):
+                _mw = self
+
+                def __call__(self, environ, start_response):
+                    key = 'HTTP_' + self._mw.header_name
+                    if key in environ:
+                        environ[key] = environ[key] + '_2'
+                    else:
+                        environ[key] = self._mw.header_val
+
+                    environ[key + '_CTR'] = str(next(_CTR))
+
+                    return wsgi_app(environ, start_response)
+
+            return HeaderAddWrapped()
+
+
+    @attr.s(frozen=True)
+    class WmwX(Middleware):
+        wsgi_wrapper = HeaderAddMW('X', 'xxx')
+
+    @attr.s(frozen=True)
+    class WmwY(Middleware):
+        wsgi_wrapper = HeaderAddMW('Y', 'yyy')
+
+
+    def ep(request):
+        return dict(request.headers)
+
+
+    def _test_app(app):
+        cl = app.get_local_client()
+
+        resp = cl.get('/')
+        assert resp.status_code == 200
+        req_headers_dict = json.loads(resp.get_data())
+        assert resp.status_code == 200
+        assert req_headers_dict.get('X') == 'xxx'
+        assert req_headers_dict.get('Y') == 'yyy'
+        assert req_headers_dict.get('X-Ctr') < req_headers_dict.get('Y-Ctr')
+
+    app = Application([('/', ep, render_basic)], middlewares=[WmwX(), WmwY()], debug=True)
+    _test_app(app)
+
+    # nest and test deduplication
+    wmwx = WmwX()
+    inner_app = Application([('/', ep, render_basic)], middlewares=[wmwx])
+    app = Application([('/', inner_app)],
+                      middlewares=[wmwx, WmwY()])
+    _test_app(app)
+
+    # now test with two matching middlewares that are separate instances
+    inner_app = Application([('/', ep, render_basic)], middlewares=[WmwX()])
+    app = Application([('/', inner_app)],
+                      middlewares=[WmwX(), WmwY()])
+    _test_app(app)

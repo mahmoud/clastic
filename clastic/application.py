@@ -73,6 +73,39 @@ def check_valid_wsgi(wsgi_callable):
                         (wsgi_callable, wc_args))
 
 
+def _get_all_middlewares(bound_routes):
+    # TODO: use merge_middlewares
+    all_mw = []
+
+    for broute in reversed(bound_routes):
+        for mw in broute.middlewares:
+            # use list and eq so mws don't have to be hashable
+            if mw not in all_mw:
+                all_mw.append(mw)
+
+    return all_mw
+
+
+def _safe_wrap_wsgi(source_name, source, inner):
+    wsgi_wrapper = getattr(source, 'wsgi_wrapper', None)
+    if wsgi_wrapper is None:
+        return inner  # no wsgi_wrapper, no problem
+    elif not callable(wsgi_wrapper):
+        raise TypeError('expected %s.wsgi_wrapper to be callable'
+                        ' or None, not %r' % (source_name, wsgi_wrapper))
+
+    wrapped_wsgi = wsgi_wrapper(inner)
+    try:
+        check_valid_wsgi(wrapped_wsgi)
+    except TypeError as te:
+        raise TypeError('expected valid WSGI callable from %s'
+                        ' (%r) WSGI wrapper (%r), instead'
+                        ' got issue: %r'
+                        % (source_name, source, wsgi_wrapper, te))
+    return wrapped_wsgi
+
+
+
 class Application(object):
     request_type = Request
     response_type = Response
@@ -103,6 +136,11 @@ class Application(object):
         for entry in routes:
             self.add(entry)
 
+        all_mws = _get_all_middlewares(self.routes)
+        for mw in reversed(all_mws):
+            self._dispatch_wsgi = _safe_wrap_wsgi('middleware', mw, self._dispatch_wsgi)
+        return
+
     def set_error_handler(self, error_handler=None):
         if error_handler is None:
             if self.debug:
@@ -111,22 +149,8 @@ class Application(object):
                 deh_type = self.default_error_handler_type
             error_handler = deh_type()
         check_render_error(error_handler.render_error, self.resources)
-        wsgi_wrapper = getattr(error_handler, 'wsgi_wrapper', None)
-        if wsgi_wrapper is None:
-            pass  # no wsgi_wrapper, no problem
-        elif not callable(wsgi_wrapper):
-            raise TypeError('expected error_handler.wsgi_wrapper to be'
-                            ' callable or None, not %r' % (wsgi_wrapper,))
-        else:
-            wrapped_wsgi = wsgi_wrapper(self._dispatch_wsgi)
-            try:
-                check_valid_wsgi(wrapped_wsgi)
-            except TypeError as te:
-                raise TypeError('expected valid WSGI callable from error'
-                                ' handler (%r) WSGI wrapper (%r), instead'
-                                ' got issue: %r'
-                                % (error_handler, wsgi_wrapper, te))
-            self._dispatch_wsgi = wrapped_wsgi
+        self._dispatch_wsgi = _safe_wrap_wsgi('error_handler', error_handler, self._dispatch_wsgi)
+
         self.error_handler = error_handler
 
     def iter_routes(self):
@@ -264,7 +288,6 @@ class Application(object):
         use_lint = args.use_lint and use_lint
         use_static = args.use_static and use_static
 
-        wrapped_wsgi = self
         if use_meta:
             from .meta import MetaApplication
             self.add(('/_meta/', MetaApplication()))
@@ -276,13 +299,11 @@ class Application(object):
             static_prefix = '/' + unicode(static_prefix).lstrip('/')
             static_app = StaticApplication(static_path)
             self.add((static_prefix, static_app), index=0)
-        if use_lint:
-            #from werkzeug.contrib.lint import LintMiddleware
-            #wrapped_wsgi = LintMiddleware(wrapped_wsgi)
-            pass
+
         if kw.get('_jk_just_testing'):
             return True
-        run_simple(address, port, wrapped_wsgi, **kw)
+
+        run_simple(address, port, self, **kw)
 
 
 class DispatchState(object):
@@ -378,4 +399,16 @@ Potentially conflicting rebindables:
 * render (green-path and red)
 * slash behavior
 * debug flag
+"""
+
+"""
+all_mw = IndexedSet()
+
+for broute in reversed(self._bound_routes):
+    for mw in broute.middlewares:
+        all_mw.add(mw)
+
+all_wsgi_mw = IndexedSet()
+for mw in all_mw:
+    all_wsgi_mw.extend(mw.wsgi_mws)
 """
