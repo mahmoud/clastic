@@ -19,7 +19,7 @@ except ImportError:
 
 from . import server
 
-from .application import Application, SubApplication
+from .application import Application, SubApplication, RerouteWSGI
 from .route import Route, GET, POST, PUT, DELETE, RESERVED_ARGS
 
 from .middleware import Middleware, GetParamMiddleware

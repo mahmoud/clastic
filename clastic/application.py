@@ -6,6 +6,7 @@ import itertools
 from collections import Sequence
 from argparse import ArgumentParser
 
+import attr
 from werkzeug import test as werkzeug_test
 from werkzeug.utils import redirect
 from werkzeug.wrappers import Request, Response, BaseResponse
@@ -25,7 +26,7 @@ from .errors import (HTTPException,
                      MIME_SUPPORT_MAP,
                      ErrorHandler,
                      ContextualErrorHandler)
-from .sinter import get_arg_names, inject
+from .sinter import get_arg_names
 
 
 try:
@@ -68,9 +69,10 @@ def check_valid_wsgi(wsgi_callable):
         or wc_args[0] != 'environ'
         or wc_args[1] != 'start_response'):
         raise TypeError('expected WSGI callable (%r)'
-                        ' to accept at least two arguments, `environ`'
-                        ' and `start_response`, respectively, not %r' %
-                        (wsgi_callable, wc_args))
+                        ' to accept two arguments, `environ` and'
+                        ' `start_response`, respectively, not %r'
+                        % (wsgi_callable, wc_args))
+    return
 
 
 def _get_all_middlewares(bound_routes):
@@ -104,6 +106,15 @@ def _safe_wrap_wsgi(source_name, source, inner):
                         % (source_name, source, wsgi_wrapper, te))
     return wrapped_wsgi
 
+
+# TODO: Possibly sticking an exception and an endpoint function is a
+# bad idea, but it looks good and works from an API perspective
+@attr.s(frozen=True)
+class RerouteWSGI(Exception):
+    wsgi_app = attr.ib()
+
+    def __call__(self):
+        raise self
 
 
 class Application(object):
@@ -190,7 +201,10 @@ class Application(object):
             pass
         else:
             request.request_guid = int2hexguid(request.request_id)
-        response = self.dispatch(request)
+        try:
+            response = self.dispatch(request)
+        except RerouteWSGI as rre:
+            return rre.wsgi_app(environ, start_response)
         return response(environ, start_response)
 
     def __call__(self, environ, start_response):
@@ -234,6 +248,8 @@ class Application(object):
                 if not isinstance(ret, BaseResponse):
                     msg = 'expected Response, received %r' % type(ret)
                     raise TypeError(msg)
+            except RerouteWSGI:
+                raise
             except Exception as exc:
                 ret = exc
                 if not isinstance(ret, HTTPException):

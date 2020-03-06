@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from clastic import Application, render_basic
+from clastic import Application, render_basic, RerouteWSGI
 from clastic.route import GET, POST, PUT, DELETE
 
 
@@ -34,3 +34,16 @@ def test_http_method_routes():
     assert status_map[200] == len(routes)
     assert status_map.get(405) == len(routes) * (len(methods) - 1)
     return
+
+
+def test_reroute_wsgi():
+    # simulate home page served by one app, and all else by another
+    other_app = Application([('/other', lambda: 'okay', render_basic)])
+    main_app = Application([('/', lambda: 'hooray', render_basic),
+                            ('/<x*str>', RerouteWSGI(other_app))])
+    cl = main_app.get_local_client()
+    resp = cl.get('/')
+    assert resp.get_data(as_text=True) == 'hooray'
+
+    resp = cl.get('/other/')
+    assert resp.get_data(as_text=True) == 'okay'
