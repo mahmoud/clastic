@@ -34,6 +34,13 @@ class JSONCookie(SecureCookie):
             raise UnquoteError()
         return value
 
+    @classmethod
+    def unserialize(cls, string, secret_key):
+        string = string.strip('"')  # this line is for a bug in werkzeug's
+                                    # test client cookie jar usage:
+                                    # https://github.com/pallets/werkzeug/issues/1060
+        return super(cls, JSONCookie).unserialize(string, secret_key)
+
     def set_expires(self, epoch_time=NOW):
         """
         epoch_time: Unix timestamp of the cookie expiry.
@@ -44,6 +51,8 @@ class JSONCookie(SecureCookie):
 
 
 class SignedCookieMiddleware(Middleware):
+    _cookie_type = JSONCookie
+
     def __init__(self,
                  arg_name='cookie',
                  cookie_name=None,
@@ -71,9 +80,9 @@ class SignedCookieMiddleware(Middleware):
         self.expiry = expiry
 
     def request(self, next, request):
-        cookie = JSONCookie.load_cookie(request,
-                                        key=self.cookie_name,
-                                        secret_key=self.secret_key)
+        cookie = self._cookie_type.load_cookie(request,
+                                               key=self.cookie_name,
+                                               secret_key=self.secret_key)
         response = next(**{self.arg_name: cookie})
         if self.expiry != NEVER and self.expiry != SESSION:
             # let the cookie-specified value override, if present
