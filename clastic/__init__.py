@@ -26,7 +26,7 @@ from .middleware import Middleware, GetParamMiddleware
 from .render import render_json, render_json_dev, render_basic
 from .meta import MetaApplication, META_ASSETS_APP
 from .static import StaticApplication, StaticFileRoute
-from .errors import HTTPException
+from .errors import HTTPException, BadRequest, InternalServerError
 from .utils import Redirector
 from ._version import version_info, __version__
 

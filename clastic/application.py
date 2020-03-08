@@ -111,6 +111,16 @@ def _safe_wrap_wsgi(source_name, source, inner):
 # bad idea, but it looks good and works from an API perspective
 @attr.s(frozen=True)
 class RerouteWSGI(Exception):
+    """Raise or use as a route endpoint to route to a different WSGI app.
+
+    Note that this will have unintended consequences if you have done
+    stateful operations to the environ (such as reading the body of
+    the request) or already called start_response or something
+    similar.
+
+    It's safest to put this high in the routing table (and middleware
+    stack).
+    """
     wsgi_app = attr.ib()
 
     def __call__(self):
