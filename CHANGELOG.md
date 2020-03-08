@@ -13,6 +13,18 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+20.0.0
+------
+*(March 7, 2020)*
+
+* Add support for WSGI middlewares onto clastic's built-in Middleware
+* Add RerouteWSGI exception/endpoint function for routing to another wsgi app.
+* Better `__str__` on clastic errors
+* Fix meta's pyvm component
+* Lots of new testing (coverage up to 85%) and fixes
+* Refactored BaseRoute/Route into Route/BoundRoute
+* Drop Python 3.5 support
+
 19.0.0
 ------
 *(March 6, 2019)*
