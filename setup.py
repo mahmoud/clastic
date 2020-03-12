@@ -45,7 +45,7 @@ setup(name='clastic',
       install_requires=['Werkzeug>=1.0.0', 'boltons>=18.0.0', 'ashes', 'glom', 'secure-cookie'],
       license=__license__,
       platforms='any',
-      tests_require=['Mako==1.0.7', 'pytest==4.3.0', 'psutil==5.5.1'],
+      tests_require=['Mako==1.0.7', 'pytest==4.3.0', 'psutil==5.6.6'],
       classifiers=[
           'Intended Audience :: Developers',
           'Development Status :: 5 - Production/Stable',
