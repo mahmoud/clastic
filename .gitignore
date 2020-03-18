@@ -1,3 +1,5 @@
+docs/_build
+htmlcov/
 tmp.py
 examples/cline/todo.db
 *.py[cod]
