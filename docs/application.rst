@@ -5,7 +5,7 @@ Applications and Routes
 
 * Clastic Applications are constructed programmatically
 * Applications consist of Routes, Resources, Middlewares, and Error Handlers
-  * The latter two are discussed in :doc:`middlewares` and :doc:`errors`
+  * The latter two are discussed in :doc:`middleware` and :doc:`errors`
 * Routes consist of patterns, endpoint functions, and an optional render function
 * Route patterns are a subset of regular expressions designed to match URL paths, and is thus aware of slashes. Slashes separate "segments", which can be one of three types: string, int, float.
 * By default a pattern segment matches one URL path segment, but clastic also supports matching multiples of segments at once: (":" matches one segment, "?" matches zero or one segment, "*" matches 0 or more segments, and "+" matches 1 or more segments).
