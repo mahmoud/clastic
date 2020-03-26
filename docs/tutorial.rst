@@ -19,8 +19,8 @@ one for the source location and one for the destination location.
    See the `Wikipedia list`_ for more information.
 
 
-Prerequites
------------
+Prerequisites
+-------------
 
 First of all, we have to install the dependencies.
 These are: *clastic* (obviously) and *dateutil*.
@@ -136,6 +136,73 @@ and the ``zone`` key is used for the value:
      </form>
    </body>
    </html>
+
+
+Assuming you've named the Python file ``tzconvert.py``,
+when you run the command ``python tzconvert.py``,
+you can visit the address ``http://127.0.0.1:5000/``
+to see the form.
+
+
+Handling request data
+---------------------
+
+Our form submits the data to the current URL,
+therefore to the same endpoint.
+Now we want to modify the ``home()`` function,
+so that if any such data is submitted,
+the response page will include the result of the conversion:
+
+.. code-block:: python
+
+   def home(request):
+       data = {}
+       if "dt" in request.values:
+           dt = request.values.get("dt")
+           dt_naive = parser.parse(dt)
+
+           src = request.values.get("src")
+           data["src_location"] = src.split("/")[-1]
+
+           src_zone = tz.gettz(src)
+           src_dt = dt_naive.replace(tzinfo=src_zone)
+           data["src_dt"] = src_dt.ctime()
+
+           dst = request.values.get("dst")
+           data["dst_location"] = dst.split("/")[-1]
+
+           dst_zone = tz.gettz(dst)
+           dst_dt = src_dt.astimezone(dst_zone)
+           data["dst_dt"] = dst_dt.ctime()
+
+       zone_info = zoneinfo.get_zonefile_instance()
+       zone_names = zone_info.zones.keys()
+       entries = ((zone.split("/")[-1], zone) for zone in zone_names)
+       zones = [
+           {"location": location.replace("_", " "), "zone": zone}
+           for location, zone in sorted(entries)
+       ]
+       data["zones"] = zones
+       return data
+
+
+The changes are that the function now takes ``request`` as a parameter,
+and passes extra data to the template
+if the request contains a date and time information to convert.
+In the template, we add the markup for showing the result:
+
+.. code-block:: html
+
+   <body>
+     <h1>Time zone convertor</h1>
+     <p class="info">
+       When it's {src_dt} in {src_location},<br>
+       it's {dst_dt} in {dst_location}.
+     </p>
+     <form action="." method="post">
+       <!-- same as before -->
+     </form>
+   </body>
 
 
 .. _Wikipedia list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
