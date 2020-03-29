@@ -166,9 +166,9 @@ to see the form.
 Handling request data
 ---------------------
 
-The form submits the data to the ``/show``,
+The form submits the data to the ``/show`` route,
 therefore we need an endpoint function to handle these requests.
-First, let's add the corresponding route:
+First, let's add the corresponding routing entry:
 
 .. code-block:: python
 
