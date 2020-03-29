@@ -31,7 +31,7 @@ Read the `Virtual Environments and Packages`_ section
 in the official Python documentation for more information.
 
 Clastic works with any version of Python.
-Let's install by installing it::
+Let's start by installing it::
 
   pip install clastic
 
