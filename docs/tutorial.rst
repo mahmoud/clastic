@@ -28,7 +28,7 @@ Prerequisites
 It's common practice to work in a separate virtual environment
 for each project, so we suggest that you create one for this tutorial.
 Read the `Virtual Environments and Packages`_ section
-in the official Python documentation for more information.
+of the official Python documentation for more information.
 
 Clastic works with any version of Python.
 Let's start by installing it::
@@ -39,7 +39,6 @@ The example application also makes use of the "dateutil" package.
 Note that the PyPI name for that package is *python-dateutil*::
 
   pip install python-dateutil
-
 
 
 Getting started
@@ -63,14 +62,15 @@ Here's the Python file:
 
 
    def home():
+       render_ctx = {}
        zone_info = zoneinfo.get_zonefile_instance()
        zone_names = zone_info.zones.keys()
        entries = [(zone.split("/")[-1], zone) for zone in zone_names]
-       zones = [
+       render_ctx["zones"] = [
            {"location": location.replace("_", " "), "zone": zone}
            for location, zone in sorted(entries)
        ]
-       return {"zones": zones}
+       return render_ctx
 
 
    def create_app():
@@ -111,8 +111,9 @@ Let's start from the bottom of this code and work our way up:
   and the render factory.
 
 - Finally, the ``home`` function generates the data
-  to be passed to the template.
-  The form will contain two dropdown lists for all available time zones,
+  that the template needs.
+  The form in the template will contain two dropdown lists
+  for all available time zones,
   so we have to pass that list.
   Here, we construct this as a list of dictionaries
   where the keys are the location names
@@ -165,64 +166,75 @@ to see the form.
 Handling request data
 ---------------------
 
-Our form submits the data to the current URL,
-therefore to the same endpoint.
-Now we want to modify the ``home()`` function,
-so that if any such data is submitted,
-the response page will include the result of the conversion:
+The form submits the data to the ``/show``,
+therefore we need an endpoint function to handle these requests.
+First, let's add the corresponding route:
 
 .. code-block:: python
 
-   def home(request):
-       data = {}
-       if "dt" in request.values:
-           dt = request.values.get("dt")
-           dt_naive = parser.parse(dt)
-
-           src = request.values.get("src")
-           data["src_location"] = src.split("/")[-1]
-
-           src_zone = tz.gettz(src)
-           src_dt = dt_naive.replace(tzinfo=src_zone)
-           data["src_dt"] = src_dt.ctime()
-
-           dst = request.values.get("dst")
-           data["dst_location"] = dst.split("/")[-1]
-
-           dst_zone = tz.gettz(dst)
-           dst_dt = src_dt.astimezone(dst_zone)
-           data["dst_dt"] = dst_dt.ctime()
-
-       zone_info = zoneinfo.get_zonefile_instance()
-       zone_names = zone_info.zones.keys()
-       entries = ((zone.split("/")[-1], zone) for zone in zone_names)
-       zones = [
-           {"location": location.replace("_", " "), "zone": zone}
-           for location, zone in sorted(entries)
+   def create_app():
+       routes = [
+           ("/", home, "home.html"),
+           ("/show", show_time, "show_time.html"),
        ]
-       data["zones"] = zones
-       return data
+       render_factory = AshesRenderFactory(os.path.dirname(__file__))
+       return Application(routes, render_factory=render_factory)
 
 
-The changes are that the function now takes ``request`` as a parameter,
-and passes extra data to the template
-if the request contains a date and time information to convert.
-In the template, we add the markup for showing the result:
+Next, we'll implement the endpoint function ``show_time``.
+Since this function has to access the submitted data,
+it takes the ``request`` as its parameter,
+and the data in the request is available through ``request.values``.
+After calculating the converted time,
+it's going to pass the source and destination times to the template,
+along with the location names.
+
+.. code-block:: python
+
+   def show_time(request):
+       render_ctx = {}
+
+       dt = request.values.get("dt")
+       dt_naive = parser.parse(dt)
+
+       src = request.values.get("src")
+       render_ctx["src_location"] = src.split("/")[-1]
+
+       src_zone = tz.gettz(src)
+       src_dt = dt_naive.replace(tzinfo=src_zone)
+       render_ctx["src_dt"] = src_dt.ctime()
+
+       dst = request.values.get("dst")
+       render_ctx["dst_location"] = dst.split("/")[-1]
+
+       dst_zone = tz.gettz(dst)
+       dst_dt = src_dt.astimezone(dst_zone)
+       render_ctx["dst_dt"] = dst_dt.ctime()
+
+       return render_ctx
+
+
+And below is a simple ``show_time.html`` template:
 
 .. code-block:: html
 
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+     <meta charset="utf-8">
+     <title>Time zone convertor</title>
+   </head>
    <body>
      <h1>Time zone convertor</h1>
      <p class="info">
        When it's {src_dt} in {src_location},<br>
        it's {dst_dt} in {dst_location}.
      </p>
-     <form action="." method="post">
-       <!-- same as before -->
-     </form>
+     <p>Go to the <a href="/">home page</a>.</p>
    </body>
+   </html>
 
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-.. _ashes: https://github.com/mahmoud/ashes
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
+.. _ashes: https://github.com/mahmoud/ashes
