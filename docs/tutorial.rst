@@ -318,6 +318,9 @@ Below is an example content for the file:
 
    h1 {
      font-size: 3em;
+   }
+
+   p, h1 {
      text-align: center;
    }
 
@@ -347,7 +350,6 @@ Below is an example content for the file:
 
    p.info {
      font-size: 2em;
-     text-align: center;
      line-height: 2;
    }
 
@@ -394,6 +396,178 @@ Don't forget to add the stylesheet link to the templates:
      <title>Time zone convertor</title>
      <link rel="stylesheet" href="/static/custom.css">
    </head>
+
+
+JSON Responses
+--------------
+
+In the last part of the tutorial,
+we're going to display the converted time
+in the same page as the form
+instead of moving to a second page.
+In order to achieve this,
+we're going to use JavaScript to update the page
+with data received from the application using JSON.
+
+First, we're going to change our ``show_time()`` endpoint function
+to accept and return JSON data.
+
+.. code-block:: python
+
+   # import json
+
+   def show_time(request):
+       values = json.loads(request.data)
+
+       dt = values.get("dt")
+       dt_naive = parser.parse(dt)
+
+       src = values.get("src")
+       src_zone = tz.gettz(src)
+
+       dst = values.get("dst")
+       dst_zone = tz.gettz(dst)
+
+       dst_dt = convert_tz(dt_naive, src_zone, dst_zone)
+       render_ctx = {
+           "src_dt": {
+               "text": dt_naive.ctime(),
+               "value": dt
+           },
+           "dst_dt": {
+               "text": dst_dt.ctime(),
+               "value": dst_dt.strftime('%Y-%m-%dT%H:%M')
+           },
+           "src_location": get_location(src),
+           "dst_location": get_location(dst),
+       }
+       return render_ctx
+
+
+You can see that the only difference is
+that the submitted data are loaded from ``request.data``
+instead of accessing through ``request.values``.
+
+The next thing is to set the rendering method to JSON
+for this routing entry:
+
+.. code-block:: python
+
+   # from clastic import render_json
+
+   def create_app():
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           ("/show", show_time, render_json),
+           ("/static", static_app),
+       ]
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, render_factory=render_factory)
+
+
+Now you should be able to test this route using curl::
+
+  curl -X POST -H "Content-Type: application/json" \
+    -d '{"dt": "2020-03-30T16:53", "src": "Australia/Tasmania", "dst": "UTC"}' \
+    http://localhost:5000/show
+
+
+And the home page template becomes:
+
+.. code-block:: html
+
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+     <meta charset="utf-8">
+     <title>Time zone convertor</title>
+     <link rel="stylesheet" href="/static/custom.css">
+     <script>
+       async function showResult() {
+         let formData = new FormData(document.querySelector('form'));
+         let response = await fetch('/show', {
+           method: 'POST',
+           body: JSON.stringify(Object.fromEntries(formData))
+         });
+         let json = await response.json();
+         document.getElementById('src_dt').innerHTML = json['src_dt']['text'];
+         document.getElementById('src_dt').setAttribute('datetime', json['src_dt']['value']);
+         document.getElementById('src_location').innerHTML = json['src_location'];
+         document.getElementById('dst_dt').innerHTML = json['dst_dt']['text'];
+         document.getElementById('dst_dt').setAttribute('datetime', json['dst_dt']['value']);
+         document.getElementById('dst_location').innerHTML = json['dst_location'];
+         document.querySelector('.info').style.display = "block";
+       }
+     </script>
+   </head>
+   <body>
+     <h1>Time zone convertor</h1>
+     <form action="/show" method="post">
+       <input type="datetime-local" name="dt" value="{now}" required>
+
+       <div class="timezones">
+         <div class="timezone">
+           <label for="src">From:</label>
+           <select name="src" id="src">
+             {#zones}
+             {@eq key=location value="{default_src}"}
+             <option value="{zone}" selected>{location}</option>
+             {:else}
+             <option value="{zone}">{location}</option>
+             {/eq}
+             {/zones}
+           </select>
+         </div>
+
+         <div class="timezone">
+           <label for="dst">To:</label>
+           <select name="dst" id="dst">
+             {#zones}
+             {@eq key=location value="{default_dst}"}
+             <option value="{zone}" selected>{location}</option>
+             {:else}
+             <option value="{zone}">{location}</option>
+             {/eq}
+             {/zones}
+           </select>
+         </div>
+       </div>
+     </form>
+     <p><button onclick="showResult()">Show</button></p>
+
+     <p class="info">
+       When it's <time id="src_dt" datetime="2020-01-01T18:00">Jan 1 2020</time>
+       in <span id="src_location">UTC</span>,<br>
+       it's <time id="dst_dt" datetime="2020-01-01T18:00">Jan 1 2020</time>
+       in <span id="dst_location">UTC</span>.
+     </p>
+   </body>
+   </html>
+
+
+The changes are:
+
+- The template for showing the result has been merged.
+  It contains dummy information.
+
+- The JavaScript code for updating the page is added.
+  It gets called when the button is clicked.
+
+- The button element is moved out of the form element.
+
+One last thing to do is to hide the result markup
+when the page is first loaded.
+This can be easily achieved in CSS:
+
+.. code-block:: css
+
+   p.info {
+     display: none;
+   }
+
+
+*TODO: where to go from here? post middleware?*
 
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
