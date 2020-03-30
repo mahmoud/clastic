@@ -374,6 +374,8 @@ to any route under ``/static``:
 
 .. code-block:: python
 
+   # from clastic.static import StaticApplication
+
    def create_app():
        static_app = StaticApplication(STATIC_PATH)
        routes = [
@@ -383,8 +385,6 @@ to any route under ``/static``:
        ]
        render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, render_factory=render_factory)
-
-
 
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
