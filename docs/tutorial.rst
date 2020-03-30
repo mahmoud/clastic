@@ -105,7 +105,8 @@ Here's the Python file:
        app.serve()
 
 
-This code creates the application
+In the last few lines,
+we see that this code creates the application
 and starts it by invoking its ``.serve()`` method.
 
 Application creation is handled by the ``create_app()`` function,
@@ -134,17 +135,18 @@ The form in the template will contain two dropdown lists
 for all available time zones,
 so we have to pass that list.
 Here, we store this data in the ``ALL_TIME_ZONES`` variable
-which we have constructed as a list of dictionaries
-which contain the location names
+which we have constructed using the ``get_all_time_zones()`` function
+as a list of dictionaries
+containing the location names
 (the last component of the time zone code,
-extracted using the ``get_location()`` helper function),
+extracted using the ``get_location()`` function),
 and the full time zone code.
 The location name will be displayed to the user,
 whereas the full code will be transmitted as the data.
 The entries will be sorted by location name.
 We also pass default values for the form inputs:
 "UTC" for both the source and destination time zones,
-and the current UTC time for the date-time to convert.
+and the current UTC time for the date-time to be converted.
 
 
 The ``home.html`` template is given below.
@@ -160,29 +162,41 @@ and the ``zone`` key is used for the value:
    <head>
      <meta charset="utf-8">
      <title>Time zone convertor</title>
+     <link rel="stylesheet" href="/static/custom.css">
    </head>
    <body>
      <h1>Time zone convertor</h1>
      <form action="/show" method="post">
-       <select name="src">
-         {#zones}
-         {@eq key=location value="{default_src}"}
-         <option value="{zone}" selected>{location}</option>
-         {:else}
-         <option value="{zone}">{location}</option>
-         {/eq}
-         {/zones}
-       </select>
        <input type="datetime-local" name="dt" value="{now}" required>
-       <select name="dst">
-         {#zones}
-         {@eq key=location value="{default_dst}"}
-         <option value="{zone}" selected>{location}</option>
-         {:else}
-         <option value="{zone}">{location}</option>
-         {/eq}
-         {/zones}
-       </select>
+
+       <div class="timezones">
+         <div class="timezone">
+           <label for="src">From:</label>
+           <select name="src" id="src">
+             {#zones}
+             {@eq key=location value="{default_src}"}
+             <option value="{zone}" selected>{location}</option>
+             {:else}
+             <option value="{zone}">{location}</option>
+             {/eq}
+             {/zones}
+           </select>
+         </div>
+
+         <div class="timezone">
+           <label for="dst">To:</label>
+           <select name="dst" id="dst">
+             {#zones}
+             {@eq key=location value="{default_dst}"}
+             <option value="{zone}" selected>{location}</option>
+             {:else}
+             <option value="{zone}">{location}</option>
+             {/eq}
+             {/zones}
+           </select>
+         </div>
+       </div>
+
        <button type="submit">Show</button>
      </form>
    </body>
@@ -214,21 +228,39 @@ First, let's add the corresponding routing entry:
 
 Next, we'll implement the endpoint function ``show_time()``.
 Since this function has to access the submitted data,
-it takes the ``request`` as its parameter,
+it takes the ``request`` as parameter,
 and the data in the request is available through ``request.values``.
 After calculating the converted time,
-it's going to pass the source and destination times to the template,
+it passes the source and destination times to the template,
 along with the location names.
+Source and destination times consist of dictionary items
+indicating how to display them (``text``),
+and what data to submit (``value``).
 
 .. code-block:: python
 
+   # from dateutil import parser, tz
+
    def show_time(request):
        dt = request.values.get("dt")
+       dt_naive = parser.parse(dt)
+
        src = request.values.get("src")
+       src_zone = tz.gettz(src)
+
        dst = request.values.get("dst")
+       dst_zone = tz.gettz(dst)
+
+       dst_dt = convert_tz(dt_naive, src_zone, dst_zone)
        render_ctx = {
-           "src_dt": dt,
-           "dst_dt": convert_tz(dt, src, dst),
+           "src_dt": {
+               "text": dt_naive.ctime(),
+               "value": dt
+           },
+           "dst_dt": {
+               "text": dst_dt.ctime(),
+               "value": dst_dt.strftime('%Y-%m-%dT%H:%M')
+           },
            "src_location": get_location(src),
            "dst_location": get_location(dst),
        }
@@ -240,19 +272,14 @@ that will actually do the conversion:
 
 .. code-block:: python
 
-   # from dateutil import parser, tz
-
-   def convert_tz(dt, src, dst):
-       dt_naive = parser.parse(dt)
-       src_zone = tz.gettz(src)
+   def convert_tz(dt_naive, src_zone, dst_zone):
        src_dt = dt_naive.replace(tzinfo=src_zone)
-       dst_zone = tz.gettz(dst)
        dst_dt = src_dt.astimezone(dst_zone)
-       return dst_dt.strftime('%Y-%m-%dT%H:%M')
+       return dst_dt
 
 
-
-And below is a simple ``show_time.html`` template:
+And below is a simple ``show_time.html`` template.
+Note how the ``text`` and ``value`` subitems are used:
 
 .. code-block:: html
 
@@ -261,18 +288,103 @@ And below is a simple ``show_time.html`` template:
    <head>
      <meta charset="utf-8">
      <title>Time zone convertor</title>
+     <link rel="stylesheet" href="/static/custom.css">
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <p>
-       When it's <time datetime="{src_dt}">{src_dt}</time>
+     <p class="info">
+       When it's <time datetime="{src_dt.value}">{src_dt.text}</time>
        in {src_location},<br>
-       it's <time datetime="{dst_dt}">{dst_dt}</time>
+       it's <time datetime="{dst_dt.value}">{dst_dt.text}</time>
        in {dst_location}.
      </p>
      <p>Go to the <a href="/">home page</a>.</p>
    </body>
    </html>
+
+
+Static assets
+-------------
+
+As our next step, let us apply some style to our markup.
+We create a subfolder named ``static``
+in the same folder as our Python source file
+and put a file named ``custom.css`` into that folder.
+Below is an example content for the file:
+
+.. code-block:: css
+
+   body {
+     font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+   }
+
+   h1 {
+     font-size: 3em;
+     text-align: center;
+   }
+
+   form {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+   }
+
+   input, select, button {
+     font: inherit;
+   }
+
+   label {
+     display: block;
+   }
+
+   div.timezones {
+     display: flex;
+     justify-content: space-between;
+     margin: 1rem 0;
+   }
+
+   div.timezone {
+     width: 45%;
+   }
+
+   p.info {
+     font-size: 2em;
+     text-align: center;
+     line-height: 2;
+   }
+
+   time {
+     color: #ff0000;
+   }
+
+
+The changes to the application code will be quite small.
+First, we define the path to the folder that contains the static assets:
+
+.. code-block:: python
+
+   CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+   STATIC_PATH = os.path.join(CUR_PATH, "static")
+
+
+And then we add a routing entry
+by creating a static application with the static path we have defined,
+and we set it as the endpoint that will handle the requests
+to any route under ``/static``:
+
+.. code-block:: python
+
+   def create_app():
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           ("/show", show_time, "show_time.html"),
+           ("/static", static_app),
+       ]
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, render_factory=render_factory)
+
+
 
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
