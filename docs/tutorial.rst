@@ -70,18 +70,26 @@ Here's the Python file:
        return zone.split("/")[-1].replace("_", " ")
 
 
-   def home():
-       render_ctx = {}
+   def get_all_time_zones():
        zone_info = zoneinfo.get_zonefile_instance()
        zone_names = zone_info.zones.keys()
        entries = {get_location(zone): zone for zone in zone_names}
-       render_ctx["zones"] = [
+       return [
            {"location": location, "zone": entries[location]}
            for location in sorted(entries.keys())
        ]
-       render_ctx["default_src"] = "UTC"
-       render_ctx["default_dst"] = "UTC"
-       render_ctx["now"] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M')
+
+
+   ALL_TIME_ZONES = get_all_time_zones()
+
+
+   def home():
+       render_ctx = {
+           "zones": ALL_TIME_ZONES,
+           "default_src": "UTC",
+           "default_dst": "UTC",
+           "now": datetime.utcnow().strftime("%Y-%m-%dT%H:%M"),
+       }
        return render_ctx
 
 
@@ -125,7 +133,8 @@ The ``home()`` function generates the data that the template needs
 The form in the template will contain two dropdown lists
 for all available time zones,
 so we have to pass that list.
-Here, we construct this as a list of dictionaries
+Here, we store this data in the ``ALL_TIME_ZONES`` variable
+which we have constructed as a list of dictionaries
 which contain the location names
 (the last component of the time zone code,
 extracted using the ``get_location()`` helper function),
@@ -203,7 +212,7 @@ First, let's add the corresponding routing entry:
        return Application(routes, render_factory=render_factory)
 
 
-Next, we'll implement the endpoint function ``show_time``.
+Next, we'll implement the endpoint function ``show_time()``.
 Since this function has to access the submitted data,
 it takes the ``request`` as its parameter,
 and the data in the request is available through ``request.values``.
@@ -213,29 +222,34 @@ along with the location names.
 
 .. code-block:: python
 
+   def show_time(request):
+       dt = request.values.get("dt")
+       src = request.values.get("src")
+       dst = request.values.get("dst")
+       render_ctx = {
+           "src_dt": dt,
+           "dst_dt": convert_tz(dt, src, dst),
+           "src_location": get_location(src),
+           "dst_location": get_location(dst),
+       }
+       return render_ctx
+
+
+The only missing piece is the ``convert_tz()`` function
+that will actually do the conversion:
+
+.. code-block:: python
+
    # from dateutil import parser, tz
 
-   def show_time(request):
-       render_ctx = {}
-
-       dt = request.values.get("dt")
+   def convert_tz(dt, src, dst):
        dt_naive = parser.parse(dt)
-
-       src = request.values.get("src")
-       render_ctx["src_location"] = get_location(src)
-
        src_zone = tz.gettz(src)
        src_dt = dt_naive.replace(tzinfo=src_zone)
-       render_ctx["src_dt"] = src_dt.strftime('%Y-%m-%dT%H:%M')
-
-       dst = request.values.get("dst")
-       render_ctx["dst_location"] = get_location(dst)
-
        dst_zone = tz.gettz(dst)
        dst_dt = src_dt.astimezone(dst_zone)
-       render_ctx["dst_dt"] = dst_dt.strftime('%Y-%m-%dT%H:%M')
+       return dst_dt.strftime('%Y-%m-%dT%H:%M')
 
-       return render_ctx
 
 
 And below is a simple ``show_time.html`` template:
