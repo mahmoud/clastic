@@ -3,8 +3,8 @@ Tutorial
 
 *TODO: add estimated time for reading the document*
 
-In this document, we are going to develop an application that will
-convert a given time (and date) between two time zones.
+In this document, we are going to develop an application
+that will convert a given time (and date) between two time zones.
 The user will enter a date and a time,
 and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
@@ -26,7 +26,8 @@ Prerequisites
 -------------
 
 It's common practice to work in a separate virtual environment
-for each project, so we suggest that you create one for this tutorial.
+for each project,
+so we suggest that you create one for this tutorial.
 Read the `Virtual Environments and Packages`_ section
 of the official Python documentation for more information.
 
@@ -46,7 +47,7 @@ Getting started
 
 The initial version of our application only displays the form,
 but doesn't handle the submitted data.
-It consists of a Python source file (``tzconvert.py``),
+It consists of a Python source file (``tzconvert.py``)
 and an HTML template file (``home.html``),
 both in the same folder.
 
@@ -61,67 +62,72 @@ Here's the Python file:
    from dateutil import zoneinfo
 
 
+   CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+   def get_location(zone):
+       return zone.split("/")[-1].replace("_", " ")
+
+
    def home():
        render_ctx = {}
        zone_info = zoneinfo.get_zonefile_instance()
        zone_names = zone_info.zones.keys()
-       entries = [(zone.split("/")[-1], zone) for zone in zone_names]
+       entries = {get_location(zone): zone for zone in zone_names}
        render_ctx["zones"] = [
-           {"location": location.replace("_", " "), "zone": zone}
-           for location, zone in sorted(entries)
+           {"location": location, "zone": entries[location]}
+           for location in sorted(entries.keys())
        ]
        return render_ctx
 
 
    def create_app():
        routes = [("/", home, "home.html")]
-       render_factory = AshesRenderFactory(os.path.dirname(__file__))
+       render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, render_factory=render_factory)
 
 
+   app = create_app()
+
    if __name__ == "__main__":
-       app = create_app()
        app.serve()
 
 
-Let's start from the bottom of this code and work our way up:
+This code creates the application
+and starts it by invoking its ``.serve()`` method.
 
-- In the last ``if`` clause, we create the application
-  and start it by invoking its ``.serve`` method.
+Application creation is handled by the ``create_app()`` function,
+where we register the routes of the application.
+A routing entry associates a route in the application
+with a function (*endpoint*) that will process the requests
+to that route.
+In the example, there is only one entry where the route is ``/``
+and the endpoint function is ``home``.
 
-- Next, we have the ``create_app`` function
-  where we register the routes of the application.
-  A routing entry associates a route in the application
-  with a function (*endpoint*) that will process the requests
-  to that route.
-  In the example, there is only one entry where the route is ``/``
-  and the endpoint function is ``home``.
+The routing entry also sets the template file ``home.html``
+to render the response.
+Clastic supports multiple template engines;
+in this application we use `Ashes`_.
+We create a render factory for rendering templates
+for our chosen template engine
+and tell it where to find the template files.
+Here, we tell the render factory to look for templates
+in the same folder as this Python source file.
+The application is then created by giving the sequence of routes
+and the render factory.
 
-- The entry also sets the template file ``home.html``
-  to render the response.
-  Clastic supports multiple template engines;
-  in this application we use `ashes`_.
-  We create a render factory for rendering templates
-  for our chosen template engine and tell it where to find
-  the template files.
-  Here, we tell the render factory to look for templates
-  in the same folder as this Python source file.
-
-- The application is created by giving the sequence of routes
-  and the render factory.
-
-- Finally, the ``home`` function generates the data
-  that the template needs.
-  The form in the template will contain two dropdown lists
-  for all available time zones,
-  so we have to pass that list.
-  Here, we construct this as a list of dictionaries
-  where the keys are the location names
-  (the last component of the time zone code),
-  and the full time zone code.
-  The location name will be displayed to the user,
-  whereas the full code will be transmitted as the data.
-  The entries will be sorted by location name.
+The ``home()`` function generates the data that the template needs.
+The form in the template will contain two dropdown lists
+for all available time zones,
+so we have to pass that list.
+Here, we construct this as a list of dictionaries
+which contain the location names
+(the last component of the time zone code,
+extracted using the ``get_location()`` helper function),
+and the full time zone code.
+The location name will be displayed to the user,
+whereas the full code will be transmitted as the data.
+The entries will be sorted by location name.
 
 
 The ``home.html`` template is given below.
@@ -177,7 +183,7 @@ First, let's add the corresponding routing entry:
            ("/", home, "home.html"),
            ("/show", show_time, "show_time.html"),
        ]
-       render_factory = AshesRenderFactory(os.path.dirname(__file__))
+       render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, render_factory=render_factory)
 
 
@@ -191,6 +197,8 @@ along with the location names.
 
 .. code-block:: python
 
+   # from dateutil import parser, tz
+
    def show_time(request):
        render_ctx = {}
 
@@ -198,14 +206,14 @@ along with the location names.
        dt_naive = parser.parse(dt)
 
        src = request.values.get("src")
-       render_ctx["src_location"] = src.split("/")[-1]
+       render_ctx["src_location"] = get_location(src)
 
        src_zone = tz.gettz(src)
        src_dt = dt_naive.replace(tzinfo=src_zone)
        render_ctx["src_dt"] = src_dt.ctime()
 
        dst = request.values.get("dst")
-       render_ctx["dst_location"] = dst.split("/")[-1]
+       render_ctx["dst_location"] = get_location(dst)
 
        dst_zone = tz.gettz(dst)
        dst_dt = src_dt.astimezone(dst_zone)
@@ -237,4 +245,4 @@ And below is a simple ``show_time.html`` template:
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
-.. _ashes: https://github.com/mahmoud/ashes
+.. _Ashes: https://github.com/mahmoud/ashes
