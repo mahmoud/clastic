@@ -398,16 +398,15 @@ Don't forget to add the stylesheet link to the templates:
    </head>
 
 
-JSON Responses
---------------
+Working with JSON
+-----------------
 
 In the last part of the tutorial,
 we're going to display the converted time
-in the same page as the form
-instead of moving to a second page.
+in the same page as the form instead of moving to a second page.
 In order to achieve this,
 we're going to use JavaScript to update the page
-with data received from the application using JSON.
+with data received sent to and received from the application using JSON.
 
 First, we're going to change our ``show_time()`` endpoint function
 to accept and return JSON data.
