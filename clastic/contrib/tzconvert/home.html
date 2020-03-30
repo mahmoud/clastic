@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Time zone convertor</title>
+  <link rel="stylesheet" href="/static/custom.css">
+  <script>
+    async function showResult() {
+      let formData = new FormData(document.querySelector('form'));
+      let response = await fetch('/show', {
+        method: 'POST',
+        body: JSON.stringify(Object.fromEntries(formData))
+      });
+      let json = await response.json();
+      document.getElementById('src_dt').innerHTML = json['src_dt']['text'];
+      document.getElementById('src_dt').setAttribute('datetime', json['src_dt']['value']);
+      document.getElementById('src_location').innerHTML = json['src_location'];
+      document.getElementById('dst_dt').innerHTML = json['dst_dt']['text'];
+      document.getElementById('dst_dt').setAttribute('datetime', json['dst_dt']['value']);
+      document.getElementById('dst_location').innerHTML = json['dst_location'];
+      document.querySelector('.info').style.display = "block";
+    }
+  </script>
+</head>
+<body>
+  <h1>Time zone convertor</h1>
+  <form action="/show" method="post">
+    <input type="datetime-local" name="dt" value="{now}" required>
+
+    <div class="timezones">
+      <div class="timezone">
+        <label for="src">From:</label>
+        <select name="src" id="src">
+          {#zones}
+          {@eq key=location value="{default_src}"}
+          <option value="{zone}" selected>{location}</option>
+          {:else}
+          <option value="{zone}">{location}</option>
+          {/eq}
+          {/zones}
+        </select>
+      </div>
+
+      <div class="timezone">
+        <label for="dst">To:</label>
+        <select name="dst" id="dst">
+          {#zones}
+          {@eq key=location value="{default_dst}"}
+          <option value="{zone}" selected>{location}</option>
+          {:else}
+          <option value="{zone}">{location}</option>
+          {/eq}
+          {/zones}
+        </select>
+      </div>
+    </div>
+  </form>
+  <p><button onclick="showResult()">Show</button></p>
+
+  <p class="info">
+    When it's <time id="src_dt" datetime="2020-01-01T18:00">Jan 1 2020</time>
+    in <span id="src_location">UTC</span>,<br>
+    it's <time id="dst_dt" datetime="2020-01-01T18:00">Jan 1 2020</time>
+    in <span id="dst_location">UTC</span>.
+  </p>
+</body>
+</html>
