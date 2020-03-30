@@ -162,7 +162,6 @@ and the ``zone`` key is used for the value:
    <head>
      <meta charset="utf-8">
      <title>Time zone convertor</title>
-     <link rel="stylesheet" href="/static/custom.css">
    </head>
    <body>
      <h1>Time zone convertor</h1>
@@ -288,7 +287,6 @@ Note how the ``text`` and ``value`` subitems are used:
    <head>
      <meta charset="utf-8">
      <title>Time zone convertor</title>
-     <link rel="stylesheet" href="/static/custom.css">
    </head>
    <body>
      <h1>Time zone convertor</h1>
@@ -385,6 +383,17 @@ to any route under ``/static``:
        ]
        render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, render_factory=render_factory)
+
+
+Don't forget to add the stylesheet link to the templates:
+
+.. code-block:: html
+
+   <head>
+     <meta charset="utf-8">
+     <title>Time zone convertor</title>
+     <link rel="stylesheet" href="/static/custom.css">
+   </head>
 
 
 .. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
