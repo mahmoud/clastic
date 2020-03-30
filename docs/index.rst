@@ -57,7 +57,7 @@ Check out our :doc:`tutorial` for more.
 .. |release| image:: https://img.shields.io/pypi/v/clastic.svg
              :target: https://pypi.org/project/clastic/
 
-.. |calver| image:: https://img.shields.io/badge/calver-YY.MM.MICRO-22bfda.svg
+.. |calver| image:: https://img.shields.io/badge/calver-YY.MINOR.MICRO-22bfda.svg
             :target: https://calver.org
 
 .. |changelog| image:: https://img.shields.io/badge/CHANGELOG-UPDATED-b84ad6.svg

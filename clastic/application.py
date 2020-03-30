@@ -354,6 +354,34 @@ class DispatchState(object):
 
 
 class SubApplication(object):
+    """Enables :class:`Application` instances to be embedded in other Applications.
+
+    Note that Routes are copied into the embedding Application, and further
+    modifications to the Application after embedding may not be visible
+    in the root Application.
+
+    Args:
+
+      prefix (str): The path prefix under which the embedded Application's routes
+        will appear. ``/`` is valid, and will merge the routes in at the root level
+        of the parent application.
+      app (Application): The Application instance being embedded.
+      rebind_render (bool): **Advanced**: Whether render arguments
+        should be reinterpreted by the embedding application's render
+        factory. Defaults to ``False``.
+      inherit_slashes (bool): **Advanced**: Whether to inherit the
+        embedding application's handling of trailing slashes. Defaults
+        to ``True``.
+
+    .. note::
+
+       This object rarely needs to be constructed manually, because
+       this behavior is built in to the default Application routes
+       argument handling.
+       ``Application(routes=[('/prefix', other_app)])``
+       automatically creates a SubApplication and embeds it.
+
+    """
     def __init__(self, prefix, app, rebind_render=False, inherit_slashes=True):
         self.prefix = prefix.rstrip('/')
         self.app = app

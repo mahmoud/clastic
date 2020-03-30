@@ -16,6 +16,38 @@ Applications and Routes
   * Route (+ GET/POST/PUT/DELETE/etc.)
   * SubApplication
 
+The Application
+---------------
+
+.. autoclass:: clastic.Application
+  :members:
+
+Route Types
+-----------
+
+.. autoclass:: clastic.Route
+  :members:
+
+.. autoclass:: clastic.GET
+
+.. autoclass:: clastic.POST
+
+.. autoclass:: clastic.PUT
+
+.. autoclass:: clastic.DELETE
+
+
+SubApplications
+---------------
+
+Clastic features strong composability using straightforward Python
+constructs. An :class:`Application` contains :class:`Route` instances,
+and those Routes can come from other Applications, using
+:class:`SubApplication`.
+
+.. autoclass:: clastic.SubApplication
+
+
 
 Advanced Routing
 ----------------
@@ -25,3 +57,5 @@ Advanced Routing
 * Clastic's one-of-a-kind routing system allows endpoint functionsand middlewares to participate in routing by raising certain standard errors, telling clastic to continue to check other routes
 * It's even possible to route to a separate WSGI application (i.e., an application not written in Clastic)
 * NullRoute (configurable)
+
+.. autoclass:: clastic.RerouteWSGI
