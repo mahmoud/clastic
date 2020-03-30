@@ -56,6 +56,7 @@ Here's the Python file:
 .. code-block:: python
 
    import os
+   from datetime import datetime
 
    from clastic import Application
    from clastic.render import AshesRenderFactory
@@ -78,6 +79,9 @@ Here's the Python file:
            {"location": location, "zone": entries[location]}
            for location in sorted(entries.keys())
        ]
+       render_ctx["default_src"] = "UTC"
+       render_ctx["default_dst"] = "UTC"
+       render_ctx["now"] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M')
        return render_ctx
 
 
@@ -116,7 +120,8 @@ in the same folder as this Python source file.
 The application is then created by giving the sequence of routes
 and the render factory.
 
-The ``home()`` function generates the data that the template needs.
+The ``home()`` function generates the data that the template needs
+(the "render context").
 The form in the template will contain two dropdown lists
 for all available time zones,
 so we have to pass that list.
@@ -128,6 +133,9 @@ and the full time zone code.
 The location name will be displayed to the user,
 whereas the full code will be transmitted as the data.
 The entries will be sorted by location name.
+We also pass default values for the form inputs:
+"UTC" for both the source and destination time zones,
+and the current UTC time for the date-time to convert.
 
 
 The ``home.html`` template is given below.
@@ -149,13 +157,21 @@ and the ``zone`` key is used for the value:
      <form action="/show" method="post">
        <select name="src">
          {#zones}
+         {@eq key=location value="{default_src}"}
+         <option value="{zone}" selected>{location}</option>
+         {:else}
          <option value="{zone}">{location}</option>
+         {/eq}
          {/zones}
        </select>
-       <input type="datetime-local" name="dt" required>
+       <input type="datetime-local" name="dt" value="{now}" required>
        <select name="dst">
          {#zones}
+         {@eq key=location value="{default_dst}"}
+         <option value="{zone}" selected>{location}</option>
+         {:else}
          <option value="{zone}">{location}</option>
+         {/eq}
          {/zones}
        </select>
        <button type="submit">Show</button>
@@ -210,14 +226,14 @@ along with the location names.
 
        src_zone = tz.gettz(src)
        src_dt = dt_naive.replace(tzinfo=src_zone)
-       render_ctx["src_dt"] = src_dt.ctime()
+       render_ctx["src_dt"] = src_dt.strftime('%Y-%m-%dT%H:%M')
 
        dst = request.values.get("dst")
        render_ctx["dst_location"] = get_location(dst)
 
        dst_zone = tz.gettz(dst)
        dst_dt = src_dt.astimezone(dst_zone)
-       render_ctx["dst_dt"] = dst_dt.ctime()
+       render_ctx["dst_dt"] = dst_dt.strftime('%Y-%m-%dT%H:%M')
 
        return render_ctx
 
@@ -234,9 +250,11 @@ And below is a simple ``show_time.html`` template:
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <p class="info">
-       When it's {src_dt} in {src_location},<br>
-       it's {dst_dt} in {dst_location}.
+     <p>
+       When it's <time datetime="{src_dt}">{src_dt}</time>
+       in {src_location},<br>
+       it's <time datetime="{dst_dt}">{dst_dt}</time>
+       in {dst_location}.
      </p>
      <p>Go to the <a href="/">home page</a>.</p>
    </body>
