@@ -7,8 +7,7 @@ Tutorial
    This document starts out with a fairly simple application code
    and proceeds by building on it.
    Therefore, it would be helpful to the reader
-   to write and try out the various stages of the application
-   while following the document.
+   to code along and try out the various stages of the application.
    In this manner, completing it should take about an hour.
 
 
@@ -19,7 +18,7 @@ and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
 
 Before we start, a note about time zones:
-Time zones are represented in "region/location" format,
+these are represented in "region/location" format,
 as in "Australia/Tasmania".
 While most such codes have two components,
 some contain only one (like "UTC"),
@@ -27,7 +26,7 @@ and some contain more than two
 (like "America/North_Dakota/New_Salem").
 Also note that spaces in region and location names are replaced
 with underscores.
-Refer to the `list of tz database time zones`_ for a full list.
+Refer to the "`List of tz database time zones`_" for a full list.
 
 
 Prerequisites
@@ -36,7 +35,7 @@ Prerequisites
 It's common practice to work in a separate virtual environment
 for each project,
 so we suggest that you create one for this tutorial.
-Read the `Virtual Environments and Packages`_ section
+Read the "`Virtual Environments and Packages`_" section
 of the official Python documentation for more information.
 
 Clastic works with any version of Python.
@@ -113,48 +112,78 @@ Here's the Python file:
        app.serve()
 
 
+Let's go through this code piece by piece.
+
 In the last few lines,
-we see that this code creates the application
-and starts it by invoking its ``.serve()`` method.
+we create the application and start it
+by invoking its :meth:`.serve() <clastic.Application.serve>` method:
+
+.. code-block:: python
+
+   app = create_app()
+
+   if __name__ == "__main__":
+       app.serve()
+
 
 Application creation is handled by the ``create_app()`` function,
 where we register the routes of the application.
-A routing entry associates a route in the application
+Every :class:`Route <clastic.Route>` associates a path
 with a function (*endpoint*) that will process the requests
-to that route.
-In the example, there is only one entry where the route is ``/``
-and the endpoint function is ``home``.
+to that path.
+In the example, there is only one route where the path is ``/``
+and the endpoint function is ``home``:
 
-The routing entry also sets the template file ``home.html``
+.. code-block:: python
+
+   def create_app():
+       routes = [("/", home, "home.html")]
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, render_factory=render_factory)
+
+
+The route also sets the template file ``home.html``
 to render the response.
 Clastic supports multiple template engines;
 in this application we use `Ashes`_.
 We create a render factory for rendering templates
 for our chosen template engine
+(in this case an
+:class:`AshesRenderFactory <clastic.render.AshesRenderFactory>`)
 and tell it where to find the template files.
 Here, we tell the render factory to look for templates
 in the same folder as this Python source file.
-The application is then created by giving the sequence of routes
-and the render factory.
+The :class:`Application <clastic.Application>` is then created
+by giving the sequence of routes and the render factory.
 
 The ``home()`` function generates the data that the template needs
 (the "render context").
 The form in the template will contain two dropdown lists
 for all available time zones,
 so we have to pass that list.
-Here, we store this data in the ``ALL_TIME_ZONES`` variable
-which we have constructed using the ``get_all_time_zones()`` function
+Here, we store this data in the ``ALL_TIME_ZONES`` variable,
+which we have constructed using the ``get_all_time_zones()`` function,
 as a list of dictionaries
-containing the location names
-(the last component of the time zone code,
-extracted using the ``get_location()`` function),
-and the full time zone code.
+containing the location names and the full time zone code.
+The location name is the last component of the time zone code,
+extracted using the ``get_location()`` function.
 The location name will be displayed to the user,
 whereas the full code will be transmitted as the data.
 The entries will be sorted by location name.
 We also pass default values for the form inputs:
 "UTC" for both the source and destination time zones,
-and the current UTC time for the date-time to be converted.
+and the current UTC time for the date-time to be converted:
+
+.. code-block:: python
+
+   def home():
+       render_ctx = {
+           "zones": ALL_TIME_ZONES,
+           "default_src": "UTC",
+           "default_dst": "UTC",
+           "now": datetime.utcnow().strftime("%Y-%m-%dT%H:%M"),
+       }
+       return render_ctx
 
 
 The ``home.html`` template is given below.
@@ -218,11 +247,12 @@ to see the form.
 Handling request data
 ---------------------
 
-The form submits the data to the ``/show`` route,
+The form submits the data to the ``/show`` path,
 therefore we need an endpoint function to handle these requests.
-First, let's add the corresponding routing entry:
+First, let's add the corresponding route:
 
 .. code-block:: python
+   :emphasize-lines: 4
 
    def create_app():
        routes = [
@@ -235,10 +265,10 @@ First, let's add the corresponding routing entry:
 
 Next, we'll implement the endpoint function ``show_time()``.
 Since this function has to access the submitted data,
-it takes the ``request`` as parameter,
+it takes the :ref:`request-builtin` as parameter,
 and the data in the request is available through ``request.values``.
 After calculating the converted time,
-it passes the source and destination times to the template,
+the function passes the source and destination times to the template,
 along with the location names.
 Source and destination times consist of dictionary items
 indicating how to display them (``text``),
@@ -367,7 +397,8 @@ Below is an example content for the file:
 
 
 The changes to the application code will be quite small.
-First, we define the path to the folder that contains the static assets:
+First, we define the file system path to the folder
+that contains the static assets:
 
 .. code-block:: python
 
@@ -375,12 +406,14 @@ First, we define the path to the folder that contains the static assets:
    STATIC_PATH = os.path.join(CUR_PATH, "static")
 
 
-And then we add a routing entry
-by creating a static application with the static path we have defined,
+And then we add a route by creating
+a :class:`StaticApplication <clastic.static.StaticApplication>`
+with the static file system path we have defined,
 and we set it as the endpoint that will handle the requests
-to any route under ``/static``:
+to any application path under ``/static``:
 
 .. code-block:: python
+   :emphasize-lines: 4, 8
 
    # from clastic.static import StaticApplication
 
@@ -416,10 +449,14 @@ In order to achieve this,
 we're going to use JavaScript to update the page
 with data sent to and received from the application using JSON.
 
-First, we're going to change our ``show_time()`` endpoint function
-to accept and return JSON data.
+First, we're going to modify our ``show_time()`` endpoint function.
+Note that the only difference is
+that the submitted data are loaded from ``request.data``
+instead of being accessed through ``request.values``,
+and that there is no change in the returned value:
 
 .. code-block:: python
+   :emphasize-lines: 4
 
    # import json
 
@@ -451,14 +488,12 @@ to accept and return JSON data.
        return render_ctx
 
 
-You can see that the only difference is
-that the submitted data are loaded from ``request.data``
-instead of accessing through ``request.values``.
-
-The next thing is to set the rendering method to JSON
-for this routing entry:
+The next thing is to set the renderer
+to :func:`render_json <clastic.render_json>`
+for this route:
 
 .. code-block:: python
+   :emphasize-lines: 7
 
    # from clastic import render_json
 
@@ -565,7 +600,7 @@ The changes are:
   Also, the form action now points to the current URL.
 
 One last thing to do is to hide the result markup
-when the page is first loaded.
+before the user clicks the "Show" button.
 This can be easily achieved in CSS:
 
 .. code-block:: css
@@ -575,9 +610,11 @@ This can be easily achieved in CSS:
    }
 
 
-*TODO: where to go from here? post middleware?*
+This concludes the introductory tutorial.
+Check out the other documents and example applications
+for advanced usage of Clastic features.
 
 
-.. _list of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+.. _List of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
 .. _Ashes: https://github.com/mahmoud/ashes
