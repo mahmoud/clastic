@@ -541,24 +541,29 @@ def find_cycle(dep_map, prenormalize=True):
 #
 
 class GET(Route):
+    """A :class:`Route` subtype which only matches for GET requests."""
+
     def __init__(self, *a, **kw):
         kw['methods'] = ('GET',)
         super(GET, self).__init__(*a, **kw)
 
 
 class POST(Route):
+    "A :class:`Route` subtype which only matches for POST requests."
     def __init__(self, *a, **kw):
         kw['methods'] = ('POST',)
         super(POST, self).__init__(*a, **kw)
 
 
 class PUT(Route):
+    "A :class:`Route` subtype which only matches for PUT requests."
     def __init__(self, *a, **kw):
         kw['methods'] = ('PUT',)
         super(PUT, self).__init__(*a, **kw)
 
 
 class DELETE(Route):
+    "A :class:`Route` subtype which only matches for DELETE requests."
     def __init__(self, *a, **kw):
         kw['methods'] = ('DELETE',)
         super(DELETE, self).__init__(*a, **kw)

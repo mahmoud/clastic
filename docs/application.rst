@@ -36,6 +36,24 @@ Route Types
 
 .. autoclass:: clastic.DELETE
 
+.. note::
+
+  Method-specific subtypes have identical signatures to :class:`Route`.
+
+  The only steps necessary to make a Route method-specific is to import the type and add it to the tuple::
+
+    Application(routes=[("/home/", home_ep, render_func)])
+
+  Becomes::
+
+    from clastic import GET
+    ...
+    Application(routes=[GET("/home/", home_ep, render_func)])
+
+If an Application contains Routes which match the path pattern, but
+none of the Routes match the method, Clastic will automatically raise
+a :class:`~clastic.MethodNotAllowed` exception for you, which results
+in a ``405`` HTTP error response to client.
 
 SubApplications
 ---------------
