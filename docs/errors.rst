@@ -13,7 +13,7 @@ controlling how a Clastic Application behaves in error situations.
 .. contents:: Contents
    :local:
 
-.. _error_handlers:
+.. _error-handlers:
 
 Error Handlers
 --------------

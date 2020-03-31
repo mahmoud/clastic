@@ -377,6 +377,40 @@ class BoundRoute(object):
 
 
 class Route(object):
+    """While Clastic may revolve around the :class:`Application`,
+    Applications would be nothing without the Routes they contain.
+
+    The :class:`Route` object is basically a combination of three things:
+
+      1. A path *pattern*
+      2. An *endpoint* function
+      3. A *render* function or argument
+
+    Put simply, when a request matches a Route's *pattern*,
+    Clastic calls the Route's *endpoint* function, and the result of
+    this is passed to the Route's *render* function.
+
+    In reality, a Route has many other levers to enable more routing features.
+
+    Args:
+
+      pattern (str): A :ref:`pattern-minilanguage`-formatted string.
+      endpoint (callable): A function to call with :ref:`injectables`,
+        which returns a Response or a render context which will be
+        passed to the Route's *render* function.
+      render (callable): An optional function which converts the output of
+        *endpoint* into a Response. Can also be an argument which is
+        passed to an Application's render_factory to generate a render
+        function. For instance, a template name or path.
+      middlewares (list): An optional list of middlewares specific to this Route.
+      resources (dict): An optional dict of resources specific to this Route.
+      methods (list): A list of text names of `HTTP methods
+        <https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods>`_
+        which a request's method must match for this Route to match.
+      render_error (callable): *Advanced*: A function which converts
+        an :exc:`HTTPException` into a Response. Defaults to the
+        Application's :ref:`error handler <error-handlers>`.
+    """
     def __init__(self, pattern, endpoint, render=None,
                  render_error=None, **kwargs):
         self.middlewares = list(kwargs.pop('middlewares', []))

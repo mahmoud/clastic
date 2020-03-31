@@ -148,7 +148,7 @@ class Application(object):
         render arguments into callables, such as
         :class:`~clastic.render.AshesRenderFactory`.
       debug (bool): Set to ``True`` to enable certain debug behavior in the application.
-      error_handler: *Advanced*: An optional :ref:`ErrorHandler <error_handlers>` instance.
+      error_handler: *Advanced*: An optional :ref:`ErrorHandler <error-handlers>` instance.
         Defaults to :class:`~clastic.errors.ErrorHandler`. If *debug* is
         ``True``, defaults to :class:`~clastic.errors.ContextualErrorHandler`.
       slash_mode (str): *Advanced*: Controls how the Application handles trailing slashes.
@@ -198,7 +198,7 @@ class Application(object):
         return
 
     def set_error_handler(self, error_handler=None):
-        """Sets the :ref:`ErrorHandler <error_handlers>` instance. Call
+        """Sets the :ref:`ErrorHandler <error-handlers>` instance. Call
         without arguments to reset the error handler to default.
 
         .. note::
@@ -420,6 +420,19 @@ class Application(object):
 
 
 class DispatchState(object):
+    """The every request handled by an :class:`Application` creates a
+    :class:`DispatchState`, which is used to track relevant state in
+    the routing progress, including which routes were attempted and
+    what exceptions were raised, if any.
+
+
+    .. note::
+
+      Objects of this type are constructed internally and are not really
+      part of the Clastic API, except that they are one of the built-in
+      injectables.
+    """
+
     def __init__(self):
         self.exceptions = []
         self.allowed_methods = set()
