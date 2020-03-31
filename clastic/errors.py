@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""In addition to error handling mechanisms, ``clastic.error`` ships
+with exception types for every standard HTTP error.
+
+Because these standard error types inherit from
+:class:`HTTPException`, which is both an exception and a Response
+type, they can be raised or returned.
+
+Errors are organized by error code, in ascending order. Note that the
+``message`` attribute is sometimes called the "name", e.g. "Not Found"
+for ``404``.
+
+"""
+
 
 """
 One notable (if incremental) improvement over Werkzeug's error system
@@ -70,7 +83,11 @@ ERROR_CODE_MAP = None
 STDLIB_EXC_URL = 'http://docs.python.org/%s/library/exceptions.html#exceptions.' % PY_VERSION
 
 
+__all__ = []  # for docs purposes, gets inited by _module_init
+
+
 def _module_init():
+    global __all__
     global ERROR_CODE_MAP
     ERROR_CODE_MAP = {}
     for k, v in globals().items():
@@ -79,6 +96,10 @@ def _module_init():
                 ERROR_CODE_MAP[v.code] = v
         except (TypeError, AttributeError):
             pass
+
+    __all__.extend([v.__name__ for k, v in
+                    sorted(ERROR_CODE_MAP.items(), key=lambda x: x[1].code)
+                    if k])
 
 
 MIME_SUPPORT_MAP = {'text/html': 'html',
@@ -89,12 +110,46 @@ DEFAULT_MIME = 'text/plain'
 
 
 class HTTPException(BaseResponse, Exception):
+    """The base :class:`Exception` for all default HTTP errors in this
+    module, the HTTPException also inherits from
+    :class:`BaseResponse`, making instances of it and its subtypes
+    valid to use via raising, as well as returning from endpoints and
+    render functions.
+
+    Args:
+
+      detail (str): A string with information about the
+        exception. Appears in the body of the HTML error page.
+      code (int): A numeric HTTP status code (e.g., ``400`` or ``500``).
+      message (str): A short name for the error, (e.g., ``"Not Found"``)
+      error_type (str): An error type name **or link** to a page with
+        details about the type of error. Useful for linking to docs.
+      is_breaking (bool): *Advanced*: For integrating with Clastic's
+        routing system, set to ``True`` to specify that this error
+        instance should not preempt trying routes further down the
+        routing table. If no other route matches or succeeds, this
+        error will be raised.
+      source_route (Route): *Advanced*: The route instance that raised this exception.
+      mimetype (str): A MIME type to return in the Response headers.
+      content_type (str): A Content-Type to return in the Response headers.
+      headers (dict): A mapping of custom headers for the Response. Defaults to ``None``.
+
+
+    .. note::
+
+      The base HTTPException includes simple serialization to text,
+      HTML, XML, and JSON.  So if a client requests a particular
+      format (using the ``Accept`` header), it will automatically
+      respond in that format. It defaults to ``text/plain`` if the
+      requested MIME type is not recognized.
+
+    """
+
     code = None
     message = 'Error'
     detail = 'An unspecified error occurred.'
 
     def __init__(self, detail=None, **kwargs):
-        # TODO: detail could be streamed
         self.detail = detail or self.detail
         self.message = kwargs.pop('message', self.message)
         self.code = kwargs.pop('code', self.code)
@@ -268,7 +323,7 @@ class NotAcceptable(BadRequest):
     message = "Available content not acceptable"
     detail = ("The endpoint cannot generate a response acceptable"
               " by your client (as specified by your client's"
-              " Accept header values.)")
+              " Accept header values).")
 
 
 class ProxyAuthenticationRequired(BadRequest):
@@ -315,7 +370,6 @@ class PreconditionFailed(BadRequest):
 
 
 class RequestEntityTooLarge(BadRequest):
-    "more like ErrorNameTooLong, amirite?"
     code = 413
     message = "Request entity too large"
     detail = ("The method/resource combination requested does"
@@ -324,7 +378,6 @@ class RequestEntityTooLarge(BadRequest):
 
 
 class RequestURITooLong(BadRequest):
-    "... shit."
     code = 414
     message = "Request URL too long"
     detail = ("The length of the requested URL exceeds the"
@@ -477,6 +530,17 @@ class HTTPVersionNotSupported(InternalServerError):
 ## START ERROR HANDLER
 
 class ErrorHandler(object):
+    """The default Clastic error handler. Provides minimal detail,
+    suitable for a production setting.
+
+    Args:
+
+      reraise_uncaught (bool): Set to `True` if you want uncaught
+        exceptions to be handled by the WSGI server rather than by this
+        Clastic error handler.
+
+    """
+
     wsgi_wrapper = None
 
     # TODO: allow overriding redirects (?)
@@ -492,18 +556,42 @@ class ErrorHandler(object):
     server_error_type = InternalServerError
 
     def __init__(self, **kwargs):
-        """\
-        Use reraise_uncaught=True if you want uncaught exceptions to be
-        handled by the WSGI server rather than by this Clastic error handler.
-        """
         self.reraise_uncaught = kwargs.get('reraise_uncaught')
 
     def render_error(self, request, _error):
+        """
+        Turn an :exc:`HTTPException` into a Response of your
+
+        Like endpoints and render functions, ``render_error()`` supports
+        injection of any built-in arguments, as well as the `_error`
+        argument (an instance of :exc:`HTTPException`, so feel free to
+        adapt the signature as needed.
+
+        This method is attached to Routes as they are bound into
+        Applications. Routes can technically override this behavior,
+        but generally a Route's error handling reflects that of the
+        Error Handler in the root application where it is bound.
+
+        By default this method just adapts the response between text,
+        HTML, XML, and JSON.
+
+        """
         best_match = request.accept_mimetypes.best_match(MIME_SUPPORT_MAP)
         _error.adapt(best_match)
         return _error
 
     def uncaught_to_response(self, _application, _route, **kwargs):
+        """Called in the ``except:`` block of Clastic's routing. Must take the
+        currently-being-handled exception and **return** a response
+        instance. The default behavior returns an instance of whatever
+        type is set in the `server_error_type` attribute
+        (:class:`InternalServerError`, by default).
+
+        Note that when inheriting, the method signature should accept
+        ``**kwargs``, as Clastic does not inject arguments as it does
+        with endpoint functions, etc.
+
+        """
         if self.reraise_uncaught:
             raise
         eh = _application.error_handler
@@ -620,6 +708,15 @@ class ContextualNotFound(NotFound):
 
 
 class ContextualErrorHandler(ErrorHandler):
+    """An error handler which offers a bit of debugging context,
+    including a stack and locals (for server errors) and routes tried
+    (for 404s).
+
+    Might be OK for some internal tools, but should generally not be
+    used for production.
+
+    """
+
     exc_info_type = ContextualExceptionInfo
     server_error_type = ContextualInternalServerError
 
@@ -647,6 +744,11 @@ class _REPLDebuggedApplication(DebuggedApplication):
 
 
 class REPLErrorHandler(ContextualErrorHandler):
+    """This error handler wraps the Application in a `Werkzeug debug
+    middleware <https://werkzeug.palletsprojects.com/en/1.0.x/debug/>`_.
+
+    """
+
     wsgi_wrapper = _REPLDebuggedApplication
 
     def uncaught_to_response(self, **kwargs):
