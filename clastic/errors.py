@@ -98,7 +98,8 @@ def _module_init():
             pass
 
     __all__.extend([v.__name__ for k, v in
-                    sorted(ERROR_CODE_MAP.items(), key=lambda x: x[1].code)
+                    sorted(ERROR_CODE_MAP.items(),
+                           key=lambda x: x[1].code or 0)
                     if k])
 
 
