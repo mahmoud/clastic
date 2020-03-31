@@ -1,25 +1,33 @@
 Tutorial
 ========
 
-*TODO: add estimated time for reading the document*
 
-In this document, we are going to develop an application
+.. note::
+
+   This document starts out with a fairly simple application code
+   and proceeds by building on it.
+   Therefore, it would be helpful to the reader
+   to write and try out the various stages of the application
+   while following the document.
+   In this manner, completing it should take about an hour.
+
+
+In this tutorial, we are going to develop an application
 that will convert a given time (and date) between two time zones.
 The user will enter a date and a time,
 and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
 
-.. note::
-
-   Time zones are represented in "region/location" format,
-   as in "Australia/Tasmania".
-   While most such codes have two components,
-   some contain only one (like "UTC"),
-   and some contain more than two
-   (like "America/North_Dakota/New_Salem").
-   Also note that spaces in region and location names are replaced
-   with underscores.
-   Refer to the `list of tz database time zones`_ for a full list.
+Before we start, a note about time zones:
+Time zones are represented in "region/location" format,
+as in "Australia/Tasmania".
+While most such codes have two components,
+some contain only one (like "UTC"),
+and some contain more than two
+(like "America/North_Dakota/New_Salem").
+Also note that spaces in region and location names are replaced
+with underscores.
+Refer to the `list of tz database time zones`_ for a full list.
 
 
 Prerequisites
@@ -406,7 +414,7 @@ we're going to display the converted time
 in the same page as the form instead of moving to a second page.
 In order to achieve this,
 we're going to use JavaScript to update the page
-with data received sent to and received from the application using JSON.
+with data sent to and received from the application using JSON.
 
 First, we're going to change our ``show_time()`` endpoint function
 to accept and return JSON data.
@@ -502,7 +510,7 @@ And the home page template becomes:
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <form action="/show" method="post">
+     <form action="." method="post">
        <input type="datetime-local" name="dt" value="{now}" required>
 
        <div class="timezones">
@@ -554,6 +562,7 @@ The changes are:
   It gets called when the button is clicked.
 
 - The button element is moved out of the form element.
+  Also, the form action now points to the current URL.
 
 One last thing to do is to hide the result markup
 when the page is first loaded.
