@@ -50,6 +50,7 @@ Check out our :doc:`tutorial` for more.
    application
    middleware
    errors
+   meta_application
    static
    troubleshooting
    compared

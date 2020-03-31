@@ -65,8 +65,6 @@ and those Routes can come from other Applications, using
 
 .. autoclass:: clastic.SubApplication
 
-
-
 Advanced Routing
 ----------------
 
@@ -75,5 +73,6 @@ Advanced Routing
 * Clastic's one-of-a-kind routing system allows endpoint functionsand middlewares to participate in routing by raising certain standard errors, telling clastic to continue to check other routes
 * It's even possible to route to a separate WSGI application (i.e., an application not written in Clastic)
 * NullRoute (configurable)
+
 
 .. autoclass:: clastic.RerouteWSGI

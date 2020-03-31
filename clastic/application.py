@@ -128,6 +128,41 @@ class RerouteWSGI(Exception):
 
 
 class Application(object):
+    """The central object around which Clastic revolves.
+
+    The Application initializer checks that all endpoints, render
+    functions, and middlewares have their dependencies satisfied
+    before completing construction. If the signatures don't line up,
+    an :exc:`NameError` will be raised.
+
+    Args:
+
+      routes (list): A list of Route instances, SubApplications, or
+        tuples. Defaults to ``[]``. Add more with :meth:`~Application.add()`.
+      resources (dict): A dict which will be injectabled to Routes and
+        middlewares in this Application. Keys must all be strings,
+        values can be any Python object. Defaults to ``{}``.
+      middlewares (list): A list of :doc:`middleware` objects.
+        Defaults to ``[]``.
+      render_factory (callable): An optional callable to convert
+        render arguments into callables, such as
+        :class:`~clastic.render.AshesRenderFactory`.
+      debug (bool): Set to ``True`` to enable certain debug behavior in the application.
+      error_handler: *Advanced*: An optional :ref:`ErrorHandler <error_handlers>` instance.
+        Defaults to :class:`~clastic.errors.ErrorHandler`. If *debug* is
+        ``True``, defaults to :class:`~clastic.errors.ContextualErrorHandler`.
+      slash_mode (str): *Advanced*: Controls how the Application handles trailing slashes.
+        One of :data:`clastic.S_REDIRECT`, :data:`~clastic.S_STRICT`, :data:`~clastic.S_REWRITE`.
+        Defaults to :data:`~clastic.S_REDIRECT`.
+
+    In addition to arguments, certain advanced behaviors can be
+    customized by inheriting from :class:`Application` and overriding
+    attributes: :attr:`~Application.request_type`,
+    :attr:`~Application.response_type`,
+    :attr:`~Application.default_error_handler_type`, and
+    :attr:`~Application.default_debug_error_handler_type`.
+
+    """
     request_type = Request
     response_type = Response
     default_error_handler_type = ErrorHandler
@@ -163,6 +198,14 @@ class Application(object):
         return
 
     def set_error_handler(self, error_handler=None):
+        """Sets the :ref:`ErrorHandler <error_handlers>` instance. Call
+        without arguments to reset the error handler to default.
+
+        .. note::
+
+          This method does not reset error handlers in Routes which have
+          already been bound.
+        """
         if error_handler is None:
             if self.debug:
                 deh_type = self.default_debug_error_handler_type
@@ -186,6 +229,13 @@ class Application(object):
         return ret
 
     def add(self, entry, index=None, **kwargs):
+        """Add a :class:`Route` or :class:`SubApplication`. A tuple may also be
+        passed, which will be converted accordingly.
+
+        Note that as each Route is bound, the Application checks
+        whether the Route's dependencies can be satisfied by the
+        Application.
+        """
         if index is None:
             index = len(self.routes)
         rf = cast_to_route_factory(entry)
@@ -284,6 +334,11 @@ class Application(object):
         return ret
 
     def get_local_client(self):
+        """Get a simple local client suitable for using in tests. See
+        `Werkzeug's test Client
+        <https://werkzeug.palletsprojects.com/en/1.0.x/test/#werkzeug.test.Client>`_
+        for more info.
+        """
         return werkzeug_test.Client(self, Response)
 
     def serve(self,
@@ -298,6 +353,38 @@ class Application(object):
               static_path=None,
               processes=None,
               **kw):
+        """Serve the Application locally, suitable for development purposes.
+
+        Args:
+
+           address (str): IP address to bind to (defaults to ``"0.0.0.0"``, which works for all IPs)
+           port (int): Port to bind on (defaults to ``5000``)
+           use_meta (bool): Whether to automatically add the
+             :doc:`MetaApplication <meta_application>` to ``/_meta/``. Defaults to ``True``.
+           use_reloader (bool): Whether to automatically reload the application when changes
+             to the source code are saved. Defaults to ``True``.
+           use_debugger (bool): Whether to wrap the Application in
+             `werkzeug's debug middleware
+             <https://werkzeug.palletsprojects.com/en/1.0.x/debug/>`_
+             for interactive debugging. (Note that a PIN will be
+             output on stdout and must be used to interact with the
+             error pages.)
+           use_static (bool): Whether to automatically serve
+             *static_path* under *static_prefix*. Defaults to
+             ``True``.
+           static_prefix (str): The URL path where static assets will
+             be served. Defaults to `/static/`.
+           static_path (str): The filesystem path to static assets to
+             serve if *use_static* is ``True``. Defaults to a path named
+             "static" in the current directory (``"./static/"``).
+           processes (int): Number of processes to serve (not
+             recommended for use with *use_debugger*). (Use
+             sparingly; not for production.)
+
+        .. warning::
+
+           The server provided by this method is not intended for production traffic use.
+        """
         parser = create_dev_server_parser()
         args, _ = parser.parse_known_args()
 
