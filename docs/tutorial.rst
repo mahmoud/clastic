@@ -11,11 +11,22 @@ Tutorial
    In this manner, completing it should take about an hour.
 
 
-In this tutorial, we are going to develop an application
-that will convert a given time (and date) between two time zones.
+While Clastic supports building all sorts of web applications and services,
+our first project will be a traditional HTML-driven web application.
+It will convert a given time (and date) between two time zones.
 The user will enter a date and a time,
 and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
+An example screenshot of the final application is shown below.
+
+.. figure:: images/tzconvert_screenshot.*
+   :alt: Application screenshot showing the user selected time
+     in Tasmania and Timbuktu.
+   :align: center
+
+   After selecting the time and two time zones,
+   clicking the "Show" button will display the given time in the source location
+   and the corresponding time in the destination location.
 
 Before we start, a note about time zones:
 these are represented in "region/location" format,
@@ -29,11 +40,14 @@ with underscores.
 Refer to the "`List of tz database time zones`_" for a full list.
 
 
+.. contents::
+   :local:
+
+
 Prerequisites
 -------------
 
-It's common practice to work in a separate virtual environment
-for each project,
+It's common practice to work in a separate virtual environment for each project,
 so we suggest that you create one for this tutorial.
 Read the "`Virtual Environments and Packages`_" section
 of the official Python documentation for more information.
@@ -43,7 +57,7 @@ Let's start by installing it::
 
   pip install clastic
 
-The example application also makes use of the "dateutil" package.
+The example application also makes use of the `dateutil`_ package.
 Note that the PyPI name for that package is *python-dateutil*::
 
   pip install python-dateutil
@@ -52,7 +66,7 @@ Note that the PyPI name for that package is *python-dateutil*::
 Getting started
 ---------------
 
-The initial version of our application only displays the form,
+Let's start with an application that just displays the form,
 but doesn't handle the submitted data.
 It consists of a Python source file (``tzconvert.py``)
 and an HTML template file (``home.html``),
@@ -112,7 +126,8 @@ Here's the Python file:
        app.serve()
 
 
-Let's go through this code piece by piece.
+Let's go through this code piece by piece,
+starting at the bottom and working our way up.
 
 In the last few lines,
 we create the application and start it
@@ -158,8 +173,7 @@ by giving the sequence of routes and the render factory.
 
 The ``home()`` function generates the data that the template needs
 (the "render context").
-The form in the template will contain two dropdown lists
-for all available time zones,
+In the template, there are two dropdown lists for all available time zones,
 so we have to pass that list.
 Here, we store this data in the ``ALL_TIME_ZONES`` variable,
 which we have constructed using the ``get_all_time_zones()`` function,
@@ -188,7 +202,7 @@ and the current UTC time for the date-time to be converted:
 
 The ``home.html`` template is given below.
 In the selection boxes,
-for each element in the ``zones`` list that is passed as parameter,
+for each element in the render context's ``zones`` list,
 the ``location`` key is used for display
 and the ``zone`` key is used for the value:
 
@@ -247,7 +261,8 @@ to see the form.
 Handling request data
 ---------------------
 
-The form submits the data to the ``/show`` path,
+At first, our application will not display the converted time on the same page.
+Instead, it submits the form data to another page (the ``/show`` path),
 therefore we need an endpoint function to handle these requests.
 First, let's add the corresponding route:
 
@@ -276,7 +291,8 @@ and what data to submit (``value``).
 
 .. code-block:: python
 
-   # from dateutil import parser, tz
+   from dateutil import parser, tz
+
 
    def show_time(request):
        dt = request.values.get("dt")
@@ -346,7 +362,7 @@ As our next step, let us apply some style to our markup.
 We create a subfolder named ``static``
 in the same folder as our Python source file
 and put a file named ``custom.css`` into that folder.
-Below is an example content for the file:
+Below is the example content for the file:
 
 .. code-block:: css
 
@@ -413,9 +429,10 @@ and we set it as the endpoint that will handle the requests
 to any application path under ``/static``:
 
 .. code-block:: python
-   :emphasize-lines: 4, 8
+   :emphasize-lines: 5, 9
 
-   # from clastic.static import StaticApplication
+   from clastic.static import StaticApplication
+
 
    def create_app():
        static_app = StaticApplication(STATIC_PATH)
@@ -446,19 +463,20 @@ In the last part of the tutorial,
 we're going to display the converted time
 in the same page as the form instead of moving to a second page.
 In order to achieve this,
-we're going to use JavaScript to update the page
-with data sent to and received from the application using JSON.
+we're going to implement a basic JSON API endpoint
+to update the page with data sent to and received from the application.
 
-First, we're going to modify our ``show_time()`` endpoint function.
-Note that the only difference is
-that the submitted data are loaded from ``request.data``
-instead of being accessed through ``request.values``,
-and that there is no change in the returned value:
+Actually, we can use our ``show_time()`` function for this purpose,
+with minimal changes.
+Instead of accessing the submitted data through ``request.values``,
+we just load it from ``request.data``.
+No changes are needed regarding the returned value.
 
 .. code-block:: python
-   :emphasize-lines: 4
+   :emphasize-lines: 5
 
-   # import json
+   import json
+
 
    def show_time(request):
        values = json.loads(request.data)
@@ -493,9 +511,10 @@ to :func:`render_json <clastic.render_json>`
 for this route:
 
 .. code-block:: python
-   :emphasize-lines: 7
+   :emphasize-lines: 8
 
-   # from clastic import render_json
+   from clastic import render_json
+
 
    def create_app():
        static_app = StaticApplication(STATIC_PATH)
@@ -508,12 +527,11 @@ for this route:
        return Application(routes, render_factory=render_factory)
 
 
-Now you should be able to test this route using curl::
+At this point, you should be able to test this route using `curl`_::
 
   curl -X POST -H "Content-Type: application/json" \
-    -d '{"dt": "2020-03-30T16:53", "src": "Australia/Tasmania", "dst": "UTC"}' \
+    -d '{"dt": "2020-04-01T10:28", "src": "Australia/Tasmania", "dst": "Africa/Timbuktu"}' \
     http://localhost:5000/show
-
 
 And the home page template becomes:
 
@@ -611,10 +629,14 @@ This can be easily achieved in CSS:
 
 
 This concludes the introductory tutorial.
+The full application code can be found in the `repo`_.
 Check out the other documents and example applications
 for advanced usage of Clastic features.
 
 
 .. _List of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
+.. _dateutil: https://dateutil.readthedocs.io/en/stable/
 .. _Ashes: https://github.com/mahmoud/ashes
+.. _curl: https://curl.haxx.se/
+.. _repo: https://github.com/mahmoud/clastic/tree/master/examples/tzconvert
