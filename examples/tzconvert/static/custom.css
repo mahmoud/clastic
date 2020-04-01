@@ -1,0 +1,45 @@
+body {
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+h1 {
+  font-size: 3em;
+}
+
+p, h1 {
+  text-align: center;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+input, select, button {
+  font: inherit;
+}
+
+label {
+  display: block;
+}
+
+div.timezones {
+  display: flex;
+  justify-content: space-between;
+  margin: 1rem 0;
+}
+
+div.timezone {
+  width: 45%;
+}
+
+p.info {
+  display: none;
+  font-size: 2em;
+  line-height: 2;
+}
+
+time {
+  color: #ff0000;
+}
