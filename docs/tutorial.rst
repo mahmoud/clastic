@@ -201,7 +201,7 @@ and the current UTC time for the date-time to be converted:
 
 
 The ``home.html`` template is given below.
-In the selection boxes,
+In the selection options,
 for each element in the render context's ``zones`` list,
 the ``location`` key is used for display
 and the ``zone`` key is used for the value:
