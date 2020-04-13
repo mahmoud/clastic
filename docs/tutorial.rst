@@ -595,7 +595,7 @@ And the home page template becomes:
          </div>
        </div>
 
-       <button onclick="showResult(event)">Show</button></p>
+       <button onclick="showResult(event)">Show</button>
      </form>
 
      <p class="info">
