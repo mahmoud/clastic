@@ -544,7 +544,8 @@ And the home page template becomes:
      <title>Time zone convertor</title>
      <link rel="stylesheet" href="/static/custom.css">
      <script>
-       async function showResult() {
+       async function showResult(event) {
+         event.preventDefault();
          let formData = new FormData(document.querySelector('form'));
          let response = await fetch('/show', {
            method: 'POST',
@@ -593,8 +594,9 @@ And the home page template becomes:
            </select>
          </div>
        </div>
+
+       <button onclick="showResult(event)">Show</button></p>
      </form>
-     <p><button onclick="showResult()">Show</button></p>
 
      <p class="info">
        When it's <time id="src_dt" datetime="2020-01-01T18:00">Jan 1 2020</time>
@@ -613,9 +615,6 @@ The changes are:
 
 - The JavaScript code for updating the page is added.
   It gets called when the button is clicked.
-
-- The button element is moved out of the form element.
-  Also, the form action now points to the current URL.
 
 One last thing to do is to hide the result markup
 before the user clicks the "Show" button.
