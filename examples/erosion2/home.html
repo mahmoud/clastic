@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Erosion</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <main class="content">
+      <h1>Erosion</h1>
+      <p class="tagline">Exogenic linkrot for limited sharing.</p>
+
+      <section class="box">
+        <h2>Create a URL</h2>
+        <div class="new">
+          <form method="POST" action="/submit">
+            <p class="target">
+              <label for="target-url">Web URL:</label>
+              <input type="text" id="target-url" name="target_url">
+            </p>
+
+            <p>
+              <label for="alias">Shortened as:</label>
+              <span class='input-prefix'>{full_host_url}</span>
+              <input type="text" id="alias" name="alias">
+              <span class="note">(optional)</span>
+            </p>
+
+            <p>
+              <label for="max-count">Click expiration:</label>
+              <input id="max-count" name="max_count" size="3" value="1">
+            </p>
+
+            <p>
+              <span class="date-expiry-l">Time expiration:</span>
+
+              <input type="radio" name="expiry_time" id="after-mins" value="mins">
+              <label for="after-mins" class="date-expiry">five minutes</label>
+
+              <input type="radio" name="expiry_time" id="after-hour" value="hour" checked>
+              <label for="after-hour" class="date-expiry">one hour</label>
+
+              <input type="radio" name="expiry_time" id="after-day" value="day">
+              <label for="after-day" class="date-expiry">one day</label>
+
+              <input type="radio" name="expiry_time" id="after-month" value="month">
+              <label for="after-month" class="date-expiry">one month</label>
+
+              <input type="radio" name="expiry_time" id="after-none" value="never">
+              <label for="after-none" class="date-expiry">never</label>
+            </p>
+
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+      </section>
+
+      {?entries}
+      <section>
+        <h2>Manage URLs</h2>
+        <ul>
+          {#entries}
+          <li>
+            <a href="{full_host_url}{.alias}">{full_host_url}{.alias}</a> &raquo; {.target} -
+            <span class="click-count"> ({.count} / {.max_count} clicks)</span>
+          </li>
+          {/entries}
+        </ul>
+      </section>
+      {/entries}
+    </main>
+
+    <footer class="content note">
+      An example application for
+      <a href="https://github.com/mahmoud/clastic">clastic</a>.
+    </footer>
+  </body>
+</html>
