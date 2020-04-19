@@ -21,7 +21,7 @@
 
             <p>
               <label for="alias">Shortened as:</label>
-              <span class='input-prefix'>{full_host_url}</span>
+              <span class='input-prefix'>{host_url}</span>
               <input type="text" id="alias" name="alias">
               <span class="note">(optional)</span>
             </p>
@@ -61,7 +61,7 @@
         <ul>
           {#entries}
           <li>
-            <a href="{full_host_url}{.alias}">{full_host_url}{.alias}</a> &raquo; {.target} -
+            <a href="{host_url}{.alias}">{host_url}{.alias}</a> &raquo; {.target} -
             <span class="click-count"> ({.count} / {.max_count} clicks)</span>
           </li>
           {/entries}

@@ -47,6 +47,7 @@ Check out our :doc:`tutorial` for more.
    :caption: Contents:
 
    tutorial
+   tutorial-part2
    application
    middleware
    errors
