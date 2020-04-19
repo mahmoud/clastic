@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from http import HTTPStatus
 
 from clastic import Application, POST, redirect
+from clastic.middleware.form import PostDataMiddleware
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
 
@@ -18,11 +19,7 @@ def home(host_url, db):
     return {"host_url": host_url, "entries": entries}
 
 
-def add_entry(request, db):
-    target_url = request.values.get("target_url")
-    alias = request.values.get("alias")
-    expiry_time = request.values.get("expiry_time")
-    max_count = request.values.get("max_count")
+def add_entry(db, target_url, alias, expiry_time, max_count):
     entry = db.add_link(
         target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
     )
@@ -34,10 +31,19 @@ def render_add_entry(context):
 
 
 def create_app():
+    new_link_mw = PostDataMiddleware(
+        {
+            "target_url": str,
+            "alias": str,
+            "max_count": int,
+            "expiry_time": str,
+        }
+    )
+
     static_app = StaticApplication(STATIC_PATH)
     routes = [
         ("/", home, "home.html"),
-        POST("/submit", add_entry, render_add_entry),
+        POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
         ("/static", static_app),
     ]
 

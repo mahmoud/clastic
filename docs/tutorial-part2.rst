@@ -304,7 +304,7 @@ Below is the implementation
        target_url = request.values.get("target_url")
        alias = request.values.get("alias")
        expiry_time = request.values.get("expiry_time")
-       max_count = request.values.get("max_count")
+       max_count = int(request.values.get("max_count"))
        entry = db.add_link(
            target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
        )
@@ -389,3 +389,50 @@ This makes sure that other HTTP methods will not be allowed for this path.
 You can try typing the address ``http://localhost:5000/submit``
 into the location bar of your browser,
 and you should see a "method not allowed" error.
+
+
+Using middleware
+----------------
+
+We can use Clastic :doc:`middleware <middleware>`
+to keep application logic out of our endpoint functions.
+In our example, we can use
+the :class:`PostDataMiddleware <clastic.middleware.form.PostDataMiddleware>`
+to convert the form data into appropriate types:
+
+.. code-block:: python
+
+   from clastic.middleware.form import PostDataMiddleware
+
+
+   def create_app():
+       new_link_mw = PostDataMiddleware(
+           {
+               "target_url": str,
+               "alias": str,
+               "max_count": int,
+               "expiry_time": str,
+           }
+       )
+
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
+           ("/static", static_app),
+       ]
+
+       ...
+
+
+This middleware also makes these data items available
+to the endpoint function as parameters.
+So we don't need to get them from ``request.values``:
+
+.. code-block:: python
+
+   def add_entry(db, target_url, alias, expiry_time, max_count):
+       entry = db.add_link(
+           target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
+       )
+       return {}
