@@ -161,3 +161,60 @@ It expects two items in the render context:
 
 The endpoint provides neither of these but fortunately,
 the default behavior of the renderer for nonexisting items is good for now.
+
+
+Resources
+---------
+
+The first issue we want to solve is that of passing the host URL
+to the template.
+To achieve this, we need a way of letting the endpoint function
+get the host URL,
+so that it can put it into the render context.
+Clastic lets us register *resources* with the application;
+these will be made available to endpoint functions when requested.
+
+Let's start by adding a simple, ini-style configuration file
+named :file:`erosion.ini`,
+with the following contents:
+
+.. code-block:: ini
+
+   [erosion]
+   host_url = http://localhost:5000
+
+
+Now we can read this file as part of our application creation function:
+
+.. code-block:: python
+
+   def create_app():
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           ("/static", static_app),
+       ]
+
+       config_path = os.path.join(CUR_PATH, "erosion.ini")
+       config = ConfigParser()
+       config.read(config_path)
+       host_url = config["erosion"]["host_url"].rstrip('/') + '/'
+       resources = {"host_url": host_url}
+
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, resources=resources, render_factory=render_factory)
+
+
+The application resources are kept as a dictionary.
+After getting the host URL from the configuration file,
+we put it into this dictionary,
+which is then registered with the application during application
+instantiation.
+
+Endpoint functions can get application resources
+simply by listing them as parameters:
+
+.. code-block:: python
+
+   def home(host_url):
+       return {"host_url": host_url}
