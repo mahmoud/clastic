@@ -218,3 +218,70 @@ simply by listing them as parameters:
 
    def home(host_url):
        return {"host_url": host_url}
+
+
+Let's apply a similar solution for passing the entries to the template.
+We will need to store the shortened links in some form of database.
+For the sake of simplicity, we'll use the ``shelve`` module
+in the Python standard library as our storage backend.
+The alias will be the key, and the full link data will be the value.
+Here's a simple, initial implementation for the backend,
+stored in the file :file:`model.py`:
+
+.. code-block:: python
+
+   import shelve
+
+
+   class LinkDB:
+       def __init__(self, db_path):
+           self.db_path = db_path
+
+       def get_links(self):
+           with shelve.open(self.db_path) as db:
+               return db.values()
+
+
+Add an option to the configuration file:
+
+.. code-block:: ini
+
+   [erosion]
+   host_url = http://localhost:5000
+   db_path = erosion.db
+
+
+Next, add the database connection to the application resources:
+
+.. code-block:: python
+   :emphasize-lines: 1, 15, 17
+
+   from model import LinkDB
+
+
+   def create_app():
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           ("/static", static_app),
+       ]
+
+       config_path = os.path.join(CUR_PATH, "erosion.ini")
+       config = ConfigParser()
+       config.read(config_path)
+       host_url = config["erosion"]["host_url"].rstrip('/') + '/'
+       db_path = config["erosion"]["db_path"]
+
+       resources = {"host_url": host_url, "db": LinkDB(db_path)}
+
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, resources=resources, render_factory=render_factory)
+
+
+And finally, use the database resource in the endpoint function:
+
+.. code-block:: python
+
+   def home(host_url, db):
+       entries = db.get_links()
+       return {"host_url": host_url}

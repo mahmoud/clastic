@@ -5,12 +5,15 @@ from clastic import Application
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
 
+from model import LinkDB
+
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 STATIC_PATH = os.path.join(CUR_PATH, "static")
 
 
-def home(host_url):
+def home(host_url, db):
+    entries = db.get_links()
     return {"host_url": host_url}
 
 
@@ -25,7 +28,9 @@ def create_app():
     config = ConfigParser()
     config.read(config_path)
     host_url = config["erosion"]["host_url"].rstrip('/') + '/'
-    resources = {"host_url": host_url}
+    db_path = config["erosion"]["db_path"]
+
+    resources = {"host_url": host_url, "db": LinkDB(db_path)}
 
     render_factory = AshesRenderFactory(CUR_PATH)
     return Application(routes, resources=resources, render_factory=render_factory)
