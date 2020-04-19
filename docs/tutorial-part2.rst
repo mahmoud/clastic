@@ -198,9 +198,10 @@ Now we can read this file as part of our application creation function:
        config_path = os.path.join(CUR_PATH, "erosion.ini")
        config = ConfigParser()
        config.read(config_path)
-       host_url = config["erosion"]["host_url"].rstrip('/') + '/'
 
+       host_url = config["erosion"]["host_url"].rstrip('/') + '/'
        resources = {"host_url": host_url}
+
        render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, resources=resources, render_factory=render_factory)
 
@@ -255,7 +256,7 @@ Add an option to the configuration file:
 Next, add the database connection to the application resources:
 
 .. code-block:: python
-   :emphasize-lines: 1, 15, 17
+   :emphasize-lines: 1, 16, 17
 
    from model import LinkDB
 
@@ -270,10 +271,11 @@ Next, add the database connection to the application resources:
        config_path = os.path.join(CUR_PATH, "erosion.ini")
        config = ConfigParser()
        config.read(config_path)
+
        host_url = config["erosion"]["host_url"].rstrip('/') + '/'
        db_path = config["erosion"]["db_path"]
-
        resources = {"host_url": host_url, "db": LinkDB(db_path)}
+
        render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, resources=resources, render_factory=render_factory)
 
@@ -373,15 +375,7 @@ What's left is adding this route to the application:
            ("/static", static_app),
        ]
 
-       config_path = os.path.join(CUR_PATH, "erosion.ini")
-       config = ConfigParser()
-       config.read(config_path)
-       host_url = config["erosion"]["host_url"].rstrip("/") + "/"
-       db_path = config["erosion"]["db_path"]
-
-       resources = {"host_url": host_url, "db": LinkDB(db_path)}
-       render_factory = AshesRenderFactory(CUR_PATH)
-       return Application(routes, resources=resources, render_factory=render_factory)
+       ...
 
 
 We add this route as a :func:`POST <clastic.POST>` route.
@@ -407,12 +401,7 @@ to convert the form data into appropriate types:
 
    def create_app():
        new_link_mw = PostDataMiddleware(
-           {
-               "target_url": str,
-               "alias": str,
-               "max_count": int,
-               "expiry_time": str,
-           }
+           {"target_url": str, "alias": str, "max_count": int, "expiry_time": str}
        )
 
        static_app = StaticApplication(STATIC_PATH)
@@ -436,3 +425,92 @@ So we don't need to get them from ``request.values``:
            target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
        )
        return {}
+
+
+Cookies
+-------
+
+As another example of middleware usage,
+let us use cookies for displaying a notice about newly added links.
+At the moment, our ``render_add_entry`` function only redirects
+to the home page.
+But we want to be able to pass data to the home page rendering function
+about the new link.
+We will pass that data over a cookie.
+
+A middleware can also be registered at the application level
+rather than for just one route.
+First we add a signed cookie middleware to our application
+that reads its secret key from the configuration file:
+
+.. code-block:: python
+
+   def create_app():
+       ...
+
+       cookie_secret = config["erosion"]["cookie_secret"]
+       cookie_mw = SignedCookieMiddleware(secret_key=cookie_secret)
+
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(
+           routes,
+           resources=resources,
+           middlewares=[cookie_mw],
+           render_factory=render_factory,
+       )
+
+
+If an endpoint function wants to access this cookie,
+it just has to declare a parameter named ``cookie``.
+We want the ``render_add_entry`` function to pass the data
+over this cookie during redirection,
+but in order to do that,
+we have to let the ``add_entry`` endpoint function to put the data
+into the render context where the ``render_add_entry`` function
+can access it:
+
+.. code-block:: python
+
+   def add_entry(db, target_url, alias, expiry_time, max_count):
+       entry = db.add_link(
+           target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
+       )
+       return {"new_entry": entry}
+
+
+   def render_add_entry(context, cookie):
+       new_entry = context.get("new_entry")
+       if new_entry is not None:
+           cookie["new_entry_alias"] = new_entry["alias"]
+       return redirect("/", code=HTTPStatus.SEE_OTHER)
+
+
+This redirection will cause the ``home`` endpoint function
+to be activated.
+That function will get the needed data from the cookie,
+and put it into the render context:
+
+.. code-block:: python
+
+   def home(host_url, db, cookie):
+       entries = db.get_links()
+       new_entry_alias = cookie.pop("new_entry_alias", None)
+       return {
+           "host_url": host_url,
+           "entries": entries,
+           "new_entry_alias": new_entry_alias,
+       }
+
+
+And add a piece of markup to the template to display the notice:
+
+.. code-block:: html
+
+   <h1>Erosion</h1>
+   <p class="tagline">Exogenic linkrot for limited sharing.</p>
+
+   {#new_entry_alias}
+   <p>
+     Successfully created <a href="{host_url}{.}">{host_url}{.}</a>.
+   </p>
+   {/new_entry_alias}
