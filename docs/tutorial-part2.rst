@@ -199,21 +199,21 @@ Now we can read this file as part of our application creation function:
        config = ConfigParser()
        config.read(config_path)
 
-       host_url = config["erosion"]["host_url"].rstrip('/') + '/'
+       host_url = config["erosion"]["host_url"].rstrip("/") + "/"
        resources = {"host_url": host_url}
 
        render_factory = AshesRenderFactory(CUR_PATH)
        return Application(routes, resources=resources, render_factory=render_factory)
 
 
-The application resources are kept as a dictionary.
+The application resources are kept as items in a dictionary.
 After getting the host URL from the configuration file,
 we put it into this dictionary,
-which is then registered with the application during application
+which then gets registered with the application during application
 instantiation.
 
-Endpoint functions can get application resources
-simply by listing them as parameters:
+Endpoint functions can access application resources
+simply by listing them (their dictionary keys) as parameters:
 
 .. code-block:: python
 
@@ -298,7 +298,7 @@ The endpoint function for this path has to receive the data,
 add the new entry to the database,
 and pass a context to the rendering function.
 Below is the implementation
-(note that it returns an empty render context for the moment):
+(note that it returns an empty render context for now):
 
 .. code-block:: python
 
@@ -434,16 +434,20 @@ As another example of middleware usage,
 let us use cookies for displaying a notice about newly added links.
 At the moment, our ``render_add_entry`` function only redirects
 to the home page.
-But we want to be able to pass data to the home page rendering function
+But we want to pass data to the home page rendering function
 about the new link.
 We will pass that data over a cookie.
 
 A middleware can also be registered at the application level
 rather than for just one route.
-First we add a signed cookie middleware to our application
-that reads its secret key from the configuration file:
+First we add
+a :class:`SignedCookieMiddleware <clastic.middleware.cookie import SignedCookieMiddleware>`
+to our application that reads its secret key from the configuration file:
 
 .. code-block:: python
+
+   from clastic.middleware.cookie import SignedCookieMiddleware
+
 
    def create_app():
        ...
