@@ -249,7 +249,12 @@ for saving and retrieving link entries:
                entries = list(db.values())
            return entries
 
-       def add_link(self, alias, *, target_url, expiry_time, max_count):
+       def get_link(self, alias):
+           with shelve.open(self.db_path) as db:
+               entry = db.get(alias)
+           return entry
+
+       def add_link(self, *, target_url, alias, expiry_time, max_count):
            entry = {
                "target": target_url,
                "alias": alias,
@@ -376,6 +381,37 @@ and you should see a "method not allowed" error.
 There are also other method-restricted routes,
 like :func:`GET <clastic.GET>`, :func:`PUT <clastic.PUT>`, and
 :func:`DELETE <clastic.DELETE>`.
+
+
+Named path segments
+-------------------
+
+Now let's turn to using the stored shortened links.
+When the shortened link URL is visited,
+we just want to redirect the browser to the target URL.
+This is going to be a GET-only route:
+
+.. code-block:: python
+   :emphasize-lines: 5
+
+   routes = [
+       ("/", home, "home.html"),
+       POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
+       ("/static", static_app),
+       GET('/<alias>', use_entry),
+   ]
+
+
+The "alias" part of the path is placed between angular brackets
+to make that segment a named parameter to the endpoint function.
+And there is no need for a renderer in this case;
+the endpoint function will do the redirection right away:
+
+.. code-block:: python
+
+   def use_entry(alias, db):
+       entry = db.get_link(alias)
+       return redirect(entry["target"], code=HTTPStatus.MOVED_PERMANENTLY)
 
 
 Using middleware

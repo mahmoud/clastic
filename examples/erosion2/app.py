@@ -2,7 +2,7 @@ import os
 from configparser import ConfigParser
 from http import HTTPStatus
 
-from clastic import Application, POST, redirect
+from clastic import Application, GET, POST, redirect
 from clastic.middleware.cookie import SignedCookieMiddleware
 from clastic.middleware.form import PostDataMiddleware
 from clastic.render import AshesRenderFactory
@@ -39,6 +39,11 @@ def render_add_entry(context, cookie):
     return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
+def use_entry(alias, db):
+    entry = db.get_link(alias)
+    return redirect(entry["target"], code=HTTPStatus.MOVED_PERMANENTLY)
+
+
 def create_app():
     new_link_mw = PostDataMiddleware(
         {"target_url": str, "alias": str, "max_count": int, "expiry_time": str}
@@ -49,6 +54,7 @@ def create_app():
         ("/", home, "home.html"),
         POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
         ("/static", static_app),
+        GET('/<alias>', use_entry),
     ]
 
     config_path = os.path.join(CUR_PATH, "erosion.ini")

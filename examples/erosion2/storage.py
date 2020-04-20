@@ -10,6 +10,11 @@ class LinkDB:
             entries = list(db.values())
         return entries
 
+    def get_link(self, alias):
+        with shelve.open(self.db_path) as db:
+            entry = db.get(alias)
+        return entry
+
     def add_link(self, *, target_url, alias, expiry_time, max_count):
         entry = {
             "target": target_url,
