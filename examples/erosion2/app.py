@@ -8,7 +8,7 @@ from clastic.middleware.form import PostDataMiddleware
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
 
-from model import LinkDB
+from storage import LinkDB
 
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))

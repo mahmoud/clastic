@@ -227,7 +227,7 @@ For the sake of simplicity, we'll use the ``shelve`` module
 in the Python standard library as our storage backend.
 The alias will be the key, and the full link data will be the value.
 Here's a simple, initial implementation for the backend,
-stored in the file :file:`model.py`:
+stored in the file :file:`storage.py`:
 
 .. code-block:: python
 
@@ -258,7 +258,7 @@ Next, add the database connection to the application resources:
 .. code-block:: python
    :emphasize-lines: 1, 16, 17
 
-   from model import LinkDB
+   from storage import LinkDB
 
 
    def create_app():
