@@ -18,7 +18,7 @@ This second part will cover resource handling, redirection,
 and middleware usage.
 
 The example application will be a link shortener.
-There will be an option letting shortened links expire,
+There will be an option for letting shortened links expire,
 based on time or on the number of times they have been clicked.
 For the sake of simplicity, we'll use the ``shelve`` module
 in the Python standard library as our storage backend.
@@ -169,7 +169,7 @@ It expects two items in the render context:
 
 The endpoint provides neither of these but fortunately,
 the template engine leaves the parts relating to nonexisting items blank,
-which works good for now.
+which is OK for now.
 
 
 Resources
@@ -322,7 +322,7 @@ Let's continue with creating new shortened links.
 The new link form submits its data to the ``/submit`` path.
 The endpoint function for this path has to receive the data,
 add the new entry to the database,
-and pass a context (empty for now) to the rendering function:
+and pass it to the rendering function as part of the context:
 
 .. code-block:: python
 
@@ -334,16 +334,15 @@ and pass a context (empty for now) to the rendering function:
        entry = db.add_link(
            target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
        )
-       return {}
+       return {"new_entry": entry}
 
 
-The next question is: how do we render this?
-We don't want to go to another page, we want to go back to the home page.
-Since the home page already lists all entries,
+The next question is: what should the renderer do?
+We don't want to display another page, we want to redirect the visitor
+back to the home page.
+Since the home page lists all entries,
 we should be able to see our newly created entry there.
-We're going to need a render function
-that will redirect the browser to the home page
-(using the :func:`redirect() <clastic.redirect>` function):
+We use the :func:`redirect() <clastic.redirect>` function for this:
 
 .. code-block:: python
 
@@ -351,8 +350,16 @@ that will redirect the browser to the home page
    from http import HTTPStatus
 
 
-   def render_add_entry():
+   def render_add_entry(context):
+       new_entry = context.get("new_entry")
        return redirect("/", code=HTTPStatus.SEE_OTHER)
+
+
+Later, we will add a notification to the home page about the newly added link.
+And for that, the rendering function gets the new entry
+using the special parameter name ``context``
+for accessing the render :ref:`context <context-builtin>`.
+It doesn't do anything with the entry for now.
 
 What's left is adding this route to the application:
 
@@ -392,7 +399,10 @@ we just want to redirect the browser to the target URL.
 This is going to be a GET-only route:
 
 .. code-block:: python
-   :emphasize-lines: 5
+   :emphasize-lines: 8
+
+   from clastic import GET
+
 
    routes = [
        ("/", home, "home.html"),
@@ -459,29 +469,14 @@ anymore:
 Cookies
 -------
 
-As another example of middleware,
-let's use cookies for displaying a notice about newly added links.
-At the moment, only the ``add_entry()`` endpoint function has the data
+Let's go back to the issue of displaying a notice about newly added links.
+At the moment, the ``render_add_entry()`` endpoint function has the data
 about the new link,
-but how do we make it available in the home page template?
-Remember the flow:
-
-#. The ``add_entry()`` endpoint function generates a render context
-   for the ``render_add_entry()`` rendering function.
-
-#. The rendering function redirects to the ``/`` path.
-
-#. The ``home()`` endpoint function processes this new request.
-   It generates a context for the home page template.
-
-#. The renderer renders the home page template.
-
-Passing the data between 1 and 2, and similarly between 3 and 4 is easy:
-the endpoint function just places it into the render context.
-But passing between 2 and 3 requires the data to persist
-over a new HTTP requests, so we'll use a cookie.
-The ``render_add_entry()`` function will place the data in a cookie,
-and the ``home()`` function will pick it up from there.
+but redirecting to the home page requires passing that data
+over a new HTTP request.
+We can use a cookie to achieve this:
+the ``render_add_entry()`` function places the data in a cookie,
+and the ``home()`` function picks it up from there.
 
 Cookies can be accessed through ``request.cookies``,
 but in this example we want to use a signed cookie.
@@ -515,22 +510,7 @@ The secret key for signing the cookie will be read from the configuration file:
 If a function wants to access this cookie,
 it just has to declare a parameter named ``cookie``.
 
-Let's start by putting the new link data into the render context (step 1):
-
-.. code-block:: python
-
-   def add_entry(db, target_url, alias, expiry_time, max_count):
-       entry = db.add_link(
-           target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
-       )
-       return {"new_entry": entry}
-
-
-Next, the rendering function will get the data from the context,
-and store its alias in a cookie (step 2).
-Note that, in addition to the ``cookie`` parameter for accessing the cookie,
-the function also declares a parameter named ``context``
-for accessing the render :ref:`context <context-builtin>`:
+Here's how the rendering function stores the new alias in the cookie:
 
 .. code-block:: python
 
@@ -541,8 +521,8 @@ for accessing the render :ref:`context <context-builtin>`:
        return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
-After redirection, the endpoint function will get the alias from the cookie,
-and put it into the render context (step 3):
+And here's how the endpoint function gets the alias from the cookie,
+and puts it into the render context:
 
 .. code-block:: python
 
@@ -556,7 +536,7 @@ and put it into the render context (step 3):
        }
 
 
-And a piece of markup is needed in the template to display the notice (step 4):
+And a piece of markup is needed in the template to display the notice:
 
 .. code-block:: html
 
