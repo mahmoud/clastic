@@ -4,10 +4,11 @@ Tutorial (Part 2)
 
 .. note::
 
-   This document continues from where the first part left off.
-   As in the first part, we proceed by building on the example application
+   This document continues from where the :doc:`first part <tutorial>`
+   left off.
+   As in the first part, we proceed by developing an example application
    step by step.
-   It would be helpful to the reader to code along
+   We suggest that you code along
    and try out the various stages of the application.
    In this manner, completing it should take about an hour.
 
@@ -20,7 +21,8 @@ and middleware usage.
 The example application will be a link shortener.
 There will be an option for letting shortened links expire,
 based on time or on the number of times they have been clicked.
-For the sake of simplicity, we'll use the ``shelve`` module
+For the sake of simplicity,
+we'll use the `shelve <https://docs.python.org/3/library/shelve.html>`_ module
 in the Python standard library as our storage backend.
 A stored link entry will consist of the target URL, the (short) alias,
 the expiry time, the maximum number of clicks, and the actual number of clicks.
@@ -342,7 +344,7 @@ We don't want to display another page, we want to redirect the visitor
 back to the home page.
 Since the home page lists all entries,
 we should be able to see our newly created entry there.
-We use the :func:`redirect() <clastic.redirect>` function for this:
+We use the :func:`~clastic.redirect` function for this:
 
 .. code-block:: python
 
@@ -380,14 +382,14 @@ What's left is adding this route to the application:
        ...
 
 
-We add this route as a :func:`POST <clastic.POST>` route.
+We add this route as a :class:`~clastic.POST` route.
 This makes sure that other HTTP methods will not be allowed for this path.
 You can try typing the address ``http://localhost:5000/submit``
 into the location bar of your browser,
-and you should see a "method not allowed" error.
+and you should see a :exc:`~clastic.errors.MethodNotAllowed` error.
 There are also other method-restricted routes,
-like :func:`GET <clastic.GET>`, :func:`PUT <clastic.PUT>`, and
-:func:`DELETE <clastic.DELETE>`.
+like :class:`~clastic.GET`, :class:`~clastic.PUT`, and
+:class:`~clastic.DELETE`.
 
 
 Named path segments
@@ -430,7 +432,7 @@ Using middleware
 Clastic allows us to use :doc:`middleware <middleware>`
 to keep application logic out of endpoint functions and to promote reuse.
 For example,
-the :class:`PostDataMiddleware <clastic.middleware.form.PostDataMiddleware>`
+the :class:`~clastic.middleware.form.PostDataMiddleware`
 can be used to convert the form data into appropriate types
 and make them available to endpoint functions as parameters:
 
@@ -481,7 +483,7 @@ and the ``home()`` function picks it up from there.
 Cookies can be accessed through ``request.cookies``,
 but in this example we want to use a signed cookie.
 Clastic includes
-a :class:`SignedCookieMiddleware <clastic.middleware.cookie.SignedCookieMiddleware>`
+a :class:`~clastic.middleware.cookie.SignedCookieMiddleware`
 for this purpose.
 This time we're going to register the middleware at the application level
 rather than for just one route.
