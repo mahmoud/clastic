@@ -22,7 +22,7 @@ The example application will be a link shortener.
 There will be an option for letting shortened links expire,
 based on time or on the number of times they have been clicked.
 For the sake of simplicity,
-we'll use the `shelve <https://docs.python.org/3/library/shelve.html>`_ module
+we'll use the :mod:`shelve` module
 in the Python standard library as our storage backend.
 A stored link entry will consist of the target URL, the (short) alias,
 the expiry time, the maximum number of clicks, and the actual number of clicks.
