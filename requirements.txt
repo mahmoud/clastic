@@ -5,35 +5,32 @@
 #    pip-compile requirements.in
 #
 appdirs==1.4.3            # via virtualenv
-ashes==19.2.0
+ashes==19.2.0             # via -r requirements.in
 atomicwrites==1.3.0       # via pytest
-attrs==19.3.0
-boltons==20.0.0
-chameleon==3.6.2
+attr==0.3.1               # via -r requirements.in
+attrs==19.3.0             # via glom, pytest
+boltons==20.0.0           # via -r requirements.in, face, glom
+chameleon==3.6.2          # via -r requirements.in
 click==7.0                # via pip-tools
-coverage==5.0.3
+coverage==5.0.3           # via -r requirements.in
 distlib==0.3.0            # via virtualenv
-face==20.1.1
+face==20.1.1              # via -r requirements.in, glom
 filelock==3.0.12          # via tox, virtualenv
-glom==19.10.0
-importlib-metadata==1.5.0  # via pluggy, pytest, tox, virtualenv
-importlib-resources==1.0.2  # via virtualenv
-mako==1.1.1
+glom==19.10.0             # via -r requirements.in
+mako==1.1.1               # via -r requirements.in
 markupsafe==1.1.1         # via mako
-more-itertools==5.0.0
+more-itertools==5.0.0     # via -r requirements.in, pytest
 packaging==20.1           # via pytest, tox
-pathlib2==2.3.5           # via pytest
-pip-tools==4.5.0
+pip-tools==4.5.0          # via -r requirements.in
 pluggy==0.13.1            # via pytest, tox
-psutil==5.6.0
+psutil==5.6.6             # via -r requirements.in
 py==1.8.1                 # via pytest, tox
 pyparsing==2.4.6          # via packaging
-pytest==4.6.9
-secure-cookie==0.1.0
-six==1.14.0               # via more-itertools, packaging, pathlib2, pip-tools, pytest, tox, virtualenv
+pytest==4.6.9             # via -r requirements.in
+secure-cookie==0.1.0      # via -r requirements.in
+six==1.14.0               # via more-itertools, packaging, pip-tools, pytest, tox, virtualenv
 toml==0.10.0              # via tox
-tox==3.14.5
-virtualenv==20.0.5
+tox==3.14.5               # via -r requirements.in
+virtualenv==20.0.5        # via -r requirements.in, tox
 wcwidth==0.1.8            # via pytest
-werkzeug==1.0.0
-zipp==1.2.0               # via importlib-metadata
+werkzeug==1.0.0           # via -r requirements.in, secure-cookie
