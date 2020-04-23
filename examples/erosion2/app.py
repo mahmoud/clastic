@@ -25,17 +25,14 @@ def home(host_url, db, cookie):
     }
 
 
-def add_entry(db, target_url, alias, expiry_time, max_count):
+def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
     entry = db.add_link(
-        target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
+        target_url=target_url,
+        alias=new_alias,
+        expiry_time=expiry_time,
+        max_count=max_count,
     )
-    return {"new_entry": entry}
-
-
-def render_add_entry(context, cookie):
-    new_entry = context.get("new_entry")
-    if new_entry is not None:
-        cookie["new_entry_alias"] = new_entry["alias"]
+    cookie["new_entry_alias"] = new_alias
     return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
@@ -46,15 +43,15 @@ def use_entry(alias, db):
 
 def create_app():
     new_link_mw = PostDataMiddleware(
-        {"target_url": str, "alias": str, "max_count": int, "expiry_time": str}
+        {"target_url": str, "new_alias": str, "max_count": int, "expiry_time": str}
     )
 
     static_app = StaticApplication(STATIC_PATH)
     routes = [
         ("/", home, "home.html"),
-        POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
+        POST("/submit", add_entry, middlewares=[new_link_mw]),
         ("/static", static_app),
-        GET('/<alias>', use_entry),
+        GET("/<alias>", use_entry),
     ]
 
     config_path = os.path.join(CUR_PATH, "erosion.ini")

@@ -75,8 +75,8 @@ Let's jump right in and start with the following application code:
 
 This is a very simple application that doesn't do anything
 that wasn't covered in the first part of the tutorial.
-Apart from the static assets, the application has only one route;
-and that endpoint doesn't provide any context to the renderer.
+Apart from the static assets, the application has only one route,
+and its endpoint doesn't provide any context to the renderer.
 
 And now for the template:
 
@@ -104,9 +104,9 @@ And now for the template:
                </p>
 
                <p>
-                 <label for="alias">Shortened as:</label>
-                 <span class='input-prefix'>{host_url}</span>
-                 <input type="text" id="alias" name="alias">
+                 <label for="new_alias">Shortened as:</label>
+                 <span class="input-prefix">{host_url}</span>
+                 <input type="text" id="alias" name="new_alias">
                  <span class="note">(optional)</span>
                </p>
 
@@ -141,7 +141,7 @@ And now for the template:
 
          {?entries}
          <section>
-           <h2>Manage URLs</h2>
+           <h2>Recorded URLs</h2>
            <ul>
              {#entries}
              <li>
@@ -163,13 +163,13 @@ And now for the template:
 
 
 This template consists of two major sections:
-one for adding a new entry, and one for managing existing entries.
+one for adding a new entry, and one for listing recorded entries.
 It expects two items in the render context:
 
 - ``host_url`` for the base URL of the application
 - ``entries`` for the shortened links stored in the application
 
-The endpoint provides neither of these but fortunately,
+The endpoint provides neither of these, but fortunately
 the template engine leaves the parts relating to nonexisting items blank,
 which is OK for now.
 
@@ -186,7 +186,7 @@ Clastic lets us register *resources* with the application;
 these will be made available to endpoint functions when requested.
 
 Let's start by adding a simple, ini-style configuration file
-named :file:`erosion.ini`,
+named ``erosion.ini``,
 with the following contents:
 
 .. code-block:: ini
@@ -225,7 +225,7 @@ which then gets registered with the application during application
 instantiation.
 
 Endpoint functions can access application resources
-simply by listing them (their dictionary keys) as parameters:
+simply by listing their dictionary keys as parameters:
 
 .. code-block:: python
 
@@ -234,7 +234,7 @@ simply by listing them (their dictionary keys) as parameters:
 
 
 Let's apply a similar solution for passing the entries to the template.
-Here's a simple implementation for the storage (file ``storage.py``)
+Here's a simple implementation for the storage module (named ``storage.py``)
 for saving and retrieving link entries:
 
 .. code-block:: python
@@ -323,24 +323,9 @@ Redirection
 Let's continue with creating new shortened links.
 The new link form submits its data to the ``/submit`` path.
 The endpoint function for this path has to receive the data,
-add the new entry to the database,
-and pass it to the rendering function as part of the context:
-
-.. code-block:: python
-
-   def add_entry(request, db):
-       target_url = request.values.get("target_url")
-       alias = request.values.get("alias")
-       expiry_time = request.values.get("expiry_time")
-       max_count = int(request.values.get("max_count"))
-       entry = db.add_link(
-           target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
-       )
-       return {"new_entry": entry}
-
-
-The next question is: what should the renderer do?
-We don't want to display another page, we want to redirect the visitor
+and add the new entry to the database.
+Once this is done,
+we don't want to display another page, we want to redirect the visitor
 back to the home page.
 Since the home page lists all entries,
 we should be able to see our newly created entry there.
@@ -352,18 +337,24 @@ We use the :func:`~clastic.redirect` function for this:
    from http import HTTPStatus
 
 
-   def render_add_entry(context):
-       new_entry = context.get("new_entry")
+   def add_entry(request, db):
+       target_url = request.values.get("target_url")
+       new_alias = request.values.get("new_alias")
+       expiry_time = request.values.get("expiry_time")
+       max_count = int(request.values.get("max_count"))
+       entry = db.add_link(
+           target_url=target_url,
+           alias=new_alias,
+           expiry_time=expiry_time,
+           max_count=max_count,
+       )
        return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
-Later, we will add a notification to the home page about the newly added link.
-And for that, the rendering function gets the new entry
-using the special parameter name ``context``
-for accessing the render :ref:`context <context-builtin>`.
-It doesn't do anything with the entry for now.
-
-What's left is adding this route to the application:
+What's left is adding this route to the application.
+If an endpoint function directly generates a response,
+as our example does via redirection,
+there is no need for a renderer:
 
 .. code-block:: python
    :emphasize-lines: 1, 8
@@ -375,7 +366,7 @@ What's left is adding this route to the application:
        static_app = StaticApplication(STATIC_PATH)
        routes = [
            ("/", home, "home.html"),
-           POST("/submit", add_entry, render_add_entry),
+           POST("/submit", add_entry),
            ("/static", static_app),
        ]
 
@@ -395,10 +386,12 @@ like :class:`~clastic.GET`, :class:`~clastic.PUT`, and
 Named path segments
 -------------------
 
-Now let's turn to using the stored shortened links.
-When the shortened link URL is visited,
-we just want to redirect the browser to the target URL.
-This is going to be a GET-only route:
+Now let's turn to using the shortened links.
+Any path other than the home page, the form submission path ``/submit``,
+and static asset paths under ``/static``
+will be treated as a shortened link,
+and we'll redirect the browser to its target URL.
+It makes sense to make this a GET-only route:
 
 .. code-block:: python
    :emphasize-lines: 8
@@ -408,16 +401,16 @@ This is going to be a GET-only route:
 
    routes = [
        ("/", home, "home.html"),
-       POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
+       POST("/submit", add_entry),
        ("/static", static_app),
-       GET('/<alias>', use_entry),
+       GET("/<alias>", use_entry),
    ]
 
 
-The "alias" part of the path is placed between angular brackets
-to make that segment a named parameter to the endpoint function.
-And there is no need for a renderer in this case;
-the endpoint function will do the redirection right away:
+Angular brackets in route paths are used to name segments.
+The part of the path that matches the segment
+will then be available to the endpoint function
+as a parameter by the same name:
 
 .. code-block:: python
 
@@ -437,20 +430,22 @@ can be used to convert the form data into appropriate types
 and make them available to endpoint functions as parameters:
 
 .. code-block:: python
+   :emphasize-lines: 5-7, 12
 
    from clastic.middleware.form import PostDataMiddleware
 
 
    def create_app():
        new_link_mw = PostDataMiddleware(
-           {"target_url": str, "alias": str, "max_count": int, "expiry_time": str}
+           {"target_url": str, "new_alias": str, "max_count": int, "expiry_time": str}
        )
 
        static_app = StaticApplication(STATIC_PATH)
        routes = [
            ("/", home, "home.html"),
-           POST("/submit", add_entry, render_add_entry, middlewares=[new_link_mw]),
+           POST("/submit", add_entry, middlewares=[new_link_mw]),
            ("/static", static_app),
+           GET("/<alias>", use_entry),
        ]
 
        ...
@@ -461,23 +456,30 @@ anymore:
 
 .. code-block:: python
 
-   def add_entry(db, target_url, alias, expiry_time, max_count):
+   def add_entry(db, target_url, new_alias, expiry_time, max_count):
        entry = db.add_link(
-           target_url=target_url, alias=alias, expiry_time=expiry_time, max_count=max_count
+           target_url=target_url,
+           alias=new_alias,
+           expiry_time=expiry_time,
+           max_count=max_count,
        )
-       return {}
+       return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
 Cookies
 -------
 
-Let's go back to the issue of displaying a notice about newly added links.
-At the moment, the ``render_add_entry()`` endpoint function has the data
-about the new link,
-but redirecting to the home page requires passing that data
-over a new HTTP request.
-We can use a cookie to achieve this:
-the ``render_add_entry()`` function places the data in a cookie,
+At the moment, after adding a new entry,
+the endpoint function only redirects to the home page.
+Say we want to display a notice to the user
+indicating that the entry was successfully added.
+This requires passing the new entry data
+from the ``add_entry()`` endpoint function
+to the ``home()`` endpoint function.
+But redirection means a new HTTP request
+and we need a way of passing data over this new request.
+One way to achieve this would be using a cookie:
+the ``add_entry()`` function places the data in a cookie,
 and the ``home()`` function picks it up from there.
 
 Cookies can be accessed through ``request.cookies``,
@@ -512,18 +514,22 @@ The secret key for signing the cookie will be read from the configuration file:
 If a function wants to access this cookie,
 it just has to declare a parameter named ``cookie``.
 
-Here's how the rendering function stores the new alias in the cookie:
+Here's how the first endpoint function stores the new alias in the cookie:
 
 .. code-block:: python
 
-   def render_add_entry(context, cookie):
-       new_entry = context.get("new_entry")
-       if new_entry is not None:
-           cookie["new_entry_alias"] = new_entry["alias"]
+   def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
+       entry = db.add_link(
+           target_url=target_url,
+           alias=new_alias,
+           expiry_time=expiry_time,
+           max_count=max_count,
+       )
+       cookie["new_entry_alias"] = new_alias
        return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
-And here's how the endpoint function gets the alias from the cookie,
+And here's how the second endpoint function gets the alias from the cookie,
 and puts it into the render context:
 
 .. code-block:: python
