@@ -1,5 +1,5 @@
-Tutorial (Part 2)
-=================
+Tutorial: Link Shortener
+========================
 
 
 .. note::

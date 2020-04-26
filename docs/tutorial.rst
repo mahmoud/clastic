@@ -1,5 +1,5 @@
-Tutorial
-========
+Tutorial: Time zone convertor
+=============================
 
 
 .. note::
@@ -629,8 +629,8 @@ This can be easily achieved in CSS:
 
 This concludes the introductory tutorial.
 The full application code can be found in the `repo`_.
-Check out the other documents and example applications
-for advanced usage of Clastic features.
+Check out the :doc:`second part <tutorial-part2>`
+to learn more about Clastic's features.
 
 
 .. _List of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
