@@ -1,4 +1,3 @@
-import operator
 import shelve
 import string
 import time
@@ -16,45 +15,50 @@ def _encode_id(num):
     return alias if alias else _CHARS[0]
 
 
-def _is_expired(entry):
-    expired_time = time.time() > entry["expires"] > 0
-    expired_clicks = entry["count"] >= entry["max_count"] > 0
-    return expired_time or expired_clicks
-
-
 class LinkDB:
     def __init__(self, db_path):
         self.db_path = db_path
-
-    def add_link(self, target_url, alias=None, *, expiry_time=0, max_count=0):
         with shelve.open(self.db_path) as db:
-            next_id = db.get("__last__", {}).get("link_id", 41660) + 1
+            db["last_id"] = 41660
+            db["entries"] = {}
+
+    def add_link(self, target_url, alias=None, expiry_time=0, max_count=0):
+        with shelve.open(self.db_path, writeback=True) as db:
+            next_id = db["last_id"] + 1
             if not alias:
                 alias = _encode_id(next_id)
             if alias in db:
                 raise ValueError("alias already in use %r" % alias)
             now = time.time()
             entry = {
-                "link_id": next_id,
                 "target": target_url,
                 "alias": alias,
                 "expires": now + expiry_time if expiry_time > 0 else 0,
                 "max_count": max_count,
                 "count": 0,
             }
-            db[alias] = entry
-            db["__last__"] = {**entry, "expires": now}
+            db["entries"][alias] = entry
+            db["last_id"] = next_id
         return entry
 
     def get_links(self):
-        with shelve.open(self.db_path) as db:
-            entries = [link for link in db.values() if not _is_expired(link)]
-        return sorted(entries, key=operator.itemgetter("link_id"), reverse=True)
+        with shelve.open(self.db_path, writeback=True) as db:
+            entries = []
+            for alias, entry in db["entries"].items():
+                if entry is None:
+                    continue
+                if time.time() > entry["expires"] > 0:
+                    db["entries"][alias] = None
+                    continue
+                entries.append(entry)
+        return entries
 
     def use_link(self, alias):
         with shelve.open(self.db_path, writeback=True) as db:
-            entry = db.get(alias)
+            entry = db["entries"].get(alias)
             if entry is not None:
                 entry["count"] += 1
-                db.sync()
+                if entry["count"] >= entry["max_count"] > 0:
+                    db["entries"][alias] = None
+                    return None
         return entry
