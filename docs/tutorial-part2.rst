@@ -78,6 +78,7 @@ Below is a simple implementation (file ``storage.py``):
            return entry
 
 
+The expiry time is given in seconds.
 Expiry values of zero for both time and clicks means
 that the link will not expire on that measure.
 It's also worth noting that the ``.add_link()`` method returns
@@ -91,47 +92,7 @@ the newly added link.
 Getting started
 ---------------
 
-Let's jump right in and start with the following application code:
-
-.. code-block:: python
-
-   import os
-
-   from clastic import Application
-   from clastic.render import AshesRenderFactory
-   from clastic.static import StaticApplication
-
-
-   CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-   STATIC_PATH = os.path.join(CUR_PATH, "static")
-
-
-   def home():
-       return {}
-
-
-   def create_app():
-       static_app = StaticApplication(STATIC_PATH)
-       routes = [
-           ("/", home, "home.html"),
-           ("/static", static_app),
-       ]
-       render_factory = AshesRenderFactory(CUR_PATH)
-       return Application(routes, render_factory=render_factory)
-
-
-   app = create_app()
-
-   if __name__ == "__main__":
-       app.serve()
-
-
-This is a very simple application that doesn't do anything
-that wasn't covered in the first part of the tutorial.
-Apart from the static assets, the application has only one route,
-and its endpoint doesn't provide any context to the renderer.
-
-And now for the template:
+Let's jump right in and start with the following template:
 
 .. code-block:: html
 
@@ -212,16 +173,53 @@ It expects two items in the render context:
 - ``host_url`` for the base URL of the application
 - ``entries`` for the shortened links stored in the application
 
-The endpoint provides neither of these, but fortunately
-the template engine leaves the parts relating to nonexisting items blank,
-which is OK for now.
+And now for the application code:
+
+.. code-block:: python
+
+   import os
+
+   from clastic import Application
+   from clastic.render import AshesRenderFactory
+   from clastic.static import StaticApplication
+
+
+   CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+   STATIC_PATH = os.path.join(CUR_PATH, "static")
+
+
+   def home():
+       return {"host_url": "http://localhost:5000", "entries": []}
+
+
+   def create_app():
+       static_app = StaticApplication(STATIC_PATH)
+       routes = [
+           ("/", home, "home.html"),
+           ("/static", static_app),
+       ]
+       render_factory = AshesRenderFactory(CUR_PATH)
+       return Application(routes, render_factory=render_factory)
+
+
+   app = create_app()
+
+   if __name__ == "__main__":
+       app.serve()
+
+
+This is a very simple application that doesn't do anything
+that wasn't covered in the first part of the tutorial.
+Apart from the static assets, the application has only one route.
+and its endpoint provides an initial context for the given template.
 
 
 Resources
 ---------
 
 The first issue we want to solve is that of passing the host URL
-to the template.
+to the template
+because the application will not run on localhost in production.
 To achieve this, we need a way of letting the endpoint function
 get the host URL,
 so that it can put it into the render context.
@@ -348,7 +346,7 @@ We use the :func:`~clastic.redirect` function for this:
    def add_entry(request, db):
        target_url = request.values.get("target_url")
        new_alias = request.values.get("new_alias")
-       expiry_time = request.values.get("expiry_time")
+       expiry_time = int(request.values.get("expiry_time"))
        max_count = int(request.values.get("max_count"))
        entry = db.add_link(
            target_url=target_url,
@@ -470,7 +468,7 @@ and make them available to endpoint functions as parameters:
 
    def create_app():
        new_link_mw = PostDataMiddleware(
-           {"target_url": str, "new_alias": str, "expiry_time": str, "max_count": int}
+           {"target_url": str, "new_alias": str, "expiry_time": int, "max_count": int}
        )
 
        static_app = StaticApplication(STATIC_PATH)
