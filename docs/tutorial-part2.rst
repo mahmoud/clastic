@@ -460,10 +460,10 @@ Using middleware
 ----------------
 
 Clastic allows us to use :doc:`middleware <middleware>`
-to keep application logic out of endpoint functions and to promote reuse.
-For example,
-the :class:`~clastic.middleware.form.PostDataMiddleware`
-can be used to convert the form data into appropriate types
+to keep endpoint functions from having to deal with routine tasks
+such as serialization, logging, database connection management, and the like.
+For example, the :class:`~clastic.middleware.form.PostDataMiddleware`
+can be used to convert submitted form data into appropriate types
 and make them available to endpoint functions as parameters:
 
 .. code-block:: python
