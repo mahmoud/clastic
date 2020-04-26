@@ -13,7 +13,7 @@ def _encode_id(num):
     while num:
         alias = _CHARS[num % _N_CHARS] + alias
         num //= len(_CHARS)
-    return alias if alias != "" else _CHARS[0]
+    return alias if alias else _CHARS[0]
 
 
 def _is_expired(entry):
