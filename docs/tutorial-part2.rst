@@ -15,20 +15,67 @@ Tutorial (Part 2)
 
 The first part of the tutorial covered some basic topics
 like routing, form handling, static assets, and JSON endpoints.
-This second part will cover resource handling, redirection,
+This second part will show examples for resource handling, redirection, errors,
 and middleware usage.
 
 The example application will be a link shortener.
 There will be an option for letting shortened links expire,
-based on time or on the number of times they have been clicked.
-For the sake of simplicity,
-we'll use the :mod:`shelve` module
-in the Python standard library as our storage backend.
-A stored link entry will consist of the target URL, the (short) alias,
-the expiry time, the maximum number of clicks, and the actual number of clicks.
-The alias will be the key, and the full link data will be the value.
+based on time or on the number of clicks.
+Users can select the shortened names (aliases) themselves,
+or let the application generate one.
+Expired aliases will not be reusable.
 
-TODO: more explanation and screenshot
+TODO: screenshot
+
+For the sake of simplicity, we'll use the :mod:`shelve` module
+in the Python standard library as our storage backend.
+A stored link entry will consist of the target URL, the alias,
+the expiry time, the maximum number of clicks,
+and the current number of clicks.
+The alias will be the key, and the full link data will be the value.
+Below is a simple implementation (file ``storage.py``):
+
+.. code-block:: python
+
+   import shelve
+
+
+   class LinkDB:
+       def __init__(self, db_path):
+           self.db_path = db_path
+
+       def add_link(self, alias=None, *, target_url, expiry_time, max_count):
+           entry = {
+               "target": target_url,
+               "alias": alias,
+               "expiry_time": expiry_time,
+               "max_count": max_count,
+               "count": 0,
+           }
+           with shelve.open(self.db_path) as db:
+               db[alias] = entry
+           return entry
+
+       def get_links(self):
+           with shelve.open(self.db_path) as db:
+               entries = [link for link in db.values() if link is not None]
+           return entries
+
+       def use_link(self, alias):
+           with shelve.open(self.db_path, writeback=True) as db:
+               entry = db.get(alias)
+               if entry is not None:
+                   entry["count"] += 1
+                   if entry["count"] >= entry["max_count"]:
+                       db[alias] = None
+                   db.sync()
+           return entry
+
+
+It's worth noting that the ``.add_link()`` method
+returns the newly added link.
+We set the value for an expired alias to ``None``
+to prevent its reuse.
 
 
 .. contents::
@@ -199,6 +246,9 @@ Now we can read this file during application creation:
 
 .. code-block:: python
 
+   from configparser import ConfigParser
+
+
    def create_app():
        static_app = StaticApplication(STATIC_PATH)
        routes = [
@@ -234,45 +284,7 @@ simply by listing their dictionary keys as parameters:
 
 
 Let's apply a similar solution for passing the entries to the template.
-Here's a simple implementation for the storage module (named ``storage.py``)
-for saving and retrieving link entries:
-
-.. code-block:: python
-
-   import shelve
-
-
-   class LinkDB:
-       def __init__(self, db_path):
-           self.db_path = db_path
-
-       def get_links(self):
-           with shelve.open(self.db_path) as db:
-               entries = list(db.values())
-           return entries
-
-       def get_link(self, alias):
-           with shelve.open(self.db_path) as db:
-               entry = db.get(alias)
-           return entry
-
-       def add_link(self, *, target_url, alias, expiry_time, max_count):
-           entry = {
-               "target": target_url,
-               "alias": alias,
-               "expiry_time": expiry_time,
-               "max_count": max_count,
-               "count": 0,
-           }
-           with shelve.open(self.db_path) as db:
-               db[alias] = entry
-           return entry
-
-
-It's worth noting that the ``.add_link()`` method
-returns the newly added link.
-
-Now, add an option to the configuration file:
+First, add an option to the configuration file:
 
 .. code-block:: ini
 
@@ -284,7 +296,7 @@ Now, add an option to the configuration file:
 Next, add the database connection to the application resources:
 
 .. code-block:: python
-   :emphasize-lines: 1, 16, 17
+   :emphasize-lines: 16, 17
 
    from storage import LinkDB
 
@@ -343,8 +355,8 @@ We use the :func:`~clastic.redirect` function for this:
        expiry_time = request.values.get("expiry_time")
        max_count = int(request.values.get("max_count"))
        entry = db.add_link(
-           target_url=target_url,
            alias=new_alias,
+           target_url=target_url,
            expiry_time=expiry_time,
            max_count=max_count,
        )
@@ -352,8 +364,8 @@ We use the :func:`~clastic.redirect` function for this:
 
 
 What's left is adding this route to the application.
-If an endpoint function directly generates a response,
-as our example does via redirection,
+If an endpoint function directly generates a response
+-as our example does via redirection-
 there is no need for a renderer:
 
 .. code-block:: python
@@ -389,8 +401,8 @@ Named path segments
 Now let's turn to using the shortened links.
 Any path other than the home page, the form submission path ``/submit``,
 and static asset paths under ``/static``
-will be treated as a shortened link,
-and we'll redirect the browser to its target URL.
+will be treated as an alias,
+and we'll redirect the browser to its target URL. [#]_
 It makes sense to make this a GET-only route:
 
 .. code-block:: python
@@ -407,6 +419,12 @@ It makes sense to make this a GET-only route:
    ]
 
 
+.. important::
+
+   Note that the ordering of the routes is significant.
+   Clastic will try dispatch a request to an endpoint function
+   in the given order of routes.
+
 Angular brackets in route paths are used to name segments.
 The part of the path that matches the segment
 will then be available to the endpoint function
@@ -415,7 +433,26 @@ as a parameter by the same name:
 .. code-block:: python
 
    def use_entry(alias, db):
-       entry = db.get_link(alias)
+       entry = db.use_link(alias)
+       return redirect(entry["target"], code=HTTPStatus.MOVED_PERMANENTLY)
+
+
+Errors
+------
+
+But what if there is no such alias recorded?
+A sensible thing to do would be to return
+a :exc:`~clastic.errors.NotFound` error:
+
+.. code-block:: python
+
+   from clastic.errors import NotFound
+
+
+   def use_entry(alias, db):
+       entry = db.use_link(alias)
+       if entry is None:
+           return NotFound()
        return redirect(entry["target"], code=HTTPStatus.MOVED_PERMANENTLY)
 
 
@@ -556,3 +593,8 @@ And a piece of markup is needed in the template to display the notice:
      Successfully created <a href="{host_url}{.}">{host_url}{.}</a>.
    </p>
    {/new_entry_alias}
+
+
+.. [#] You should remember that a browser can make an automatic request
+       for the site's favicon at an address like ``/favicon.ico``.
+       Our code will treat this as a missing alias.

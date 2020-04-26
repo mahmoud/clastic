@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from http import HTTPStatus
 
 from clastic import Application, GET, POST, redirect
+from clastic.errors import NotFound
 from clastic.middleware.cookie import SignedCookieMiddleware
 from clastic.middleware.form import PostDataMiddleware
 from clastic.render import AshesRenderFactory
@@ -27,8 +28,8 @@ def home(host_url, db, cookie):
 
 def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
     entry = db.add_link(
-        target_url=target_url,
         alias=new_alias,
+        target_url=target_url,
         expiry_time=expiry_time,
         max_count=max_count,
     )
@@ -37,7 +38,9 @@ def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
 
 
 def use_entry(alias, db):
-    entry = db.get_link(alias)
+    entry = db.use_link(alias)
+    if entry is None:
+        return NotFound()
     return redirect(entry["target"], code=HTTPStatus.MOVED_PERMANENTLY)
 
 
