@@ -17,7 +17,7 @@ It will convert a given time (and date) between two time zones.
 The user will enter a date and a time,
 and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
-An example screenshot of the final application is shown below.
+A screenshot of the final application is shown below.
 
 .. figure:: images/tzconvert_screenshot.*
    :alt: Application screenshot showing the user selected time
@@ -47,7 +47,8 @@ Refer to the "`List of tz database time zones`_" for a full list.
 Prerequisites
 -------------
 
-It's common practice to work in a separate virtual environment for each project,
+It's common practice to work in a separate virtual environment
+for each project,
 so we suggest that you create one for this tutorial.
 Read the "`Virtual Environments and Packages`_" section
 of the official Python documentation for more information.
@@ -131,7 +132,7 @@ starting at the bottom and working our way up.
 
 In the last few lines,
 we create the application and start it
-by invoking its :meth:`.serve() <clastic.Application.serve>` method:
+by invoking its :meth:`~clastic.Application.serve` method:
 
 .. code-block:: python
 
@@ -143,7 +144,7 @@ by invoking its :meth:`.serve() <clastic.Application.serve>` method:
 
 Application creation is handled by the ``create_app()`` function,
 where we register the routes of the application.
-Every :class:`Route <clastic.Route>` associates a path
+Every :class:`~clastic.Route` associates a path
 with a function (*endpoint*) that will process the requests
 to that path.
 In the example, there is only one route where the path is ``/``
@@ -163,12 +164,11 @@ Clastic supports multiple template engines;
 in this application we use `Ashes`_.
 We create a render factory for rendering templates
 for our chosen template engine
-(in this case an
-:class:`AshesRenderFactory <clastic.render.AshesRenderFactory>`)
+(in this case an :class:`~clastic.render.AshesRenderFactory`)
 and tell it where to find the template files.
 Here, we tell the render factory to look for templates
 in the same folder as this Python source file.
-The :class:`Application <clastic.Application>` is then created
+The :class:`~clastic.Application` is then created
 by giving the sequence of routes and the render factory.
 
 The ``home()`` function generates the data that the template needs
@@ -254,7 +254,7 @@ and the ``zone`` key is used for the value:
 
 
 With these two files in place, run the command ``python tzconvert.py``
-and you can visit the address ``http://127.0.0.1:5000/``
+and you can visit the address ``http://localhost:5000/``
 to see the form.
 
 
@@ -423,7 +423,7 @@ that contains the static assets:
 
 
 And then we add a route by creating
-a :class:`StaticApplication <clastic.static.StaticApplication>`
+a :class:`~clastic.static.StaticApplication`
 with the static file system path we have defined,
 and we set it as the endpoint that will handle the requests
 to any application path under ``/static``:
@@ -459,7 +459,7 @@ Don't forget to add the stylesheet link to the templates:
 Working with JSON
 -----------------
 
-In the last part of the tutorial,
+As our last modification,
 we're going to display the converted time
 in the same page as the form instead of moving to a second page.
 In order to achieve this,
@@ -506,8 +506,7 @@ No changes are needed regarding the returned value.
        return render_ctx
 
 
-The next thing is to set the renderer
-to :func:`render_json <clastic.render_json>`
+The next thing is to set the renderer to :func:`~clastic.render_json`
 for this route:
 
 .. code-block:: python

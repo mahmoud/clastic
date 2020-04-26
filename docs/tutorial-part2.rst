@@ -25,6 +25,8 @@ Users can select the shortened names (aliases) themselves,
 or let the application generate one.
 Expired aliases will not be reusable.
 
+A screenshot of the application is shown below:
+
 .. figure:: images/erosion_screenshot.*
    :alt: Application screenshot showing link addition and listing form.
    :align: center
