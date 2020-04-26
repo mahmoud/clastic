@@ -25,7 +25,12 @@ Users can select the shortened names (aliases) themselves,
 or let the application generate one.
 Expired aliases will not be reusable.
 
-TODO: screenshot
+.. figure:: images/erosion_screenshot.*
+   :alt: Application screenshot showing link addition and listing form.
+   :align: center
+
+   The user can fill in a form to create a new link,
+   or view existing links.
 
 For the sake of simplicity, we'll use the :mod:`shelve` module
 in the Python standard library as our storage backend.
@@ -158,11 +163,6 @@ Let's jump right in and start with the following template:
          </section>
          {/entries}
        </main>
-
-       <footer class="content note">
-         An example application for
-         <a href="https://github.com/mahmoud/clastic">clastic</a>.
-       </footer>
      </body>
    </html>
 
