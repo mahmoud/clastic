@@ -30,25 +30,33 @@ TODO: screenshot
 For the sake of simplicity, we'll use the :mod:`shelve` module
 in the Python standard library as our storage backend.
 A stored link entry will consist of the target URL, the alias,
-the expiry time, the maximum number of clicks,
-and the current number of clicks.
+the time when the link will expire,
+the maximum number of clicks, and the current number of clicks.
 The alias will be the key, and the full link data will be the value.
 Below is a simple implementation (file ``storage.py``):
 
 .. code-block:: python
 
    import shelve
+   import time
+
+
+   def _is_expired(entry):
+       expired_time = time.time() > entry["expires"] > 0
+       expired_clicks = entry["count"] >= entry["max_count"] > 0
+       return expired_time or expired_clicks
+
 
 
    class LinkDB:
        def __init__(self, db_path):
            self.db_path = db_path
 
-       def add_link(self, alias=None, *, target_url, expiry_time, max_count):
+       def add_link(self, target_url, alias=None, *, expiry_time=0, max_count=0):
            entry = {
                "target": target_url,
                "alias": alias,
-               "expiry_time": expiry_time,
+               "expires": time.time() + expiry_time if expiry_time > 0 else 0,
                "max_count": max_count,
                "count": 0,
            }
@@ -58,7 +66,7 @@ Below is a simple implementation (file ``storage.py``):
 
        def get_links(self):
            with shelve.open(self.db_path) as db:
-               entries = [link for link in db.values() if link is not None]
+               entries = [link for link in db.values() if not _is_expired(link)]
            return entries
 
        def use_link(self, alias):
@@ -66,16 +74,14 @@ Below is a simple implementation (file ``storage.py``):
                entry = db.get(alias)
                if entry is not None:
                    entry["count"] += 1
-                   if entry["count"] >= entry["max_count"]:
-                       db[alias] = None
                    db.sync()
            return entry
 
 
-It's worth noting that the ``.add_link()`` method
-returns the newly added link.
-We set the value for an expired alias to ``None``
-to prevent its reuse.
+Expiry values of zero for both time and clicks means
+that the link will not expire on that measure.
+It's also worth noting that the ``.add_link()`` method returns
+the newly added link.
 
 
 .. contents::
@@ -146,39 +152,29 @@ And now for the template:
            <div class="new">
              <form method="POST" action="/submit">
                <p class="target">
-                 <label for="target-url">Web URL:</label>
-                 <input type="text" id="target-url" name="target_url">
+                 <label for="target_url">Web URL:</label>
+                 <input type="text" name="target_url">
                </p>
 
                <p>
                  <label for="new_alias">Shortened as:</label>
                  <span class="input-prefix">{host_url}</span>
-                 <input type="text" id="alias" name="new_alias">
+                 <input type="text" name="new_alias">
                  <span class="note">(optional)</span>
                </p>
 
                <p>
-                 <label for="max-count">Click expiration:</label>
-                 <input id="max-count" name="max_count" size="3" value="1">
+                 <label for="expiry_time" class="date-expiry-l">Time expiration:</label>
+                 <input type="radio" name="expiry_time" value="300"> five minutes
+                 <input type="radio" name="expiry_time" value="3600"> one hour
+                 <input type="radio" name="expiry_time" value="86400"> one day
+                 <input type="radio" name="expiry_time" value="2592000"> one month
+                 <input type="radio" name="expiry_time" value="0" checked> never
                </p>
 
                <p>
-                 <span class="date-expiry-l">Time expiration:</span>
-
-                 <input type="radio" name="expiry_time" id="after-mins" value="mins">
-                 <label for="after-mins" class="date-expiry">five minutes</label>
-
-                 <input type="radio" name="expiry_time" id="after-hour" value="hour" checked>
-                 <label for="after-hour" class="date-expiry">one hour</label>
-
-                 <input type="radio" name="expiry_time" id="after-day" value="day">
-                 <label for="after-day" class="date-expiry">one day</label>
-
-                 <input type="radio" name="expiry_time" id="after-month" value="month">
-                 <label for="after-month" class="date-expiry">one month</label>
-
-                 <input type="radio" name="expiry_time" id="after-none" value="never">
-                 <label for="after-none" class="date-expiry">never</label>
+                 <label for="max_count">Click expiration:</label>
+                 <input type="number" name="max_count" size="3" value="1">
                </p>
 
                <button type="submit">Submit</button>
@@ -355,8 +351,8 @@ We use the :func:`~clastic.redirect` function for this:
        expiry_time = request.values.get("expiry_time")
        max_count = int(request.values.get("max_count"))
        entry = db.add_link(
-           alias=new_alias,
            target_url=target_url,
+           alias=new_alias,
            expiry_time=expiry_time,
            max_count=max_count,
        )
@@ -474,7 +470,7 @@ and make them available to endpoint functions as parameters:
 
    def create_app():
        new_link_mw = PostDataMiddleware(
-           {"target_url": str, "new_alias": str, "max_count": int, "expiry_time": str}
+           {"target_url": str, "new_alias": str, "expiry_time": str, "max_count": int}
        )
 
        static_app = StaticApplication(STATIC_PATH)
@@ -557,8 +553,8 @@ Here's how the first endpoint function stores the new alias in the cookie:
 
    def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
        entry = db.add_link(
-           target_url=target_url,
            alias=new_alias,
+           target_url=target_url,
            expiry_time=expiry_time,
            max_count=max_count,
        )
@@ -593,6 +589,7 @@ And a piece of markup is needed in the template to display the notice:
      Successfully created <a href="{host_url}{.}">{host_url}{.}</a>.
    </p>
    {/new_entry_alias}
+
 
 
 .. [#] You should remember that a browser can make an automatic request

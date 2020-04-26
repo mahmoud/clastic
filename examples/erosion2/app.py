@@ -28,12 +28,12 @@ def home(host_url, db, cookie):
 
 def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
     entry = db.add_link(
-        alias=new_alias,
         target_url=target_url,
+        alias=new_alias,
         expiry_time=expiry_time,
         max_count=max_count,
     )
-    cookie["new_entry_alias"] = new_alias
+    cookie["new_entry_alias"] = entry["alias"]
     return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 
@@ -46,7 +46,7 @@ def use_entry(alias, db):
 
 def create_app():
     new_link_mw = PostDataMiddleware(
-        {"target_url": str, "new_alias": str, "max_count": int, "expiry_time": str}
+        {"target_url": str, "new_alias": str, "expiry_time": int, "max_count": int}
     )
 
     static_app = StaticApplication(STATIC_PATH)

@@ -21,39 +21,29 @@
         <div class="new">
           <form method="POST" action="/submit">
             <p class="target">
-              <label for="target-url">Web URL:</label>
-              <input type="text" id="target-url" name="target_url">
+              <label for="target_url">Web URL:</label>
+              <input type="text" name="target_url">
             </p>
 
             <p>
               <label for="new_alias">Shortened as:</label>
               <span class="input-prefix">{host_url}</span>
-              <input type="text" id="alias" name="new_alias">
+              <input type="text" name="new_alias">
               <span class="note">(optional)</span>
             </p>
 
             <p>
-              <label for="max-count">Click expiration:</label>
-              <input id="max-count" name="max_count" size="3" value="1">
+              <label for="expiry_time" class="date-expiry-l">Time expiration:</label>
+              <input type="radio" name="expiry_time" value="300"> five minutes
+              <input type="radio" name="expiry_time" value="3600"> one hour
+              <input type="radio" name="expiry_time" value="86400"> one day
+              <input type="radio" name="expiry_time" value="2592000"> one month
+              <input type="radio" name="expiry_time" value="0" checked> never
             </p>
 
             <p>
-              <span class="date-expiry-l">Time expiration:</span>
-
-              <input type="radio" name="expiry_time" id="after-mins" value="mins">
-              <label for="after-mins" class="date-expiry">five minutes</label>
-
-              <input type="radio" name="expiry_time" id="after-hour" value="hour" checked>
-              <label for="after-hour" class="date-expiry">one hour</label>
-
-              <input type="radio" name="expiry_time" id="after-day" value="day">
-              <label for="after-day" class="date-expiry">one day</label>
-
-              <input type="radio" name="expiry_time" id="after-month" value="month">
-              <label for="after-month" class="date-expiry">one month</label>
-
-              <input type="radio" name="expiry_time" id="after-none" value="never">
-              <label for="after-none" class="date-expiry">never</label>
+              <label for="max_count">Click expiration:</label>
+              <input type="number" name="max_count" size="3" value="1">
             </p>
 
             <button type="submit">Submit</button>
