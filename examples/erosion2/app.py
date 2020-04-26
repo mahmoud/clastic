@@ -1,3 +1,14 @@
+# Copyright (C) 2020 H. Turgut Uyar <uyar@tekir.org>
+#
+# Derived from the code by Mahmoud Hashemi <mahmoud@hatnote.com>.
+#
+# Released under the BSD license.
+#
+# This is an example application for the Clastic web application framework.
+# It is developed as part of a tutorial:
+#
+# https://python-clastic.readthedocs.io/en/latest/tutorial-part2.html
+
 import os
 from configparser import ConfigParser
 from http import HTTPStatus
