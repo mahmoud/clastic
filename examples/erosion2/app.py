@@ -30,21 +30,28 @@ STATIC_PATH = os.path.join(CUR_PATH, "static")
 def home(host_url, db, cookie):
     entries = db.get_links()
     new_entry_alias = cookie.pop("new_entry_alias", None)
+    alias_available = cookie.pop("alias_available", None)
     return {
         "host_url": host_url,
         "entries": entries,
         "new_entry_alias": new_entry_alias,
+        "alias_available": alias_available,
     }
 
 
 def add_entry(db, cookie, target_url, new_alias, expiry_time, max_count):
-    entry = db.add_link(
-        target_url=target_url,
-        alias=new_alias,
-        expiry_time=expiry_time,
-        max_count=max_count,
-    )
-    cookie["new_entry_alias"] = entry["alias"]
+    try:
+        entry = db.add_link(
+            target_url=target_url,
+            alias=new_alias,
+            expiry_time=expiry_time,
+            max_count=max_count,
+        )
+        cookie["new_entry_alias"] = entry["alias"]
+        cookie["alias_available"] = "yes"
+    except ValueError:
+        cookie["new_entry_alias"] = new_alias
+        cookie["alias_available"] = "no"
     return redirect("/", code=HTTPStatus.SEE_OTHER)
 
 

@@ -11,44 +11,46 @@
       <p class="tagline">Exogenic linkrot for limited sharing.</p>
 
       {#new_entry_alias}
-      <p class="note">
+      <p class="message">
+      {@eq key=alias_available value="yes"}
         Successfully created <a href="{host_url}{.}">{host_url}{.}</a>.
+      {:else}
+        The short link name <code>{.}</code> is not available.
+      {/eq}
       </p>
       {/new_entry_alias}
 
       <section class="box">
         <h2>Create a URL</h2>
-        <div class="new">
-          <form method="POST" action="/submit">
-            <p class="target">
-              <label for="target_url">Web URL:</label>
-              <input type="text" name="target_url">
-            </p>
+        <form method="POST" action="/submit" class="new">
+          <p class="target">
+            <label for="target_url">Web URL:</label>
+            <input type="text" name="target_url">
+          </p>
 
-            <p>
-              <label for="new_alias">Shortened as:</label>
-              <span class="input-prefix">{host_url}</span>
-              <input type="text" name="new_alias">
-              <span class="note">(optional)</span>
-            </p>
+          <p>
+            <label for="new_alias">Shortened as:</label>
+            <span class="input-prefix">{host_url}</span>
+            <input type="text" name="new_alias">
+            <span class="note">(optional)</span>
+          </p>
 
-            <p>
-              <label for="expiry_time" class="date-expiry-l">Time expiration:</label>
-              <input type="radio" name="expiry_time" value="300"> five minutes
-              <input type="radio" name="expiry_time" value="3600"> one hour
-              <input type="radio" name="expiry_time" value="86400"> one day
-              <input type="radio" name="expiry_time" value="2592000"> one month
-              <input type="radio" name="expiry_time" value="0" checked> never
-            </p>
+          <p>
+            <label for="expiry_time" class="date-expiry-l">Time expiration:</label>
+            <input type="radio" name="expiry_time" value="300"> five minutes
+            <input type="radio" name="expiry_time" value="3600"> one hour
+            <input type="radio" name="expiry_time" value="86400"> one day
+            <input type="radio" name="expiry_time" value="2592000"> one month
+            <input type="radio" name="expiry_time" value="0" checked> never
+          </p>
 
-            <p>
-              <label for="max_count">Click expiration:</label>
-              <input type="number" name="max_count" size="3" value="1">
-            </p>
+          <p>
+            <label for="max_count">Click expiration:</label>
+            <input type="number" name="max_count" size="3" value="1">
+          </p>
 
-            <button type="submit">Submit</button>
-          </form>
-        </div>
+          <button type="submit">Submit</button>
+        </form>
       </section>
 
       {?entries}

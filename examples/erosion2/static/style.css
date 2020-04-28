@@ -1,14 +1,9 @@
 body {
-  background: #FDFDFD;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  background: #fdfdfd;
   margin: 1em 0;
   padding: 0;
-}
-
-body {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 300;
-  font-size: 1em;
-  line-height: 1.5em;
+  line-height: 1.5;
 }
 
 input {
@@ -52,7 +47,7 @@ h2 {
   padding: 0;
   border-radius: 5px;
   box-shadow: 1px 2px 1px #ccc;
-  border: 1px solid #9E9E9E;
+  border: 1px solid #9e9e9e;
   margin-bottom: 1em;
 }
 
@@ -65,12 +60,6 @@ h2 {
   color: #7f7f7f;
   font-style: italic;
   margin: 0 0 2em 1em;
-}
-
-.or {
-  font-style: italic;
-  margin: 0.5em 0 0 1em;
-  color: #7f7f7f;
 }
 
 .input-prefix {
@@ -96,19 +85,12 @@ input[type="number"] {
   color: #7f7f7f;
 }
 
-.dead {
-  text-decoration:line-through;
-}
-
 .target {
   margin: 0;
 }
 
-.link div {
-  overflow: auto;
-  font-size: 0.8em;
-  white-space: pre;
-  padding: 4px 10px;
-  margin: 5px 0;
-  background: #d62728;
+.message {
+  background-color: #40ff40;
+  border: 1px solid #008000;
+  padding: 0.5em;
 }
