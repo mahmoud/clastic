@@ -47,6 +47,7 @@ without alias generation and link expiration features:
 
 .. code-block:: python
 
+   import os
    import shelve
    import time
 
@@ -54,8 +55,10 @@ without alias generation and link expiration features:
    class LinkDB:
        def __init__(self, db_path):
            self.db_path = db_path
-           with shelve.open(self.db_path) as db:
-               db["entries"] = {}
+           if not os.path.exists(self.db_path):
+               with shelve.open(self.db_path, writeback=True) as db:
+                   db["last_id"] = 41660
+                   db["entries"] = {}
 
        def add_link(self, target_url, alias=None, expiry_time=0, max_count=0):
            with shelve.open(self.db_path, writeback=True) as db:
