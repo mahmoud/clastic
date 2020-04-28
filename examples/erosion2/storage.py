@@ -37,10 +37,13 @@ class LinkDB:
     def add_link(self, target_url, alias=None, expiry_time=0, max_count=0):
         with shelve.open(self.db_path, writeback=True) as db:
             next_id = db["last_id"] + 1
-            if not alias:
-                alias = _encode_id(next_id)
-            if alias in db["entries"]:
+            if alias and (alias in db["entries"]):
                 raise ValueError("alias already in use %r" % alias)
+            while (not alias):
+                alias = _encode_id(next_id)
+                if alias in db["entries"]:
+                    alias = None
+                    next_id += 1
             now = time.time()
             entry = {
                 "target": target_url,
