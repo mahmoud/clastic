@@ -214,7 +214,7 @@ And now for the application code:
 
 
 This is a very simple application that doesn't do anything
-that wasn't covered in the first part of the tutorial.
+that wasn't covered in the :doc:`first part of the tutorial <tutorial>`.
 Apart from the static assets, the application has only one route.
 and its endpoint provides an initial context for the given template.
 
@@ -295,7 +295,7 @@ First, add an option to the configuration file:
 Next, add the database connection to the application resources:
 
 .. code-block:: python
-   :emphasize-lines: 16, 17
+   :emphasize-lines: 16-19
 
    from storage import LinkDB
 
@@ -313,6 +313,8 @@ Next, add the database connection to the application resources:
 
        host_url = config["erosion"]["host_url"].rstrip('/') + '/'
        db_path = config["erosion"]["db_path"]
+       if not os.path.isabs(db_path):
+           db_path = os.path.join(os.path.dirname(config_path), db_path)
        resources = {"host_url": host_url, "db": LinkDB(db_path)}
 
        render_factory = AshesRenderFactory(CUR_PATH)

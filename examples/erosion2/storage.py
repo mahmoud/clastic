@@ -30,7 +30,7 @@ class LinkDB:
             next_id = db["last_id"] + 1
             if not alias:
                 alias = _encode_id(next_id)
-            if alias in db:
+            if alias in db["entries"]:
                 raise ValueError("alias already in use %r" % alias)
             now = time.time()
             entry = {

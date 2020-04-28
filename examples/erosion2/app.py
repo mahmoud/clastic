@@ -74,6 +74,8 @@ def create_app():
 
     host_url = config["erosion"]["host_url"].rstrip("/") + "/"
     db_path = config["erosion"]["db_path"]
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(os.path.dirname(config_path), db_path)
     resources = {"host_url": host_url, "db": LinkDB(db_path)}
 
     cookie_secret = config["erosion"]["cookie_secret"]
