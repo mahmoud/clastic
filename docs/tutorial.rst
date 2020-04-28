@@ -216,7 +216,7 @@ and the ``zone`` key is used for the value:
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <form action="/show" method="post">
+     <form action="/show" method="POST">
        <input type="datetime-local" name="dt" value="{now}" required>
 
        <div class="timezones">
@@ -459,8 +459,7 @@ Don't forget to add the stylesheet link to the templates:
 Working with JSON
 -----------------
 
-As our last modification,
-we're going to display the converted time
+Our last task is to display the converted time
 in the same page as the form instead of moving to a second page.
 In order to achieve this,
 we're going to implement a basic JSON API endpoint
@@ -543,9 +542,9 @@ And the home page template becomes:
      <title>Time zone convertor</title>
      <link rel="stylesheet" href="/static/custom.css">
      <script>
-       async function showResult(event) {
+       async function showResult(event, form) {
          event.preventDefault();
-         let formData = new FormData(document.querySelector('form'));
+         let formData = new FormData(form);
          let response = await fetch('/show', {
            method: 'POST',
            body: JSON.stringify(Object.fromEntries(formData))
@@ -563,7 +562,7 @@ And the home page template becomes:
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <form action="." method="post">
+     <form action="." method="POST" onsubmit="showResult(event, this)">
        <input type="datetime-local" name="dt" value="{now}" required>
 
        <div class="timezones">
@@ -594,7 +593,7 @@ And the home page template becomes:
          </div>
        </div>
 
-       <button onclick="showResult(event)">Show</button>
+       <button type="submit">Show</button>
      </form>
 
      <p class="info">
@@ -613,7 +612,7 @@ The changes are:
   It contains dummy information.
 
 - The JavaScript code for updating the page is added.
-  It gets called when the button is clicked.
+  It gets called when the form gets submitted (when the button is clicked).
 
 One last thing to do is to hide the result markup
 before the user clicks the "Show" button.

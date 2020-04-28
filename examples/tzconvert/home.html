@@ -5,9 +5,9 @@
   <title>Time zone convertor</title>
   <link rel="stylesheet" href="/static/custom.css">
   <script>
-    async function showResult(event) {
+    async function showResult(event, form) {
       event.preventDefault();
-      let formData = new FormData(document.querySelector('form'));
+      let formData = new FormData(form);
       let response = await fetch('/show', {
         method: 'POST',
         body: JSON.stringify(Object.fromEntries(formData))
@@ -25,7 +25,7 @@
 </head>
 <body>
   <h1>Time zone convertor</h1>
-  <form action="." method="post">
+  <form action="." method="POST" onsubmit="showResult(event, this)">
     <input type="datetime-local" name="dt" value="{now}" required>
 
     <div class="timezones">
@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <button onclick="showResult(event)">Show</button>
+    <button type="submit">Show</button>
   </form>
 
   <p class="info">
