@@ -4,11 +4,20 @@ import string
 import time
 
 
-_CHARS = sorted(string.ascii_lowercase + string.digits)
+_CHARS = sorted(set(string.ascii_lowercase + string.digits) - {"l"})
 _N_CHARS = len(_CHARS)
 
 
 def _encode_id(num):
+    """Convert an integer to a short string.
+
+    >>> _encode_id(41660)
+    'z0a'
+    >>> _encode_id(4166000)
+    '2s5tk'
+    >>> _encode_id(41660 + int(1e7))  # 10 million links later
+    '6p79k'
+    """
     alias = ""
     n = abs(num)
     while n > 0:
