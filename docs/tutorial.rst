@@ -1,5 +1,5 @@
-Tutorial
-========
+Tutorial: Time zone convertor
+=============================
 
 
 .. note::
@@ -17,7 +17,7 @@ It will convert a given time (and date) between two time zones.
 The user will enter a date and a time,
 and select two time zones from a list of all available time zones,
 one for the source location and one for the destination location.
-An example screenshot of the final application is shown below.
+A screenshot of the final application is shown below.
 
 .. figure:: images/tzconvert_screenshot.*
    :alt: Application screenshot showing the user selected time
@@ -47,7 +47,8 @@ Refer to the "`List of tz database time zones`_" for a full list.
 Prerequisites
 -------------
 
-It's common practice to work in a separate virtual environment for each project,
+It's common practice to work in a separate virtual environment
+for each project,
 so we suggest that you create one for this tutorial.
 Read the "`Virtual Environments and Packages`_" section
 of the official Python documentation for more information.
@@ -131,7 +132,7 @@ starting at the bottom and working our way up.
 
 In the last few lines,
 we create the application and start it
-by invoking its :meth:`.serve() <clastic.Application.serve>` method:
+by invoking its :meth:`~clastic.Application.serve` method:
 
 .. code-block:: python
 
@@ -143,7 +144,7 @@ by invoking its :meth:`.serve() <clastic.Application.serve>` method:
 
 Application creation is handled by the ``create_app()`` function,
 where we register the routes of the application.
-Every :class:`Route <clastic.Route>` associates a path
+Every :class:`~clastic.Route` associates a path
 with a function (*endpoint*) that will process the requests
 to that path.
 In the example, there is only one route where the path is ``/``
@@ -163,12 +164,11 @@ Clastic supports multiple template engines;
 in this application we use `Ashes`_.
 We create a render factory for rendering templates
 for our chosen template engine
-(in this case an
-:class:`AshesRenderFactory <clastic.render.AshesRenderFactory>`)
+(in this case an :class:`~clastic.render.AshesRenderFactory`)
 and tell it where to find the template files.
 Here, we tell the render factory to look for templates
 in the same folder as this Python source file.
-The :class:`Application <clastic.Application>` is then created
+The :class:`~clastic.Application` is then created
 by giving the sequence of routes and the render factory.
 
 The ``home()`` function generates the data that the template needs
@@ -216,7 +216,7 @@ and the ``zone`` key is used for the value:
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <form action="/show" method="post">
+     <form action="/show" method="POST">
        <input type="datetime-local" name="dt" value="{now}" required>
 
        <div class="timezones">
@@ -254,7 +254,7 @@ and the ``zone`` key is used for the value:
 
 
 With these two files in place, run the command ``python tzconvert.py``
-and you can visit the address ``http://127.0.0.1:5000/``
+and you can visit the address ``http://localhost:5000/``
 to see the form.
 
 
@@ -423,7 +423,7 @@ that contains the static assets:
 
 
 And then we add a route by creating
-a :class:`StaticApplication <clastic.static.StaticApplication>`
+a :class:`~clastic.static.StaticApplication`
 with the static file system path we have defined,
 and we set it as the endpoint that will handle the requests
 to any application path under ``/static``:
@@ -459,8 +459,7 @@ Don't forget to add the stylesheet link to the templates:
 Working with JSON
 -----------------
 
-In the last part of the tutorial,
-we're going to display the converted time
+Our last task is to display the converted time
 in the same page as the form instead of moving to a second page.
 In order to achieve this,
 we're going to implement a basic JSON API endpoint
@@ -506,8 +505,7 @@ No changes are needed regarding the returned value.
        return render_ctx
 
 
-The next thing is to set the renderer
-to :func:`render_json <clastic.render_json>`
+The next thing is to set the renderer to :func:`~clastic.render_json`
 for this route:
 
 .. code-block:: python
@@ -544,9 +542,9 @@ And the home page template becomes:
      <title>Time zone convertor</title>
      <link rel="stylesheet" href="/static/custom.css">
      <script>
-       async function showResult(event) {
+       async function showResult(event, form) {
          event.preventDefault();
-         let formData = new FormData(document.querySelector('form'));
+         let formData = new FormData(form);
          let response = await fetch('/show', {
            method: 'POST',
            body: JSON.stringify(Object.fromEntries(formData))
@@ -558,13 +556,13 @@ And the home page template becomes:
          document.getElementById('dst_dt').innerHTML = json['dst_dt']['text'];
          document.getElementById('dst_dt').setAttribute('datetime', json['dst_dt']['value']);
          document.getElementById('dst_location').innerHTML = json['dst_location'];
-         document.querySelector('.info').style.display = "block";
+         document.querySelector('.info').style.display = 'block';
        }
      </script>
    </head>
    <body>
      <h1>Time zone convertor</h1>
-     <form action="." method="post">
+     <form action="." method="POST" onsubmit="showResult(event, this)">
        <input type="datetime-local" name="dt" value="{now}" required>
 
        <div class="timezones">
@@ -595,7 +593,7 @@ And the home page template becomes:
          </div>
        </div>
 
-       <button onclick="showResult(event)">Show</button>
+       <button type="submit">Show</button>
      </form>
 
      <p class="info">
@@ -614,7 +612,7 @@ The changes are:
   It contains dummy information.
 
 - The JavaScript code for updating the page is added.
-  It gets called when the button is clicked.
+  It gets called when the form gets submitted (when the button is clicked).
 
 One last thing to do is to hide the result markup
 before the user clicks the "Show" button.
@@ -629,8 +627,8 @@ This can be easily achieved in CSS:
 
 This concludes the introductory tutorial.
 The full application code can be found in the `repo`_.
-Check out the other documents and example applications
-for advanced usage of Clastic features.
+Check out the :doc:`second part <tutorial-part2>`
+to learn more about Clastic's features.
 
 
 .. _List of tz database time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones

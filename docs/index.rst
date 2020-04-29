@@ -40,13 +40,14 @@ Then get to building your first application!
 Getting Started
 ---------------
 
-Check out our :doc:`tutorial` for more.
+Check out our :doc:`Tutorial <tutorial>` for more.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    tutorial
+   tutorial-part2
    application
    middleware
    errors

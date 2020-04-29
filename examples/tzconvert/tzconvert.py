@@ -1,3 +1,12 @@
+# Copyright (C) 2020 H. Turgut Uyar <uyar@tekir.org>
+#
+# Released under the BSD license.
+#
+# This is an example application for the Clastic web application framework.
+# It is developed as part of a tutorial:
+#
+# https://python-clastic.readthedocs.io/en/latest/tutorial.html
+
 import json
 import os
 from datetime import datetime
