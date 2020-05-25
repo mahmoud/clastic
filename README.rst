@@ -1,13 +1,23 @@
 Clastic
 =======
 
+.. raw:: html
+
+   <a href="https://pypi.org/project/clastic/"><img src="https://img.shields.io/pypi/v/clastic.svg"></a>
+   <a href="https://calver.org/"><img src="https://img.shields.io/badge/calver-YY.MINOR.MICRO-22bfda.svg"></a>
+
 A functional Python web framework that streamlines explicit
 development practices while eliminating global state.
+
+Clastic is pure-Python, tested on Python 2.7-3.7, and
+`documented <https://python-clastic.readthedocs.io/>`_,
+with `tutorials <https://python-clastic.readthedocs.io/en/latest/tutorial.html>`_.
 
 .. contents::
    :depth: 2
    :backlinks: top
    :local:
+
 
 Quick Start Guide
 -----------------
