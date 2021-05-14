@@ -13,6 +13,14 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+21.0.0
+------
+*(May 13, 2021)*
+
+Quick compatibility release. Note that future clastic releases will
+likely drop Py2.7 support and may drop Werkzeug 1.0 compatibility.
+
+
 20.0.0
 ------
 *(March 7, 2020)*
