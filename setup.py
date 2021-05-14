@@ -26,7 +26,7 @@ desc = ('A functional Python web framework that streamlines'
         ' global state.')
 
 if sys.version_info < (2,6):
-    raise NotImplementedError("Sorry, clastic only supports Python >=2.6")
+    raise NotImplementedError("Sorry, clastic only supports Python >2.6")
 
 setup(name='clastic',
       version=__version__,
