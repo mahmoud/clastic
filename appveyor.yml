@@ -5,10 +5,6 @@
 # https://github.com/audreyr/cookiecutter/commit/3c4685f536afda3be93da3fe3039cec0ab0d60a3
 
 environment:
-  matrix:
-    - PYTHON: "C:\\Python27-x64"
-      TOX_ENV: "py27"
-
     - PYTHON: "C:\\Python37-x64"
       TOX_ENV: "py37"
 
