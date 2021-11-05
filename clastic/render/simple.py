@@ -3,7 +3,11 @@
 import sys
 import itertools
 from json import JSONEncoder
-from collections import Mapping, Sized, Iterable
+import sys
+if sys.version_info < (3,3,):
+    from collections import Mapping, Sized, Iterable
+else:
+    from collections.abc import Mapping, Sized, Iterable
 
 from werkzeug.wrappers import Response
 

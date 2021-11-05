@@ -3,7 +3,11 @@ from __future__ import unicode_literals
 
 import os
 import itertools
-from collections import Sequence
+import sys
+if sys.version_info < (3,3,):
+    from collections import Sequence
+else:
+    from collections.abc import Sequence
 from argparse import ArgumentParser
 
 import attr

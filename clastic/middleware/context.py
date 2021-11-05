@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from collections import Mapping
+import sys
+if sys.version_info < (3,3,):
+    from collections import Mapping
+else:
+    from collections.abc import Mapping
 
 from ..sinter import FunctionBuilder
 from .core import Middleware
