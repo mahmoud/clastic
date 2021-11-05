@@ -4,10 +4,20 @@
 # This configuration based on:
 # https://github.com/audreyr/cookiecutter/commit/3c4685f536afda3be93da3fe3039cec0ab0d60a3
 
+# By default appveyor runs on Visual Studio 2015
+# https://www.appveyor.com/docs/build-environment/#choosing-image-for-your-builds
+image: Visual Studio 2019
+
 environment:
   matrix:
     - PYTHON: "C:\\Python37-x64"
       TOX_ENV: "py37"
+    - PYTHON: "C:\\Python38-x64"
+      TOX_ENV: "py38"
+    - PYTHON: "C:\\Python39-x64"
+      TOX_ENV: "py39"
+    - PYTHON: "C:\\Python310-x64"
+      TOX_ENV: "py310"
 
 
 init:
@@ -17,7 +27,6 @@ init:
   - "%PYTHON%/python -c \"import struct;print(8 * struct.calcsize(\'P\'))\""
 
 install:
-  - "%PYTHON%/Scripts/easy_install -U pip"
   - "%PYTHON%/Scripts/pip install -U --force-reinstall tox wheel"
 
 build: false  # Not a C# project, build stuff at the test step instead.
