@@ -92,7 +92,13 @@ def restart_with_reloader(error_func=None):
     to_mon = []
     while 1:
         print(' * Clastic restarting with reloader')
-        args = [sys.executable] + sys.argv
+        args = [sys.executable]
+        path, basename = os.path.split(sys.argv[0])
+        if basename == '__main__.py':
+            pkg_name = os.path.basename(path)
+            args.extend(['-m', pkg_name] + sys.argv[1:])
+        else:
+            args.extend(sys.argv)
         new_environ = os.environ.copy()
         new_environ['WERKZEUG_RUN_MAIN'] = 'true'
         if os.name == 'nt':
