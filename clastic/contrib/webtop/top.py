@@ -81,8 +81,8 @@ def format_dict(pd):
     mem_info = pd['memory_info']
     ret['virt'] = bytes2human(getattr(mem_info, 'vms', 0))
     ret['res'] = bytes2human(getattr(mem_info, 'rss', 0))
-    ret['cpu'] = '' if pd['cpu_percent'] is None else pd['cpu_percent']
-    ret['mem'] = ''
+    ret['cpu'] = -0.0 if pd['cpu_percent'] is None else pd['cpu_percent']
+    ret['mem'] = -0.0
     if pd['memory_percent'] is not None:
         ret['mem'] = round(pd['memory_percent'], 1)
     ret['name'] = pd['name'] or ''
