@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 
 from clastic import Application, StaticApplication, StaticFileRoute
+from clastic.static import is_binary_string
 
 _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,6 +31,13 @@ def test_basic_static_serve():
         assert resp.status_code == 403
     else:
         assert resp.status_code == 404  # mostly windows
+
+
+def test_binary_string():
+    assert is_binary_string(b'abc') is False
+    assert is_binary_string(b'5\x18.\x84\xd7F\xceR\xaf\xed\xb1\xdc\xe2VZ') is True
+    assert is_binary_string(b'') is False
+    assert is_binary_string((b'a' * 4096) + b'\x18') is False  # only samples so far
 
 
 def test_basic_static_route():

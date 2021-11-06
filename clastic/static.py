@@ -19,17 +19,20 @@ from .errors import Forbidden, NotFound
 
 try:
     unicode = unicode
+    PY3 = False
 except NameError:
     # py3
     unicode = str
+    PY3 = True
 
 DEFAULT_MAX_AGE = 360
 DEFAULT_TEXT_MIME = 'text/plain'
 DEFAULT_BINARY_MIME = 'application/octet-stream'
 
 # string.printable doesn't cut it
-_PRINTABLE = ''.join([chr(x) for x in [7, 8, 9, 10, 12, 13, 27] +
-                      list(range(32, 256))])
+_PRINTABLE = b''.join([chr(x).encode('latin-1') if PY3 else chr(x)
+                       for x in [7, 8, 9, 10, 12, 13, 27] +
+                       list(range(32, 256))])
 
 IS_WINDOWS = sys.platform == 'win32'
 
