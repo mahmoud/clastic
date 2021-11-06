@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from collections import Mapping, Iterable
+import sys
+if sys.version_info < (3,3,):
+    from collections import Mapping, Iterable
+else:
+    from collections.abc import Mapping, Iterable
 
 from boltons.iterutils import is_iterable
 
