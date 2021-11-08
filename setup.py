@@ -42,10 +42,10 @@ setup(name='clastic',
                 'clastic.tests'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=['Werkzeug>=1.0.0,<2.0', 'boltons>=18.0.0', 'ashes', 'glom', 'secure-cookie'],
+      install_requires=['Werkzeug>=1.0.0,<2.0', 'boltons>=20.0.0', 'ashes', 'glom', 'secure-cookie'],
       license=__license__,
       platforms='any',
-      tests_require=['Mako==1.0.7', 'pytest==4.3.0', 'psutil==5.6.6'],
+      tests_require=['Mako==1.0.7', 'pytest==4.6.9', 'psutil==5.8.0'],
       classifiers=[
           'Intended Audience :: Developers',
           'Development Status :: 5 - Production/Stable',
@@ -58,9 +58,11 @@ setup(name='clastic',
           'Topic :: Software Development :: Libraries :: Application Frameworks',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.5',
-          'Programming Language :: Python :: 3.6',
-          'Programming Language :: Python :: 3.7', ]
+          'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
+          'Programming Language :: Python :: 3.9',
+          'Programming Language :: Python :: 3.10']
+
       )
 
 """
