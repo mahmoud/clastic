@@ -247,7 +247,6 @@ def get_endpoint_info(route):
     try:
         ret['module_name'], ret['name'] = get_callable_name(route.endpoint)
     except AttributeError:
-        import pdb;pdb.post_mortem()
         try:
             ret['name'] = repr(route.endpoint)
         except:

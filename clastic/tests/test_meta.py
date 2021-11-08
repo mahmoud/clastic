@@ -57,8 +57,6 @@ def test_route_names():
     app = Application(routes=routes,
                       resources={'iterable': [1, 2, 3], 'start': 0})
 
-    # set([r['endpoint']['name'] for r in app['routes']])
-
     cl = app.get_local_client()
     assert cl.get('/meta/').status_code == 200
     if not PY3:
@@ -77,3 +75,16 @@ def test_route_names():
                           'name': 'get_file_response'},
                          {'module_name': 'clastic.meta.MetaApplication', 'name': 'get_main'},
                          {'module_name': 'builtins', 'name': 'sum'}]
+
+
+def test_resource_redaction():
+    app = Application(routes=[('/meta', MetaApplication())],
+                      resources={'a_secret': 'vsecret', 'ok': 'bokay'})
+
+    cl = app.get_local_client()
+    resp = cl.get('/meta/')
+    assert resp.status_code == 200
+
+    content = resp.get_data(as_text=True)
+    assert 'bokay' in content
+    assert 'vsecret' not in content
