@@ -220,7 +220,10 @@ def get_gc_info():
 def get_resource_info(_application):
     ret = []
     for key, val in _application.resources.items():
-        trunc_val = _trunc(repr(val))
+        if 'secret' in key:
+            trunc_val = '[REDACTED]'
+        else:
+            trunc_val = _trunc(repr(val))
         ret.append({'key': key, 'value': trunc_val})
     return ret
 
