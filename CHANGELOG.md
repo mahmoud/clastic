@@ -13,13 +13,23 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+21.1.0
+------
+*(November 7, 2021)*
+
+* Add py3.10 support
+* redact secret resources in meta
+* fix some py3 meta bugs
+
+Note: Likely last py2/py3 version, pending testing on
+[montage](https://github.com/hatnote/montage).
+
 21.0.0
 ------
 *(May 13, 2021)*
 
 Quick compatibility release. Note that future clastic releases will
 likely drop Py2.7 support and may drop Werkzeug 1.0 compatibility.
-
 
 20.0.0
 ------
