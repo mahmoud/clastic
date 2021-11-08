@@ -38,6 +38,23 @@ def get_fb(f, drop_self=True):
     return ret
 
 
+def get_callable_name(f):
+    if not PY3:
+        return f.__module__, f.func_name
+
+    path = []
+    if inspect.ismethod(f):
+        path.append(f.__self__.__class__.__name__)
+        f = f.__func__
+    elif not (inspect.isfunction(f) or inspect.isbuiltin(f)) and hasattr(f, '__call__'):
+        f = f.__class__
+
+    module = getattr(f, '__module__', None)
+    if module is not None:
+        path.insert(0, module)
+    return '.'.join(path), f.__name__
+
+
 def get_arg_names(f, only_required=False):
     fb = get_fb(f)
 

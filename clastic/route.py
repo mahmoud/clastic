@@ -4,7 +4,7 @@ import re
 
 from boltons.iterutils import first
 
-from .sinter import inject, get_arg_names, get_fb
+from .sinter import inject, get_arg_names, get_fb, get_callable_name
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
@@ -456,9 +456,10 @@ class Route(object):
         cn = self.__class__.__name__
         ep = self.endpoint
         try:
+            ep_mod, ep_name = get_callable_name(ep)
             ep_name = '%s.%s' % (ep.__module__, ep.func_name)
         except Exception:
-            ep_name = repr(ep)
+            ep_name = object.__repr__(ep)
         args = (cn, self.pattern, ep_name)
         tmpl = '<%s pattern=%r endpoint=%s>'
         if self.methods:

@@ -50,7 +50,7 @@ except NameError:
 
 
 from .application import Application, NullRoute, RESERVED_ARGS
-from .sinter import inject, get_fb
+from .sinter import inject, get_fb, get_callable_name
 from .render import render_json, AshesRenderFactory
 from .static import StaticApplication
 
@@ -242,10 +242,13 @@ def get_endpoint_info(route):
     # TODO: callable object endpoints?
     ret = {}
     try:
-        ret['name'] = route.endpoint.func_name
-        ret['module_name'] = route.endpoint.__module__
+        ret['module_name'], ret['name'] = get_callable_name(route.endpoint)
     except AttributeError:
-        ret['name'] = repr(route.endpoint)
+        import pdb;pdb.post_mortem()
+        try:
+            ret['name'] = repr(route.endpoint)
+        except:
+            ret['name'] = object.__repr__(route.endpoint)
     return ret
 
 
