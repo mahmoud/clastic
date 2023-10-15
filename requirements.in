@@ -1,17 +1,17 @@
 ashes
 attr
 boltons
-chameleon
+chameleon<3.10  # 4.0 dropped 2.7 support, 3.10 made scopes dict-like in a way that breaks tests
 coverage
 face
 glom
 Mako
 more-itertools<6.0.0  # >=6.0 breaks py27/pypy
-pip-tools
+pip-tools==5.5.0
 psutil==5.8.0
 pytest<5.0.0
 secure-cookie  # werkzeug goes 1.0 but adds an 0ver dep that's been in prod since 2007
-tox
+tox<4
 Werkzeug
 pip==20.1.1
 virtualenv>=16.4.3  # open(mode='rU') warnings
