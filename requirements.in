@@ -1,5 +1,5 @@
 ashes
-attr
+attrs==21.4.0
 boltons
 chameleon<3.10  # 4.0 dropped 2.7 support, 3.10 made scopes dict-like in a way that breaks tests
 coverage
