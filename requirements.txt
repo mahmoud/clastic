@@ -13,28 +13,28 @@ click==7.1.2              # via -r requirements.in, pip-tools
 coverage==5.5             # via -r requirements.in
 distlib==0.3.7            # via virtualenv
 face==20.1.1              # via -r requirements.in, glom
-filelock==3.12.2          # via tox, virtualenv
-glom==23.3.0              # via -r requirements.in
-importlib-metadata==6.7.0  # via mako, pluggy, pytest, tox, virtualenv
-mako==1.2.4               # via -r requirements.in
-markupsafe==2.1.3         # via mako, werkzeug
+filelock==3.2.1           # via -r requirements.in, tox, virtualenv
+glom==23.1.1              # via -r requirements.in
+importlib-metadata==2.1.3  # via -r requirements.in, pytest, tox, virtualenv
+mako==1.1.6               # via -r requirements.in
+markupsafe==1.1.1         # via -r requirements.in, mako
 more-itertools==5.0.0     # via -r requirements.in, pytest
-packaging==23.2           # via pytest, tox
+packaging==20.9           # via -r requirements.in, pytest, tox
 pip-tools==5.5.0          # via -r requirements.in
-platformdirs==3.11.0      # via virtualenv
+platformdirs==2.0.2       # via -r requirements.in, virtualenv
 pluggy==0.13.1            # via pytest, tox
 psutil==5.8.0             # via -r requirements.in
 py==1.11.0                # via pytest, tox
+pyparsing==2.4.7          # via -r requirements.in, packaging
 pytest==4.6.11            # via -r requirements.in
-secure-cookie==0.2.0      # via -r requirements.in
-six==1.16.0               # via more-itertools, pytest, tox
-tomli==2.0.1              # via tox
+secure-cookie==0.1.0      # via -r requirements.in
+six==1.16.0               # via more-itertools, pytest, tox, virtualenv
+#  tomli==2.0.1              # via tox  <- shouldn't be. tomli was added in tox>=4
 tox==3.28.0               # via -r requirements.in
-typing-extensions==4.7.1  # via importlib-metadata, platformdirs
-virtualenv==20.24.5       # via -r requirements.in, tox
+virtualenv==20.15.1       # via -r requirements.in, tox
 wcwidth==0.2.8            # via pytest
-werkzeug==2.2.3           # via -r requirements.in, secure-cookie
-zipp==3.15.0              # via importlib-metadata
+werkzeug==1.0.1           # via -r requirements.in, secure-cookie
+zipp==1.2.0              # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
