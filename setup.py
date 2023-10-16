@@ -25,7 +25,7 @@ desc = ('A functional Python web framework that streamlines'
         ' explicit development practices while eliminating'
         ' global state.')
 
-if sys.version_info < (2,6):
+if sys.version_info < (2,7):
     raise NotImplementedError("Sorry, clastic only supports Python >2.6")
 
 setup(name='clastic',
@@ -42,10 +42,20 @@ setup(name='clastic',
                 'clastic.tests'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=['Werkzeug>=1.0.0,<2.0', 'boltons>=20.0.0', 'ashes', 'glom', 'secure-cookie'],
+      install_requires=[
+          'Werkzeug>=1.0.0,<2.0', 
+          'ashes',
+          'attrs<=21.4.0',
+          'boltons>=20.0.0', 
+          'glom<=23.1.1', 
+          'secure-cookie==0.1.0'],
       license=__license__,
       platforms='any',
-      tests_require=['Mako==1.0.7', 'pytest==4.6.9', 'psutil==5.8.0'],
+      tests_require=[
+          'chameleon==3.9.1',
+          'Mako==1.1.6', 
+          'pytest==4.6.9', 
+          'psutil==5.8.0'],
       classifiers=[
           'Intended Audience :: Developers',
           'Development Status :: 5 - Production/Stable',
@@ -56,7 +66,6 @@ setup(name='clastic',
           'Topic :: Internet :: WWW/HTTP :: WSGI :: Server',
           'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries',
           'Topic :: Software Development :: Libraries :: Application Frameworks',
-          'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
