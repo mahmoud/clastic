@@ -5,7 +5,6 @@ explicit development practices while eliminating global state.
 """
 
 import os
-import sys
 import importlib
 from setuptools import setup
 
@@ -73,7 +72,9 @@ setup(name='clastic',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: 3.9',
-          'Programming Language :: Python :: 3.10']
+          'Programming Language :: Python :: 3.10',
+          'Programming Language :: Python :: 3.11',
+          ]
 
       )
 
@@ -91,7 +92,7 @@ A brief checklist for release:
 * write CHANGELOG
 * git commit
 * git tag -a x.y.z -m "brief summary"
-* bump glom/_version.py version onto n+1 dev
+* bump clastic/_version.py version onto n+1 dev
 * git commit
 * git push
 
