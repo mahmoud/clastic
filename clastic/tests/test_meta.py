@@ -10,13 +10,6 @@ from clastic.middleware.cookie import SignedCookieMiddleware
 from clastic.tests.common import cookie_hello_world
 
 _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
-
-try:
-    unicode
-    PY3 = False
-except:
-    PY3 = True
-
 IS_PYPY = '__pypy__' in sys.builtin_module_names
 
 
@@ -54,7 +47,7 @@ def test_route_names():
               ('/callable_obj', obj, render_basic),
               StaticFileRoute('/file', _CUR_DIR + '/test_meta.py'),
               ('/meta', MetaApplication())]
-    if PY3 and not IS_PYPY:
+    if not IS_PYPY:
         routes.append(('/builtin', sum, render_basic))
 
     app = Application(routes=routes,
@@ -62,7 +55,7 @@ def test_route_names():
 
     cl = app.get_local_client()
     assert cl.get('/meta/').status_code == 200
-    if not PY3 or IS_PYPY:
+    if IS_PYPY:
         return
 
     resp = cl.get('/meta/json/')
