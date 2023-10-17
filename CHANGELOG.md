@@ -13,6 +13,14 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+
+
+21.1.2
+------
+*(Oct 17, 2023)*
+
+Bumped a few dependencies to their last py2-compatible version ahead of dropping Py3 support in 23.0.0. (Skipped 21.1.1)
+
 21.1.0
 ------
 *(November 7, 2021)*
