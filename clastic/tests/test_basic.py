@@ -11,7 +11,7 @@ from clastic.tests.common import hello_world, DummyMiddleware, RequestProvidesNa
 
 def test_create_empty_application():
     app = Application()
-    return app
+    assert app
 
 
 def test_create_hw_application():

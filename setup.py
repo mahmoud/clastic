@@ -5,8 +5,8 @@ explicit development practices while eliminating global state.
 """
 
 import os
-import imp
 import sys
+import importlib
 from setuptools import setup
 
 
@@ -15,9 +15,15 @@ __contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/clastic'
 __license__ = 'BSD'
 
+def import_path(module_name, path):
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 CUR_PATH = os.path.abspath(os.path.dirname(__file__))
 _version_mod_path = os.path.join(CUR_PATH, 'clastic', '_version.py')
-_version_mod = imp.load_source('_version', _version_mod_path)
+_version_mod = import_path('_version', _version_mod_path)
 __version__ = _version_mod.__version__
 
 
@@ -25,8 +31,6 @@ desc = ('A functional Python web framework that streamlines'
         ' explicit development practices while eliminating'
         ' global state.')
 
-if sys.version_info < (2,7):
-    raise NotImplementedError("Sorry, clastic only supports Python >2.6")
 
 setup(name='clastic',
       version=__version__,
@@ -45,17 +49,17 @@ setup(name='clastic',
       install_requires=[
           'Werkzeug>=1.0.0,<2.0', 
           'ashes',
-          'attrs<=21.4.0',
-          'boltons>=20.0.0', 
-          'glom<=23.1.1', 
-          'secure-cookie==0.1.0'],
+          'attrs',
+          'boltons', 
+          'glom', 
+          'secure-cookie>=0.1.0,<=0.2.0'],
       license=__license__,
       platforms='any',
       tests_require=[
           'chameleon==3.9.1',
-          'Mako==1.1.6', 
-          'pytest==4.6.9', 
-          'psutil==5.8.0'],
+          'Mako', 
+          'pytest', 
+          'psutil'],
       classifiers=[
           'Intended Audience :: Developers',
           'Development Status :: 5 - Production/Stable',
@@ -66,7 +70,6 @@ setup(name='clastic',
           'Topic :: Internet :: WWW/HTTP :: WSGI :: Server',
           'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries',
           'Topic :: Software Development :: Libraries :: Application Frameworks',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: 3.9',
@@ -79,13 +82,16 @@ A brief checklist for release:
 
 * tox
 * git commit (if applicable)
-* Bump setup.py version off of -dev
+* Bump clastic/_version version off of -dev
 * git commit -a -m "bump version for x.y.z release"
-* python setup.py sdist bdist_wheel upload
-* git tag -a x.y.z -m "brief summary"
+* rm -rf dist/*
+* python setup.py sdist bdist_wheel
+* twine upload dist/*
+* bump docs/conf.py version
 * write CHANGELOG
 * git commit
-* bump setup.py version onto n+1 dev
+* git tag -a x.y.z -m "brief summary"
+* bump glom/_version.py version onto n+1 dev
 * git commit
 * git push
 
