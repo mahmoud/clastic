@@ -1,6 +1,7 @@
 ashes
 boltons
-chameleon<3.10  # 4.0 dropped 2.7 support, 3.10 made scopes dict-like in a way that breaks tests
+# when dropping py3.7, can make this >=4.4.0
+chameleon>=4.3.0  # 4.3.0 fixed the long-running dict iterability issue, see chameleon #390
 coverage
 face
 mako

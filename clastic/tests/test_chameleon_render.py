@@ -58,8 +58,8 @@ def test_chameleon_mixed():
 
     c = app.get_local_client()
     resp = c.get('/')
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.data
     assert b'clasty' in resp.data
 
     resp = c.get('/json/')
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.data
