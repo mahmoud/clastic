@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 
-import sys
 import types
 import inspect
 import hashlib
 import linecache
 
 from boltons import iterutils
-from boltons.strutils import camel2under
 from boltons.funcutils import FunctionBuilder
 
-PY3 = (sys.version_info[0] == 3)
 _VERBOSE = False
 _INDENT = '    '
 
@@ -39,9 +35,6 @@ def get_fb(f, drop_self=True):
 
 
 def get_callable_name(f):
-    if not PY3:
-        return f.__module__, f.func_name
-
     path = []
     if inspect.ismethod(f):
         path.append(f.__self__.__class__.__name__)
@@ -158,10 +151,7 @@ def compile_code(code_str, name, env=None, verbose=_VERBOSE):
     code = compile(code_str, unique_filename, 'single')
     if verbose:
         print(code_str)
-    if PY3:
-        exec(code, env)
-    else:
-        exec("exec code in env")
+    exec(code, env)
 
     linecache.cache[unique_filename] = (
         len(code_str),

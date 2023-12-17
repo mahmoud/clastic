@@ -17,20 +17,12 @@ from .errors import Forbidden, NotFound
 # TODO: default favicon.ico StaticApplication?
 # TODO: process paths
 
-try:
-    unicode = unicode
-    PY3 = False
-except NameError:
-    # py3
-    unicode = str
-    PY3 = True
-
 DEFAULT_MAX_AGE = 360
 DEFAULT_TEXT_MIME = 'text/plain'
 DEFAULT_BINARY_MIME = 'application/octet-stream'
 
 # string.printable doesn't cut it
-_PRINTABLE = b''.join([chr(x).encode('latin-1') if PY3 else chr(x)
+_PRINTABLE = b''.join([chr(x).encode('latin-1')
                        for x in [7, 8, 9, 10, 12, 13, 27] +
                        list(range(32, 256))])
 
@@ -150,7 +142,7 @@ class StaticApplication(Application):
                  cache_timeout=DEFAULT_MAX_AGE,
                  default_text_mime=DEFAULT_TEXT_MIME,
                  default_binary_mime=DEFAULT_BINARY_MIME):
-        if isinstance(search_paths, (unicode, bytes)):
+        if isinstance(search_paths, (str, bytes)):
             search_paths = [search_paths]
         self.search_paths = search_paths
         self.cache_timeout = cache_timeout
@@ -161,7 +153,7 @@ class StaticApplication(Application):
 
     def get_file_response(self, path, request):
         try:
-            if not isinstance(path, (unicode, bytes)):
+            if not isinstance(path, (str, bytes)):
                 path = '/'.join(path)
             full_path = find_file(self.search_paths, path)
             if full_path is None:

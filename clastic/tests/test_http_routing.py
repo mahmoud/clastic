@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
 
 from clastic import Application, render_basic, RerouteWSGI
 from clastic.route import GET, POST, PUT, DELETE

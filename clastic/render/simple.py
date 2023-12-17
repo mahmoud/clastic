@@ -3,24 +3,11 @@
 import sys
 import itertools
 from json import JSONEncoder
-import sys
-if sys.version_info < (3,3,):
-    from collections import Mapping, Sized, Iterable
-else:
-    from collections.abc import Mapping, Sized, Iterable
+from collections.abc import Mapping, Sized, Iterable
 
 from werkzeug.wrappers import Response
 
 from .tabular import TabularRender
-
-PY2 = (sys.version_info[0] == 2)
-
-try:
-    unicode
-except NameError:
-    # py3
-    unicode = str
-
 
 class ClasticJSONEncoder(JSONEncoder):
     def __init__(self, **kw):
@@ -29,8 +16,7 @@ class ClasticJSONEncoder(JSONEncoder):
         kw.setdefault('ensure_ascii', True)
         kw.setdefault('indent', 2)
         kw.setdefault('sort_keys', True)
-        if not PY2:
-            kw.pop('encoding', None)
+        kw.pop('encoding', None)
         super(ClasticJSONEncoder, self).__init__(**kw)
 
     def default(self, obj):
@@ -114,10 +100,12 @@ class BasicRender(object):
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
     def render_response(self, context, request, _route):
-        if isinstance(context, (bytes, unicode)):  # already serialized
+        if isinstance(context, str):  # already serialized but not encoded
+            context = context.encode('utf8')
+        if isinstance(context, bytes):  # already serialized and encoded
             if self._guess_json(context):
                 return Response(context, mimetype="application/json")
-            elif '<html' in context[:168]:
+            elif b'<html' in context[:168]:
                 # based on the longest DOCTYPE I found in a brief search
                 return Response(context, mimetype="text/html")
             else:
@@ -147,7 +135,7 @@ class BasicRender(object):
             return self.json_render(context)
         elif resp_mime == 'text/html':
             return self.tabular_render(context, _route)
-        return Response(unicode(context), mimetype="text/plain")
+        return Response(str(context), mimetype="text/plain")
 
     @property
     def _mime_format_map(self):
@@ -162,12 +150,12 @@ class BasicRender(object):
         return self._format_mime_map.values()
 
     @staticmethod
-    def _guess_json(text):
-        if not text:
+    def _guess_json(bytestr: bytes):
+        if not bytestr:
             return False
-        elif text[0] == '{' and text[-1] == '}':
+        elif bytestr[0] == b'{' and bytestr[-1] == b'}':
             return True
-        elif text[0] == '[' and text[-1] == ']':
+        elif bytestr[0] == b'[' and bytestr[-1] == b']':
             return True
         else:
             return False

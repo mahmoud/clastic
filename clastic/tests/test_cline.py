@@ -1,5 +1,4 @@
 
-from __future__ import unicode_literals
 
 from clastic.cline import Cline
 

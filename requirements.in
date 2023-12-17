@@ -1,25 +1,13 @@
 ashes
-attrs==21.4.0
-click<8  # pip-tools uses it
 boltons
 chameleon<3.10  # 4.0 dropped 2.7 support, 3.10 made scopes dict-like in a way that breaks tests
-coverage<6
+coverage
 face
-filelock==3.2.1
-glom<23.3.0  # dropped py2
-importlib-metadata==2.1.3  # py2-only
-Mako==1.1.6  # py2-only
-markupsafe==1.1.1
-more-itertools<6.0.0  # >=6.0 breaks py27/pypy
-pip-tools==5.5.0
-psutil==5.8.0
-pytest<5.0.0
-secure-cookie==0.1.0  # werkzeug goes 1.0 but adds an 0ver dep that's been in prod since 2007. can go to 0.2.0 after py2 drop
-tox==3.28.0  # py2
-Werkzeug==1.0.1
-packaging==20.9  # py2-only
-platformdirs==2.0.2  # py2-only
-pyparsing==2.4.7  # py2-only
-pip==20.1.1
-virtualenv==20.15.1
-zipp==1.2.0
+mako
+pip-tools
+psutil
+pytest
+secure-cookie  # werkzeug goes 1.0 but adds an 0ver dep that's been in prod since 2007. can go to 0.2.0 after py2 drop
+tox
+Werkzeug<2
+

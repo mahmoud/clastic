@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
 from pytest import raises
 
 from clastic import Application, render_basic, Response
