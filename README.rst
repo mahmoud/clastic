@@ -9,7 +9,7 @@ Clastic
 A functional Python web framework that streamlines explicit
 development practices while eliminating global state.
 
-Clastic is pure-Python, tested on Python 2.7-3.7, and
+Clastic is pure-Python, tested on Python 3.7+, and
 `documented <https://python-clastic.readthedocs.io/>`_,
 with `tutorials <https://python-clastic.readthedocs.io/en/latest/tutorial.html>`_.
 

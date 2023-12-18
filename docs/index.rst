@@ -22,7 +22,7 @@ Clastic
 Installation
 ------------
 
-Clastic is pure Python, and tested on Python 2.7-3.7+, as well as PyPy. Installation is easy::
+Clastic is pure Python, and tested on Python 3.7+, as well as PyPy3. Installation is easy::
 
   pip install clastic
 
