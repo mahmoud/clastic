@@ -55,7 +55,7 @@ setup(name='clastic',
       license=__license__,
       platforms='any',
       tests_require=[
-          'chameleon>=4.4.0',
+          'chameleon>=4.4.1',
           'Mako', 
           'pytest', 
           'psutil'],
