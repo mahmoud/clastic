@@ -59,8 +59,9 @@ def test_route_names():
 
     resp = cl.get('/meta/json/')
     assert resp.status_code == 200
+    resp_data = json.loads(resp.data)
 
-    endpoints = [r['endpoint'] for r in json.loads(resp.data)['app']['routes']]
+    endpoints = [r['endpoint'] for r in resp_data['app']['routes']]
     assert endpoints == [{'module_name': 'clastic.tests.test_meta', 'name': 'func_ep'},
                          {'module_name': 'clastic.tests.test_meta.CallableObj', 'name': 'ep_method'},
                          {'module_name': 'clastic.tests.test_meta', 'name': 'CallableObj'},
@@ -70,7 +71,9 @@ def test_route_names():
                           'name': 'get_file_response'},
                          {'module_name': 'clastic.meta.MetaApplication', 'name': 'get_main'},
                          {'module_name': 'builtins', 'name': 'sum'}]
-
+    
+    for peripheral, info in resp_data.items():
+        assert 'exc_content' not in info, f'failed meta context for domain "{peripheral}": {info["exc_content"]}'
 
 def test_resource_redaction():
     app = Application(routes=[('/meta', MetaApplication())],
