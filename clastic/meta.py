@@ -199,8 +199,11 @@ def get_pyvm_info():
 
     ret['gc'] = glom(None, Call(get_gc_info), skip_exc=Exception)  # effectively try/except:pass
 
-    get_interval = getattr(sys, 'getswitchinterval', sys.getcheckinterval)
-    ret['check_interval'] = get_interval()
+    get_interval = getattr(sys, 'getswitchinterval', getattr(sys, 'getcheckinterval', None))
+    if get_interval:
+        ret['check_interval'] = get_interval()
+    else:
+        ret['check_interval'] = None
     return ret
 
 
