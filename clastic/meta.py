@@ -108,7 +108,7 @@ def get_proc_info():
                                'pgid': T.getpgrp(),
                                'niceness': T.nice(0)},
                           skip_exc=AttributeError)
-    ret.update(unix_only_vals)
+    ret.update(unix_only_vals or {})
 
     ret['rusage'] = get_rusage_dict()
     ret['rlimit'] = get_rlimit_dict()
