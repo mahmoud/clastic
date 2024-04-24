@@ -95,7 +95,7 @@ def get_proc_info():
     ret['pid'] = os.getpid()
     _user_t, _sys_t = os.times()[:2]
     ret['cpu_times'] = {'user_time': _user_t, 'sys_time': _sys_t}
-    ret['cwd'] = os.getcwdu()
+    ret['cwd'] = os.getcwd()
     ret['umask'] = os.umask(os.umask(2))  # have to set to get
     ret['umask_str'] = '{0:03o}'.format(ret['umask'])
 

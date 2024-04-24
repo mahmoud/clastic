@@ -2,7 +2,8 @@ TODO
 ====
 
 * Wrap start_response so we know whether it's safe to reroute WSGI
-
+* dependency overrides for testing
+  
 v19.0
 -----
 * stats middleware reset/clear endpoint
