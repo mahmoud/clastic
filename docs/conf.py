@@ -31,7 +31,7 @@ copyright = '2023, Mahmoud Hashemi'
 author = 'Mahmoud Hashemi'
 
 # The full version, including alpha/beta/rc tags
-release = '23.1'
+release = '24.0'
 
 
 # -- General configuration ---------------------------------------------------

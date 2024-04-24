@@ -12,6 +12,13 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+## 24.0.0
+
+_(Apr 23, 2024)_
+
+- Fix Chameleon support for newer Chameleon versions
+- Improved `MetaApplication` support for newer versions of Python (and Windows)
+
 ## 23.1.0
 
 _(Dec 17, 2023)_
