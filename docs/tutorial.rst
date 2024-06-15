@@ -571,6 +571,7 @@ and call the ``showResult`` function when the submit button is pressed:
 
 
 .. code-block:: html
+   :emphasize-lines: 5, 9
 
    <head>
      <meta charset="utf-8">
