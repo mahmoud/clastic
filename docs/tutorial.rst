@@ -403,6 +403,8 @@ Static assets
 -------------
 
 As our next step, let us apply some style to our page.
+Adding styles will require a CSS file, which should be served without processing.
+Such files are generally known as *static assets*.
 We create a subfolder named ``static``
 in the same folder as our Python source file
 and put a file named ``custom.css`` into that folder.
