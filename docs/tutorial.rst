@@ -123,6 +123,8 @@ First, let's take a look at the template file (``home.html``):
 
    Clastic supports multiple template engines;
    in this application we use `Ashes`_.
+   Ashes is a Python implementation of the `Dust`_ template engine
+   for JavaScript.
 
 This template expects some data to be passed to it.
 These are marked using curly brackets:
@@ -599,5 +601,6 @@ to learn more about Clastic's features.
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
 .. _dateutil: https://dateutil.readthedocs.io/
 .. _Ashes: https://github.com/mahmoud/ashes
+.. _Dust: https://akdubya.github.io/dustjs/
 .. _curl: https://curl.haxx.se/
 .. _repo: https://github.com/mahmoud/clastic/tree/master/examples/tzconvert
