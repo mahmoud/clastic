@@ -28,7 +28,7 @@ def get_all_time_zones():
             "zone": zone,
         }
         time_zones.append(entry)
-    return sorted(time_zones, key=lambda s: s["location"])
+    return sorted(time_zones, key=lambda x: x["location"])
 
 
 ALL_TIME_ZONES = get_all_time_zones()

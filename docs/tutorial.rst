@@ -169,7 +169,7 @@ Next, we turn to the Python code (``tzconvert.py``):
                "zone": zone,
            }
            time_zones.append(entry)
-       return sorted(time_zones, key=lambda s: s["location"])
+       return sorted(time_zones, key=lambda x: x["location"])
 
 
    ALL_TIME_ZONES = get_all_time_zones()
@@ -280,7 +280,7 @@ The list of all time zones is constructed once, at application startup:
                "zone": zone,
            }
            time_zones.append(entry)
-       return sorted(time_zones, key=lambda s: s["location"])
+       return sorted(time_zones, key=lambda x: x["location"])
 
 
    ALL_TIME_ZONES = get_all_time_zones()
