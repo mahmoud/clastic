@@ -522,7 +522,7 @@ At this point, you should be able to test this route using `curl`_::
 
 Now we arrange the home page template.
 First, we add a modal dialog to display the result.
-By default, it contains dummy information:
+By default, it contains placeholder values:
 
 
 .. code-block:: html
