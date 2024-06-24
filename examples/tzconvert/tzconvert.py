@@ -1,4 +1,4 @@
-# Copyright (C) 2020 H. Turgut Uyar <uyar@tekir.org>
+# Copyright (C) 2024 H. Turgut Uyar <uyar@tekir.org>
 #
 # Released under the BSD license.
 #
@@ -7,18 +7,13 @@
 #
 # https://python-clastic.readthedocs.io/en/latest/tutorial.html
 
-import json
-import os
-from datetime import datetime
+from datetime import datetime, timezone
+from pathlib import Path
+from zoneinfo import ZoneInfo, available_timezones
 
 from clastic import Application, render_json
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
-from dateutil import parser, tz, zoneinfo
-
-
-CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-STATIC_PATH = os.path.join(CUR_PATH, "static")
 
 
 def get_location(zone):
@@ -26,13 +21,14 @@ def get_location(zone):
 
 
 def get_all_time_zones():
-    zone_info = zoneinfo.get_zonefile_instance()
-    zone_names = zone_info.zones.keys()
-    entries = {get_location(zone): zone for zone in zone_names}
-    return [
-        {"location": location, "zone": entries[location]}
-        for location in sorted(entries.keys())
-    ]
+    time_zones = []
+    for zone in available_timezones():
+        entry = {
+            "location": get_location(zone),
+            "zone": zone,
+        }
+        time_zones.append(entry)
+    return sorted(time_zones, key=lambda x: x["location"])
 
 
 ALL_TIME_ZONES = get_all_time_zones()
@@ -40,10 +36,10 @@ ALL_TIME_ZONES = get_all_time_zones()
 
 def home():
     render_ctx = {
-        "zones": ALL_TIME_ZONES,
+        "default_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M"),
         "default_src": "UTC",
         "default_dst": "UTC",
-        "now": datetime.utcnow().strftime("%Y-%m-%dT%H:%M"),
+        "zones": ALL_TIME_ZONES,
     }
     return render_ctx
 
@@ -55,16 +51,14 @@ def convert_tz(dt_naive, src_zone, dst_zone):
 
 
 def show_time(request):
-    values = json.loads(request.data)
+    dt = request.values.get("dt")
+    dt_naive = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
 
-    dt = values.get("dt")
-    dt_naive = parser.parse(dt)
+    src = request.values.get("src")
+    src_zone = ZoneInfo(src)
 
-    src = values.get("src")
-    src_zone = tz.gettz(src)
-
-    dst = values.get("dst")
-    dst_zone = tz.gettz(dst)
+    dst = request.values.get("dst")
+    dst_zone = ZoneInfo(dst)
 
     dst_dt = convert_tz(dt_naive, src_zone, dst_zone)
     render_ctx = {
@@ -83,13 +77,15 @@ def show_time(request):
 
 
 def create_app():
-    static_app = StaticApplication(STATIC_PATH)
+    static_path = Path(__file__).parent / "static"
+    static_app = StaticApplication(str(static_path))
     routes = [
         ("/", home, "home.html"),
         ("/show", show_time, render_json),
         ("/static", static_app),
     ]
-    render_factory = AshesRenderFactory(CUR_PATH)
+    templates_path = Path(__file__).parent
+    render_factory = AshesRenderFactory(str(templates_path))
     return Application(routes, render_factory=render_factory)
 
 
