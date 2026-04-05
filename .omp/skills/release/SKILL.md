@@ -12,8 +12,8 @@ clastic uses CalVer: `YY.MINOR.MICRO` (e.g. `26.0.1`). The version lives in
 `clastic/__init__.py` as a `__version__` literal string. During development it
 carries a `dev` suffix (e.g. `26.0.1dev`). Flit reads this at build time.
 
-Tags use the `v` prefix (e.g. `v26.0.1`, NOT `26.0.1`). The publish workflow
-triggers on tags matching `v[0-9]*.[0-9]*.[0-9]*`.
+Tags do NOT use a `v` prefix (e.g. `26.0.1`, NOT `v26.0.1`). The publish workflow
+triggers on tags matching `[0-9]*.[0-9]*.[0-9]*`.
 
 ## Pre-flight checks
 
@@ -88,10 +88,10 @@ Use the exact format `clastic version X.Y.Z` for the commit message.
 ### 5. Tag the release
 
 ```bash
-git tag -a v26.0.1 -m "short summary of key changes in this release"
+git tag -a 26.0.1 -m "short summary of key changes in this release"
 ```
 
-Tags use the `v` prefix. The tag message should be a short,
+Tags do NOT use a prefix. The tag message should be a short,
 lowercase, descriptive summary of the release (not just the version number).
 Examples:
 
@@ -124,7 +124,7 @@ This triggers two GitHub Actions workflows:
 - `Publish to PyPI` (on the tag)
 
 The publish workflow validates that `__version__` on the tagged commit does
-not contain `dev` and matches the tag (after stripping the `v` prefix). It
+not contain `dev` and matches the tag. It
 parses `__version__` from the file with `sed` rather than importing the module
 (the build job does not install dependencies). If either check fails,
 publishing is blocked.
@@ -155,14 +155,14 @@ Report the results to the user.
 - **Failed release** (tag exists locally/on GitHub but not on PyPI): PyPI is
 	the source of truth. Delete the stale tag locally and on the remote:
 	```bash
-	git tag -d vX.Y.Z
-	git push origin :refs/tags/vX.Y.Z  # if it was pushed
+	git tag -d X.Y.Z
+	git push origin :refs/tags/X.Y.Z  # if it was pushed
 	```
 	Then check `__version__` in `clastic/__init__.py`. If it was already bumped
 	past the failed release (e.g. `X.Y.(Z+1)dev`), reset it to `X.Y.Zdev` so
 	the release flow strips the suffix to the correct version. Amend or revert
 	the bump commit as needed, then restart the release from step 1.
-- **Wrong version tagged**: `git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`
+- **Wrong version tagged**: `git tag -d X.Y.Z && git push origin :refs/tags/X.Y.Z`
 	then fix and re-tag.
 - **Publish workflow failed**: Check the GitHub Actions log. Common causes:
 	version mismatch, dev suffix present, PyPI trusted publisher not configured.

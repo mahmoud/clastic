@@ -3,7 +3,7 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - "v[0-9]*.[0-9]*.[0-9]*"
+      - "[0-9]*.[0-9]*.[0-9]*"
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
             echo "::error::Version $VERSION contains dev suffix."
             exit 1
           fi
-          TAG=${GITHUB_REF#refs/tags/v}
+          TAG=${GITHUB_REF#refs/tags/}
           if [ "$VERSION" != "$TAG" ]; then
             echo "::error::Tag $TAG does not match __version__ ($VERSION)"
             exit 1
@@ -60,7 +60,7 @@ jobs:
           python-version: "3.11"
       - name: Wait for PyPI
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
+          TAG=${GITHUB_REF#refs/tags/}
           for i in $(seq 1 30); do
             if curl -s -f "https://pypi.org/pypi/clastic/$TAG/json" > /dev/null; then
               echo "clastic $TAG available on PyPI"
@@ -71,7 +71,7 @@ jobs:
           done
       - name: Install from PyPI and verify
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
+          TAG=${GITHUB_REF#refs/tags/}
           uv pip install --system clastic==$TAG --index-url https://pypi.org/simple/
           INSTALLED=$(cd /tmp && python -c "import clastic; print(clastic.__version__)")
           echo "Installed version: $INSTALLED"
