@@ -2,11 +2,7 @@
 
 import os
 import itertools
-import sys
-if sys.version_info < (3,3,):
-    from collections import Sequence
-else:
-    from collections.abc import Sequence
+from collections.abc import Sequence
 from argparse import ArgumentParser
 
 import attr
@@ -32,11 +28,6 @@ from .errors import (HTTPException,
 from .sinter import get_arg_names
 
 
-try:
-    unicode
-except NameError:
-    # py3
-    unicode = str
 
 
 _REQ_ID_ITER = itertools.count()
@@ -412,7 +403,7 @@ class Application(object):
             static_path = args.static_path or static_path or \
                 os.path.join(os.getcwd(), 'static')
             static_prefix = args.static_prefix or static_prefix
-            static_prefix = '/' + unicode(static_prefix).lstrip('/')
+            static_prefix = '/' + str(static_prefix).lstrip('/')
             static_app = StaticApplication(static_path)
             self.add((static_prefix, static_app), index=0)
 

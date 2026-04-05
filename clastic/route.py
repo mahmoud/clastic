@@ -8,11 +8,6 @@ from .sinter import inject, get_arg_names, get_fb, get_callable_name
 from .middleware import (check_middlewares,
                          merge_middlewares,
                          make_middleware_chain)
-try:
-    unicode = unicode
-except NameError:
-    # py3
-    unicode = str
 
 
 _REQUEST_BUILTINS = ('request', '_application', '_route', '_dispatch_state')
@@ -70,8 +65,8 @@ TYPE_CONV_MAP = {}
 TYPE_PATT_MAP = {}
 DEFAULT_CONVS = [('int', int, _INT_PATTERN),
                  ('float', float, _FLOAT_PATTERN),
-                 ('str', unicode, _STR_PATTERN),
-                 ('unicode', unicode, _STR_PATTERN)]
+                 ('str', str, _STR_PATTERN),
+                 ('unicode', str, _STR_PATTERN)]
 
 
 def _register_converter(name, func, pattern):

@@ -4,7 +4,6 @@ import os
 import time
 import socket
 import hashlib
-import binascii
 import datetime
 
 from werkzeug.utils import redirect
@@ -32,11 +31,7 @@ class Redirector(object):
 
 
 
-try:
-    random_hex = os.urandom(4).hex()
-except AttributeError:
-    # py2
-    random_hex = binascii.hexlify(os.urandom(4))
+random_hex = os.urandom(4).hex()
 
 _GUID_SALT = '-'.join([str(os.getpid()),
                        socket.gethostname() or '<nohostname>',

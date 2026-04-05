@@ -33,19 +33,8 @@ try:
 except ImportError:
     resource = None
 
-try:
-    import sysconfig
-except ImportError:
-    try:
-        from distutils import sysconfig
-    except ImportError:
-        sysconfig = None
+import sysconfig
 
-try:
-    unicode
-except NameError:
-    # py3
-    unicode = str
 
 
 from .application import Application, NullRoute, RESERVED_ARGS
@@ -191,7 +180,7 @@ def get_pyvm_info():
     ret['compiler'] = platform.python_compiler()
     ret['build_date'] = platform.python_build()[1]
     ret['version_info'] = list(sys.version_info)
-    ret['have_ucs4'] = getattr(sys, 'maxunicode', 0) > 65536
+    ret['have_ucs4'] = True
     ret['have_readline'] = HAVE_READLINE
 
     ret['active_thread_count'] = glom(sys, (T._current_frames(), len), skip_exc=Exception)
@@ -518,20 +507,20 @@ def _process_items(all_items):
                     key = repr(item)
                 except:
                     key = 'unreprable object %s' % object.__repr__(key)
-        if isinstance(key, (bytes, unicode)):
+        if isinstance(key, (bytes, str)):
             cur['key'] = key
         else:
             try:
-                cur['key'] = unicode(key[0])
-                cur['key_detail'] = unicode(key[1])
+                cur['key'] = str(key[0])
+                cur['key_detail'] = str(key[1])
             except:
-                cur['key'] = unicode(key)
-        if isinstance(value, (bytes, unicode)):
+                cur['key'] = str(key)
+        if isinstance(value, (bytes, str)):
             cur['value'] = value
         else:
             try:
-                cur['value'] = unicode(value[0])
-                cur['value_detail'] = unicode(value[1])
+                cur['value'] = str(value[0])
+                cur['value_detail'] = str(value[1])
             except:
                 cur['value'] = str(value)
         ret.append(cur)

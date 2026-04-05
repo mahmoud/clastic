@@ -115,7 +115,7 @@ class _ParsedTB(object):
 
     @classmethod
     def from_string(cls, tb_str):
-        if not isinstance(tb_str, unicode):
+        if not isinstance(tb_str, str):
             tb_str = tb_str.decode('utf-8')
         tb_lines = tb_str.lstrip().splitlines()
         if tb_lines[0].strip() == 'Traceback (most recent call last):':

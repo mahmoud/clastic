@@ -1,19 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import sys
-if sys.version_info < (3,3,):
-    from collections import Mapping
-else:
-    from collections.abc import Mapping
+from collections.abc import Mapping
 
 from ..sinter import FunctionBuilder
 from .core import Middleware
 
-try:
-    unicode
-except NameError:
-    # py3
-    unicode = str
 
 
 class ContextProcessor(Middleware):
@@ -39,12 +30,12 @@ class ContextProcessor(Middleware):
         return '%s(%s)' % (cn, ', '.join(kwargs))
 
     def _check_params(self, required, defaults, overwrite):
-        if not all([isinstance(arg, unicode) for arg in required]):
+        if not all([isinstance(arg, str) for arg in required]):
             raise TypeError('required argument names must be decoded strings')
         if not isinstance(defaults, Mapping):
             raise TypeError('defaults expected a dict (or mapping), not: %r'
                             % defaults)
-        if not all([isinstance(arg, unicode) for arg in defaults.keys()]):
+        if not all([isinstance(arg, str) for arg in defaults.keys()]):
             raise TypeError('default argument names must be decoded strings')
         for reserved_arg in ('self', 'next', 'context'):
             if reserved_arg in defaults or reserved_arg in required:
@@ -81,6 +72,5 @@ class ContextProcessor(Middleware):
 class SimpleContextProcessor(ContextProcessor):
     def __init__(self, *args, **kwargs):
         defaults = dict([(a, None) for a in args])
-        defaults.update([(k.decode('utf8') if isinstance(k, bytes) else k, v)
-                         for k, v in kwargs.items()])
+        defaults.update(kwargs)
         super(SimpleContextProcessor, self).__init__(defaults=defaults)

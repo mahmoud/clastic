@@ -3,10 +3,7 @@
 import os
 import re
 from textwrap import dedent
-try:
-    from html import escape as html_escape
-except ImportError:
-    from cgi import escape as html_escape
+from html import escape as html_escape
 
 
 from boltons.tableutils import Table
