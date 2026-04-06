@@ -6,7 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "clastic"
 dynamic = ["version"]
 description = "A functional Python web framework that streamlines explicit development practices while eliminating global state."
-readme = "README.rst"
+readme = "README.md"
 authors = [{ name = "Mahmoud Hashemi", email = "mahmoud@hatnote.com" }]
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
@@ -57,7 +57,7 @@ include = [
 	"clastic/tests/",
 	"tox.ini",
 	"LICENSE",
-	"README.rst",
+	"README.md",
 	"CHANGELOG.md",
 ]
 

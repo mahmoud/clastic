@@ -12,6 +12,18 @@ Clastic's approach to updates is as follows:
 Check this page when upgrading to make sure you know about all the new
 features and potential breakages.
 
+## 26.0.0
+
+_(April 6, 2026)_
+
+- Drop Python 2/3.3-3.7 compatibility code
+- Migrate build system from setup.py to pyproject.toml (flit)
+- Modernize CI: uv/tox-uv, codecov, GitHub Actions publish workflow
+- Fix undefined `unicode()` call in `render/simple.py`
+- Add server tests (open_test_socket, iter_monitor_files, enable_tty_echo)
+- Update docs tutorial with time zone converter example
+- Convert README from reStructuredText to Markdown
+
 ## 24.0.0
 
 _(Apr 23, 2024)_

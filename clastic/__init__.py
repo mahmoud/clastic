@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '24.0.1dev'
+__version__ = '26.0.0'
 
 """
     clastic
