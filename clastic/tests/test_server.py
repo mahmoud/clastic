@@ -15,30 +15,16 @@ def test_open_test_socket_success():
     assert open_test_socket('127.0.0.1', 0) is True
 
 
-def test_open_test_socket_occupied_raises():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(('127.0.0.1', 0))
-    sock.listen(1)
-    port = sock.getsockname()[1]
-    try:
-        with pytest.raises(OSError):
-            open_test_socket('127.0.0.1', port, raise_exc=True)
-    finally:
-        sock.close()
+def test_open_test_socket_bind_failure_raises():
+    # 192.0.2.0/24 (TEST-NET-1, RFC 5737) is never locally assigned,
+    # so binding to it reliably fails with EADDRNOTAVAIL.
+    with pytest.raises(OSError):
+        open_test_socket('192.0.2.1', 0, raise_exc=True)
 
 
-def test_open_test_socket_occupied_returns_false():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(('127.0.0.1', 0))
-    sock.listen(1)
-    port = sock.getsockname()[1]
-    try:
-        result = open_test_socket('127.0.0.1', port, raise_exc=False)
-        assert result is False
-    finally:
-        sock.close()
+def test_open_test_socket_bind_failure_returns_false():
+    result = open_test_socket('192.0.2.1', 0, raise_exc=False)
+    assert result is False
 
 
 def _ipv6_available():
