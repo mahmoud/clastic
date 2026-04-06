@@ -97,7 +97,7 @@ def restart_with_reloader(error_func=None):
             args.extend(sys.argv)
         new_environ = os.environ.copy()
         new_environ['WERKZEUG_RUN_MAIN'] = 'true'
-        if os.name == 'nt':
+        if os.name == 'nt':  # pragma: no cover
             for key, value in new_environ.items():
                 if isinstance(value, str):
                     new_environ[key] = value.encode('iso-8859-1')

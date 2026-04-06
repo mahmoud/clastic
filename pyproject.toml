@@ -68,8 +68,8 @@ testpaths = ["clastic/tests"]
 branch = true
 source = ["clastic"]
 omit = [
-	"clastic/tests/*",
-	"clastic/_werkzeug_serving.py",
+	"*/tests/*",
+	"*/_werkzeug_serving.py",
 ]
 
 [tool.coverage.paths]
