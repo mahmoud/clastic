@@ -55,3 +55,7 @@ nosetests.xml
 
 # Vim
 *.swp
+
+
+# Environment
+.env

@@ -58,15 +58,8 @@ Possible values to support templating:
 """
 import sys
 import datetime
-try:
-    import exceptions
-    from cgi import escape as html_escape
-    PY_VERSION = 2
-except ImportError:
-    unicode = str
-    import builtins as exceptions  # lol py3
-    from html import escape as html_escape
-    PY_VERSION = 3
+import builtins as exceptions
+from html import escape as html_escape
 
 from werkzeug.utils import get_content_type
 from werkzeug.debug import DebuggedApplication
@@ -74,13 +67,13 @@ from werkzeug.wrappers import BaseResponse
 from boltons.tbutils import ExceptionInfo, ContextualExceptionInfo
 from glom import glom, T
 
-from . import _version
+from . import __version__
 from .render.simple import ClasticJSONEncoder
 from ._contextual_errors import CONTEXTUAL_ENV
 
 
 ERROR_CODE_MAP = None
-STDLIB_EXC_URL = 'http://docs.python.org/%s/library/exceptions.html#exceptions.' % PY_VERSION
+STDLIB_EXC_URL = 'http://docs.python.org/3/library/exceptions.html#exceptions.'
 
 
 __all__ = []  # for docs purposes, gets inited by _module_init
@@ -253,7 +246,7 @@ class HTTPException(BaseResponse, Exception):
     def __str__(self):
         if not self.detail:
             ret = self.message
-        elif isinstance(self.detail, unicode):
+        elif isinstance(self.detail, str):
             ret = self.detail
         else:
             ret = repr(self.detail)
@@ -639,7 +632,7 @@ class ContextualInternalServerError(InternalServerError):
 
 
         eid = {'is_email': False,
-               'clastic_version': _version.__version__,
+               'clastic_version': __version__,
                'exc_type': exc_info.exc_type,
                'exc_value': exc_info.exc_msg,
                'exc_tb': exc_tb,

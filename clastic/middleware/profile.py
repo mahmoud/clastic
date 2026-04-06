@@ -3,10 +3,7 @@
 import cProfile
 from pstats import Stats
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 from .core import Middleware
 

@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 from chameleon import PageTemplateLoader
 

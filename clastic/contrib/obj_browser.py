@@ -12,15 +12,8 @@ from clastic import META_ASSETS_APP
 
 # TODO: lintutils check on sys.modules
 
-try:
-    basestring
-except NameError:
-    basestring = str
 
-try:
-    from html import escape as html_escape
-except ImportError:
-    from cgi import escape as html_escape
+from html import escape as html_escape
 
 
 def create_app(default_obj=None):
@@ -160,7 +153,7 @@ def get_referree_key_obj_list(obj):
 
 
 def tolabel(obj):
-    if not isinstance(obj, basestring):
+    if not isinstance(obj, str):
         try:
             obj = repr(obj)
         except Exception:
@@ -170,7 +163,7 @@ def tolabel(obj):
 
 def format(html, *args, **kwargs):
     def escape(e):
-        if isinstance(e, basestring):
+        if isinstance(e, str):
             return html_escape(e)
         return e
 

@@ -1,0 +1,85 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "clastic"
+dynamic = ["version"]
+description = "A functional Python web framework that streamlines explicit development practices while eliminating global state."
+readme = "README.rst"
+authors = [{ name = "Mahmoud Hashemi", email = "mahmoud@hatnote.com" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+	"Intended Audience :: Developers",
+	"Development Status :: 5 - Production/Stable",
+	"Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+	"Topic :: Internet :: WWW/HTTP :: WSGI",
+	"Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+	"Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+	"Topic :: Internet :: WWW/HTTP :: WSGI :: Server",
+	"Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries",
+	"Topic :: Software Development :: Libraries :: Application Frameworks",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: Implementation :: CPython",
+	"Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+	"Werkzeug>=1.0.0,<2.0",
+	"ashes",
+	"attrs",
+	"boltons>=20.0.0",
+	"glom",
+	"secure-cookie>=0.1.0,<=0.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mahmoud/clastic"
+Documentation = "https://python-clastic.readthedocs.io/"
+
+[dependency-groups]
+dev = [
+	"coverage[toml]>=7",
+	"pytest>=8",
+	"tox>=4",
+	"tox-uv>=1",
+	"chameleon>=4.4.1",
+	"Mako",
+	"psutil",
+]
+
+[tool.flit.sdist]
+include = [
+	"clastic/tests/",
+	"tox.ini",
+	"LICENSE",
+	"README.rst",
+	"CHANGELOG.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["clastic/tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["clastic"]
+omit = [
+	"*/tests/*",
+	"*/_werkzeug_serving.py",
+]
+
+[tool.coverage.paths]
+source = [
+	"clastic",
+	"*/site-packages/clastic",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+	"pragma: no cover",
+	"if __name__",
+]

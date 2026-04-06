@@ -113,7 +113,7 @@ class BasicRender(object):
 
         # not serialized yet, time to guess what the requester wants
         if not isinstance(context, Sized):
-            return Response(unicode(context), mimetype="text/plain")
+            return Response(str(context), mimetype="text/plain")
         return self._serialize_to_resp(context, request, _route)
 
     __call__ = render_response

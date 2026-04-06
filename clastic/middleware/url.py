@@ -1,18 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sys
-if sys.version_info < (3,3,):
-    from collections import Mapping, Iterable
-else:
-    from collections.abc import Mapping, Iterable
+from collections.abc import Mapping, Iterable
 
 from boltons.iterutils import is_iterable
 
-try:
-    unicode
-except NameError:
-    # py3
-    unicode = str
 
 from .core import Middleware
 
@@ -31,10 +22,10 @@ class GetParamMiddleware(Middleware):
         # TODO: defaults?
         if isinstance(params, Mapping):
             self.params = params
-        elif isinstance(params, unicode):
-            self.params = {params: unicode}
+        elif isinstance(params, str):
+            self.params = {params: str}
         elif is_iterable(params):
-            self.params = dict([(p, unicode) for p in params])
+            self.params = dict([(p, str) for p in params])
         else:
             raise TypeError('expected a string, dict, mapping, or iterable.')
         if not all([isinstance(v, type) for v in self.params.values()]):

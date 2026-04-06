@@ -9,10 +9,7 @@ import subprocess
 from itertools import chain
 from ast import literal_eval
 
-try:
-    import thread
-except ImportError:
-    import _thread as thread  # py3
+import _thread as thread
 
 from ._werkzeug_serving import reloader_loop, make_server
 
@@ -100,9 +97,9 @@ def restart_with_reloader(error_func=None):
             args.extend(sys.argv)
         new_environ = os.environ.copy()
         new_environ['WERKZEUG_RUN_MAIN'] = 'true'
-        if os.name == 'nt':
-            for key, value in new_environ.iteritems():
-                if isinstance(value, unicode):
+        if os.name == 'nt':  # pragma: no cover
+            for key, value in new_environ.items():
+                if isinstance(value, str):
                     new_environ[key] = value.encode('iso-8859-1')
         child_proc = subprocess.Popen(args,
                                       env=new_environ,
