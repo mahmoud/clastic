@@ -26,9 +26,9 @@ jobs:
           - { name: "3.8", python: "3.8", os: ubuntu-latest, tox: py38 }
           - { name: "PyPy3", python: "pypy-3.9", os: ubuntu-latest, tox: pypy3 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8.2.0
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - run: uvx --with tox-uv tox -e ${{ matrix.tox }}
