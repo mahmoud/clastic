@@ -39,7 +39,7 @@ jobs:
           cd .tox && coverage combine --rcfile ../pyproject.toml && coverage xml --rcfile ../pyproject.toml -o coverage-${{ matrix.tox }}.xml
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
           files: .tox/coverage-${{ matrix.tox }}.xml
