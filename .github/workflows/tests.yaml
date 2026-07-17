@@ -26,9 +26,9 @@ jobs:
           - { name: "3.8", python: "3.8", os: ubuntu-latest, tox: py38 }
           - { name: "PyPy3", python: "pypy-3.9", os: ubuntu-latest, tox: pypy3 }
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v8.2.0
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python }}
       - run: uvx --with tox-uv tox -e ${{ matrix.tox }}
@@ -39,7 +39,7 @@ jobs:
           cd .tox && coverage combine --rcfile ../pyproject.toml && coverage xml --rcfile ../pyproject.toml -o coverage-${{ matrix.tox }}.xml
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           fail_ci_if_error: true
           files: .tox/coverage-${{ matrix.tox }}.xml
