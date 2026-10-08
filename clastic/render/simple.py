@@ -153,9 +153,9 @@ class BasicRender(object):
     def _guess_json(bytestr: bytes):
         if not bytestr:
             return False
-        elif bytestr[0] == b'{' and bytestr[-1] == b'}':
+        elif bytestr[:1] == b'{' and bytestr[-1:] == b'}':
             return True
-        elif bytestr[0] == b'[' and bytestr[-1] == b']':
+        elif bytestr[:1] == b'[' and bytestr[-1:] == b']':
             return True
         else:
             return False
