@@ -28,8 +28,9 @@ class HTTPCacheMiddleware(Middleware):
         if hasattr(resp, 'cache_control'):
             for attr in self.cache_attrs:
                 cache_val = getattr(self, attr, None)
-                if cache_val:
-                    setattr(resp.cache_control, attr, cache_val)
+                if cache_val is not None:
+                    setattr(resp.cache_control, attr,
+                            None if cache_val is False else cache_val)
             if self.use_etags and not resp.is_streamed:
                 # TODO: do streamed responses too?
                 resp.add_etag()
