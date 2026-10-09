@@ -15,7 +15,8 @@ class GzipMiddleware(Middleware):
         resp = next()
         # TODO: shortcut redirects/304s/responses without content?
         resp.vary.add('Accept-Encoding')
-        if resp.content_encoding or not request.accept_encodings['gzip']:
+        if (resp.status_code == 206 or resp.content_encoding
+                or not request.accept_encodings['gzip']):
             return resp
 
         # https://connect.microsoft.com/IE/feedback/details/1795907/content-encoding-gzip-in-response-header-is-missing-on-ie11

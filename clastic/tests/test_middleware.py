@@ -197,3 +197,41 @@ def test_wsgi_mw():
     app = Application([('/', inner_app)],
                       middlewares=[WmwX(), WmwY()])
     _test_app(app)
+
+
+def test_gzip_mw_preserves_partial_response():
+    from clastic import Response
+    from clastic.middleware.compress import GzipMiddleware
+
+    content = b'a' * 1000
+
+    def partial():
+        return Response(content, status=206,
+                        headers={'Content-Range': 'bytes 0-999/2000'})
+
+    app = Application([('/', partial)], middlewares=[GzipMiddleware()])
+    response = app.get_local_client().get('/', headers={
+        'Accept-Encoding': 'gzip', 'Range': 'bytes=0-999'})
+    assert response.status_code == 206
+    assert response.data == content
+    assert response.headers['Content-Range'] == 'bytes 0-999/2000'
+    assert response.content_length == 1000
+    assert not response.content_encoding
+
+
+def test_gzip_mw_preserves_multipart_ranges():
+    from clastic import Response
+    from clastic.middleware.compress import GzipMiddleware
+
+    content = (b'--ranges\r\nContent-Range: bytes 0-999/2000\r\n\r\n'
+               + b'a' * 1000 + b'\r\n--ranges--\r\n')
+
+    def partial():
+        return Response(content, status=206,
+                        content_type='multipart/byteranges; boundary=ranges')
+
+    app = Application([('/', partial)], middlewares=[GzipMiddleware()])
+    response = app.get_local_client().get('/', headers={'Accept-Encoding': 'gzip'})
+    assert response.status_code == 206
+    assert response.data == content
+    assert not response.content_encoding
